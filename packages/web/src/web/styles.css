@@ -1,0 +1,114 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+
+@theme {
+  --color-obsidian: #0b0b0b;
+  --color-obsidian-raised: #111111;
+  --color-obsidian-line: #1c1a16;
+  --color-gold: #c5a059;
+  --color-gold-bright: #e4c989;
+  --color-gold-deep: #8a6d34;
+  --color-bone: #f5f3ee;
+  --color-muted: #8c877d;
+  --color-verified: #5fb37a;
+  --color-danger: #c6543f;
+
+  --font-display: "Cormorant Garamond", Georgia, serif;
+  --font-sora: "Sora", sans-serif;
+  --font-mono: "IBM Plex Mono", monospace;
+  --font-body: "Manrope", sans-serif;
+}
+
+:root {
+  --radius: 0.5rem;
+}
+
+@layer base {
+  * {
+    border-color: var(--color-obsidian-line);
+  }
+  html {
+    scroll-behavior: smooth;
+  }
+  body {
+    background-color: var(--color-obsidian);
+    color: var(--color-bone);
+    font-family: var(--font-body);
+    -webkit-font-smoothing: antialiased;
+    overflow-x: hidden;
+  }
+  ::selection {
+    background: var(--color-gold);
+    color: #000;
+  }
+}
+
+@layer components {
+  .eyebrow {
+    font-family: var(--font-mono);
+    text-transform: uppercase;
+    letter-spacing: 0.28em;
+    font-size: 0.7rem;
+    color: var(--color-gold);
+  }
+  .gold-text {
+    background: linear-gradient(180deg, var(--color-gold-bright), var(--color-gold) 55%, var(--color-gold-deep));
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+  .hairline {
+    border: 1px solid var(--color-obsidian-line);
+  }
+  .card-surface {
+    background: var(--color-obsidian-raised);
+    border: 1px solid var(--color-obsidian-line);
+    transition: border-color 0.4s ease, transform 0.4s ease, box-shadow 0.4s ease;
+  }
+  .card-surface:hover {
+    border-color: color-mix(in srgb, var(--color-gold) 55%, transparent);
+    box-shadow: 0 0 40px -18px var(--color-gold);
+  }
+}
+
+/* Thin drifting geometric gold lines background */
+@keyframes drift {
+  0% { transform: translateY(0) rotate(0deg); opacity: 0.5; }
+  50% { opacity: 0.9; }
+  100% { transform: translateY(-40px) rotate(1deg); opacity: 0.5; }
+}
+.bg-grid {
+  background-image:
+    linear-gradient(to right, rgba(197, 160, 89, 0.05) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(197, 160, 89, 0.05) 1px, transparent 1px);
+  background-size: 64px 64px;
+}
+
+/* Keyhole crest (pure CSS) */
+.crest {
+  position: relative;
+  border-radius: 9999px;
+  background: radial-gradient(circle at 50% 35%, #141414, #050505);
+  border: 1.5px solid var(--color-gold);
+  box-shadow: inset 0 0 12px rgba(0, 0, 0, 0.8), 0 0 0 3px rgba(197, 160, 89, 0.12);
+  display: grid;
+  place-items: center;
+}
+.crest::before {
+  content: "";
+  position: absolute;
+  width: 26%;
+  aspect-ratio: 1;
+  top: 22%;
+  border-radius: 9999px;
+  border: 1.5px solid var(--color-gold);
+}
+.crest::after {
+  content: "";
+  position: absolute;
+  width: 12%;
+  height: 30%;
+  top: 42%;
+  background: var(--color-gold);
+  clip-path: polygon(35% 0, 65% 0, 100% 100%, 0 100%);
+}
