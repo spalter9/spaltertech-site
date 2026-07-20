@@ -1,22 +1,28 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { Volume2, VolumeX, Play, Maximize2 } from "lucide-react";
+import { Volume2, VolumeX, Play, Maximize2, RotateCcw } from "lucide-react";
 
 /**
  * Landing hero video — autoplays muted the instant the page loads (browser-safe),
  * with a pulsing "sound on" prompt. First interaction unmutes and restarts from
  * 0:00 so the narration and hard-electronic score play in perfect sync.
+ * Plays through exactly once (no loop); on end, holds on the final frame and
+ * shows a replay control.
  */
 export function HeroVideo({ src, poster }: { src: string; poster?: string }) {
   const ref = useRef<HTMLVideoElement | null>(null);
   const wrapRef = useRef<HTMLDivElement | null>(null);
   const [muted, setMuted] = useState(true);
   const [engaged, setEngaged] = useState(false);
+  const [ended, setEnded] = useState(false);
 
   useEffect(() => {
     const v = ref.current;
     if (!v) return;
     v.muted = true;
     void v.play().catch(() => {});
+    const onEnded = () => setEnded(true);
+    v.addEventListener("ended", onEnded);
+    return () => v.removeEventListener("ended", onEnded);
   }, []);
 
   const engage = useCallback(() => {
@@ -25,8 +31,17 @@ export function HeroVideo({ src, poster }: { src: string; poster?: string }) {
     v.muted = false;
     setMuted(false);
     v.currentTime = 0;
+    setEnded(false);
     void v.play().catch(() => {});
     setEngaged(true);
+  }, []);
+
+  const replay = useCallback(() => {
+    const v = ref.current;
+    if (!v) return;
+    v.currentTime = 0;
+    setEnded(false);
+    void v.play().catch(() => {});
   }, []);
 
   const toggleMute = useCallback(() => {
@@ -54,7 +69,6 @@ export function HeroVideo({ src, poster }: { src: string; poster?: string }) {
         ref={ref}
         poster={poster}
         muted={muted}
-        loop
         playsInline
         preload="auto"
         aria-label="The Sovereign Briefing hero film"
@@ -78,6 +92,22 @@ export function HeroVideo({ src, poster }: { src: string; poster?: string }) {
               <Play className="ml-0.5 text-gold" size={24} fill="currentColor" />
             </span>
             <span className="font-mono text-[10px] uppercase tracking-[0.28em] text-bone/90">Tap for sound</span>
+          </span>
+        </button>
+      )}
+
+      {/* Replay overlay (after the film has finished — no auto-loop) */}
+      {ended && (
+        <button
+          onClick={replay}
+          aria-label="Replay"
+          className="absolute inset-0 grid place-items-center bg-gradient-to-t from-black/60 via-black/25 to-black/40 transition-colors hover:bg-black/40"
+        >
+          <span className="flex flex-col items-center gap-3">
+            <span className="grid h-16 w-16 place-items-center rounded-full border border-gold/70 bg-obsidian/60 backdrop-blur-sm transition-transform hover:scale-105">
+              <RotateCcw className="text-gold" size={22} />
+            </span>
+            <span className="font-mono text-[10px] uppercase tracking-[0.28em] text-bone/90">Replay</span>
           </span>
         </button>
       )}

@@ -5,11 +5,12 @@ import { Lock, LogOut, Menu, X } from "lucide-react";
 import { Monogram } from "./brand";
 import { useMe } from "../queries/pillars";
 import { authClient } from "../lib/auth";
+import { PillarModal, type PillarSlug } from "./pillar-modal";
 
-const LINKS = [
-  { href: "/pillar/master-trust", label: "Cryptographic Sovereignty", sub: "Master Trust" },
-  { href: "/pillar/surrealizer", label: "Catalog Modernization", sub: "Surrealizer Engine" },
-  { href: "/pillar/ssp", label: "Ecosystem Integration", sub: "Sovereign Sign Protocol" },
+const LINKS: { slug: PillarSlug; href: string; label: string; sub: string }[] = [
+  { slug: "master-trust", href: "/pillar/master-trust", label: "Cryptographic Sovereignty", sub: "Master Trust" },
+  { slug: "surrealizer", href: "/pillar/surrealizer", label: "Catalog Modernization", sub: "Surrealizer Engine" },
+  { slug: "ssp", href: "/pillar/ssp", label: "Ecosystem Integration", sub: "Sovereign Sign Protocol" },
 ];
 
 export function Nav() {
@@ -17,6 +18,7 @@ export function Nav() {
   const me = useMe();
   const authed = !!me.data;
   const [open, setOpen] = useState(false);
+  const [modal, setModal] = useState<PillarSlug | null>(null);
 
   // Close the mobile menu on route change and lock body scroll while open.
   useEffect(() => setOpen(false), [loc]);
@@ -36,9 +38,11 @@ export function Nav() {
 
         <nav className="hidden lg:flex items-center gap-7">
           {LINKS.map((l) => (
-            <Link
+            <button
               key={l.href}
-              to={l.href}
+              type="button"
+              onClick={() => setModal(l.slug)}
+              aria-label={`${l.label} — ${l.sub}`}
               title={l.sub}
               className={`group relative font-mono text-[11px] uppercase tracking-[0.2em] transition-colors ${
                 loc === l.href ? "text-gold" : "text-muted hover:text-bone"
@@ -49,7 +53,7 @@ export function Nav() {
               <span className="pointer-events-none absolute left-1/2 top-full mt-3 -translate-x-1/2 whitespace-nowrap rounded-sm border border-obsidian-line bg-obsidian-raised px-3 py-1.5 font-mono text-[9px] tracking-[0.18em] text-gold opacity-0 translate-y-1 shadow-[0_10px_30px_-15px_rgba(0,0,0,0.9)] transition-all duration-200 group-hover:opacity-100 group-hover:translate-y-0">
                 {l.sub}
               </span>
-            </Link>
+            </button>
           ))}
         </nav>
 
@@ -111,10 +115,15 @@ export function Nav() {
               {LINKS.map((l) => {
                 const active = loc === l.href;
                 return (
-                  <Link
+                  <button
                     key={l.href}
-                    to={l.href}
-                    className={`flex items-center justify-between gap-4 py-4 border-b border-obsidian-line transition-colors ${
+                    type="button"
+                    aria-label={`${l.label} — ${l.sub}`}
+                    onClick={() => {
+                      setOpen(false);
+                      setModal(l.slug);
+                    }}
+                    className={`flex items-center justify-between gap-4 py-4 border-b border-obsidian-line text-left transition-colors ${
                       active ? "text-gold" : "text-bone hover:text-gold"
                     }`}
                   >
@@ -125,7 +134,7 @@ export function Nav() {
                       </span>
                     </span>
                     <span className="w-1.5 h-1.5 rounded-full bg-gold shrink-0" />
-                  </Link>
+                  </button>
                 );
               })}
 
@@ -149,6 +158,9 @@ export function Nav() {
           </motion.div>
         )}
       </AnimatePresence>
+
+      {/* Quick-look pillar modal — pops before the full page */}
+      <PillarModal slug={modal} onClose={() => setModal(null)} />
     </header>
   );
 }

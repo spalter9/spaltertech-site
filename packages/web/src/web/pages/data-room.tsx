@@ -1,9 +1,10 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Link } from "wouter";
-import { motion } from "motion/react";
+import { motion, AnimatePresence } from "motion/react";
 import {
   Loader2, FileText, Video, Presentation, Workflow, DollarSign, Link2, BarChart3,
   Play, ShieldCheck, Fingerprint, AudioWaveform, Bot, Lock as LockIcon, ArrowLeft, CheckCircle2,
+  X, ArrowRight,
 } from "lucide-react";
 import { Nav } from "../components/nav";
 import { Crest } from "../components/brand";
@@ -172,11 +173,27 @@ function BriefingModule() {
 }
 
 /* ── Module: 8-segment Data Room ───────────────────────────── */
+type Segment = {
+  id: string; code: string; title: string; kind: string;
+  summary: string; body: string; status: string; clearance: string;
+};
+
+// Cards that correspond to a live section on this page get a jump link.
+const JUMP_FOR: Record<string, { id: string; label: string }> = {
+  VIDEO: { id: "briefing", label: "Watch the briefing" },
+  FINANCIALS: { id: "proforma", label: "Open the Pro Forma estimator" },
+  PRICING: { id: "proforma", label: "Open the Pro Forma estimator" },
+  INTEGRATION: { id: "surrealizer", label: "Open the Surrealizer Engine" },
+  LINK: { id: "vault", label: "Enter the live modules" },
+};
+
 function DataRoomModule() {
   const segs = useSegments();
+  const [selected, setSelected] = useState<Segment | null>(null);
+
   return (
     <section id="data-room" className="scroll-mt-32">
-      <ModuleHead tag="Pillar I — Legal" title="Segment Library" desc="Eight structured IP and financial disclosure modules. Served securely from the Master Trust." />
+      <ModuleHead tag="Pillar I — Legal" title="Segment Library" desc="Eight structured IP and financial disclosure modules. Served securely from the Master Trust. Select any module to open it." />
       {segs.isLoading ? (
         <Grid><SkeletonCards n={8} /></Grid>
       ) : (
@@ -184,13 +201,16 @@ function DataRoomModule() {
           {segs.data?.map((s, i) => {
             const Icon = KIND_ICON[s.kind] ?? FileText;
             return (
-              <motion.div
+              <motion.button
                 key={s.id}
+                type="button"
+                onClick={() => setSelected(s as Segment)}
+                aria-label={`Open ${s.title}`}
                 initial={{ opacity: 0, y: 20 }}
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
                 transition={{ delay: (i % 4) * 0.06 }}
-                className="card-surface p-6 flex flex-col"
+                className="card-surface p-6 flex flex-col text-left cursor-pointer hover:-translate-y-1 hover:border-gold/50 transition-all"
               >
                 <div className="flex items-center justify-between">
                   <span className="font-mono text-gold text-sm">{s.code}</span>
@@ -204,12 +224,90 @@ function DataRoomModule() {
                     {s.clearance === "privileged" ? <LockIcon size={10} /> : null}{s.status.replace("_", " ")}
                   </span>
                 </div>
-              </motion.div>
+              </motion.button>
             );
           })}
         </Grid>
       )}
+
+      <SegmentModal segment={selected} onClose={() => setSelected(null)} />
     </section>
+  );
+}
+
+function SegmentModal({ segment, onClose }: { segment: Segment | null; onClose: () => void }) {
+  useEffect(() => {
+    if (!segment) return;
+    const onKey = (e: KeyboardEvent) => e.key === "Escape" && onClose();
+    document.addEventListener("keydown", onKey);
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.removeEventListener("keydown", onKey);
+      document.body.style.overflow = "";
+    };
+  }, [segment, onClose]);
+
+  const jump = segment ? JUMP_FOR[segment.kind] : undefined;
+  const Icon = segment ? (KIND_ICON[segment.kind] ?? FileText) : FileText;
+
+  return (
+    <AnimatePresence>
+      {segment && (
+        <motion.div
+          key="segment-modal"
+          className="fixed inset-0 z-[70] grid place-items-center p-4 sm:p-6"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          transition={{ duration: 0.2 }}
+        >
+          <div className="absolute inset-0 bg-obsidian/80 backdrop-blur-sm" onClick={onClose} aria-hidden />
+
+          <motion.div
+            aria-modal="true"
+            aria-label={segment.title}
+            className="relative w-full max-w-xl card-surface border border-gold/30 p-8 shadow-[0_40px_120px_-30px_rgba(0,0,0,0.9)] max-h-[85vh] overflow-y-auto"
+            initial={{ opacity: 0, y: 24, scale: 0.98 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: 16, scale: 0.98 }}
+            transition={{ duration: 0.28, ease: "easeOut" }}
+          >
+            <button onClick={onClose} className="absolute right-4 top-4 text-muted hover:text-gold transition-colors p-1" aria-label="Close">
+              <X size={18} />
+            </button>
+
+            <div className="flex items-center justify-between">
+              <div className="w-12 h-12 grid place-items-center border border-gold/40 text-gold">
+                <Icon size={22} />
+              </div>
+              <span className="font-mono text-3xl text-obsidian-line">{segment.code}</span>
+            </div>
+
+            <p className="eyebrow mt-6">{segment.kind.replace("_", " ")}</p>
+            <h3 className="font-display text-2xl md:text-3xl mt-2 leading-tight">{segment.title}</h3>
+            <p className="text-gold/90 text-sm leading-relaxed mt-5">{segment.summary}</p>
+            <p className="text-muted text-sm leading-relaxed mt-3 whitespace-pre-line">{segment.body}</p>
+
+            <div className="mt-8 border-t border-obsidian-line pt-5 flex items-center gap-3 flex-wrap">
+              {jump && (
+                <a
+                  href={`#${jump.id}`}
+                  onClick={onClose}
+                  className="group inline-flex items-center gap-2 font-mono text-[11px] uppercase tracking-[0.2em] px-5 py-3 border border-gold text-gold hover:bg-gold hover:text-obsidian transition-colors"
+                >
+                  {jump.label}
+                  <ArrowRight size={14} className="transition-transform group-hover:translate-x-1" />
+                </a>
+              )}
+              <span className="font-mono text-[9px] uppercase tracking-[0.18em] text-muted flex items-center gap-1">
+                {segment.clearance === "privileged" ? <LockIcon size={10} /> : null}
+                {segment.clearance} · {segment.status.replace("_", " ")}
+              </span>
+            </div>
+          </motion.div>
+        </motion.div>
+      )}
+    </AnimatePresence>
   );
 }
 
