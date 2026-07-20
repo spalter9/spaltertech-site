@@ -116,36 +116,19 @@ function BriefingModule() {
         desc="A full walkthrough of the Sovereign infrastructure — the three-pillar ecosystem reclaiming control, transparency, and valuation for premier creative catalogs."
       />
 
-      {/* Main event — large feature player */}
-      <div className="mb-3 flex items-center gap-2.5">
-        <span className="font-mono text-[10px] uppercase tracking-[0.2em] text-gold">Feature Presentation</span>
-        <span className="h-px flex-1 bg-obsidian-line" />
-        <span className="font-mono text-[10px] uppercase tracking-[0.16em] text-muted">4:04 · Narrated</span>
-      </div>
-      <div className="card-surface p-2 sm:p-3">
-        <VideoPlayer
-          sources={[{ src: "/videos/mt-main-16x9.mp4", type: "video/mp4" }]}
-          poster="/videos/mt-main-poster.jpg"
-          ratio="16 / 9"
-        />
-      </div>
-      <p className="mt-3 font-mono text-[10px] uppercase tracking-[0.16em] text-muted">
-        Confidential · For privileged review only
-      </p>
-
-      {/* Teaser — smaller companion player */}
-      <div className="mt-14 grid gap-6 lg:grid-cols-[minmax(0,1.6fr)_minmax(0,1fr)] lg:items-center">
+      {/* Orphan cut — opening companion player (first) */}
+      <div className="grid gap-6 lg:grid-cols-[minmax(0,1.6fr)_minmax(0,1fr)] lg:items-center">
         <div className="lg:order-2">
-          <p className="eyebrow">Companion · 0:35</p>
-          <h3 className="font-display text-2xl mt-2">The Teaser</h3>
+          <p className="eyebrow">Companion · 4:22</p>
+          <h3 className="font-display text-2xl mt-2">The Orphan Cut</h3>
           <p className="text-muted text-sm mt-2 leading-relaxed">
-            A rapid-cut sizzle reel — the Master Trust in motion. Best shared as the opening hook ahead of the full briefing above.
+            The origin story — how the world's masters were orphaned, and how the Master Trust reclaims them. The opening chapter ahead of the full feature below.
           </p>
         </div>
         <div className="lg:order-1 card-surface p-2">
           <VideoPlayer
-            sources={[{ src: "/videos/mt-teaser-16x9.mp4", type: "video/mp4" }]}
-            poster="/videos/mt-teaser-poster.jpg"
+            sources={[{ src: "/videos/mt-orphan-16x9-v1.mp4", type: "video/mp4" }]}
+            poster="/videos/mt-orphan-poster.jpg"
             ratio="16 / 9"
           />
         </div>
@@ -162,12 +145,29 @@ function BriefingModule() {
         </div>
         <div className="card-surface p-2">
           <VideoPlayer
-            sources={[{ src: "/videos/ssp-directive-16x9.mp4", type: "video/mp4" }]}
+            sources={[{ src: "/videos/ssp-directive-16x9-v2.mp4", type: "video/mp4" }]}
             poster="/videos/ssp-directive-poster.jpg"
             ratio="16 / 9"
           />
         </div>
       </div>
+
+      {/* Main event — large feature player (third) */}
+      <div className="mt-14 mb-3 flex items-center gap-2.5">
+        <span className="font-mono text-[10px] uppercase tracking-[0.2em] text-gold">Feature Presentation</span>
+        <span className="h-px flex-1 bg-obsidian-line" />
+        <span className="font-mono text-[10px] uppercase tracking-[0.16em] text-muted">4:04 · Narrated</span>
+      </div>
+      <div className="card-surface p-2 sm:p-3">
+        <VideoPlayer
+          sources={[{ src: "/videos/mt-main-16x9.mp4", type: "video/mp4" }]}
+          poster="/videos/mt-main-poster.jpg"
+          ratio="16 / 9"
+        />
+      </div>
+      <p className="mt-3 font-mono text-[10px] uppercase tracking-[0.16em] text-muted">
+        Confidential · For privileged review only
+      </p>
     </section>
   );
 }
