@@ -15,30 +15,50 @@ const TABS: { id: Tab; label: string; sub: string; icon: typeof FileText }[] = [
   { id: "summary", label: "Executive Summary", sub: "Institutional positioning", icon: FileText },
 ];
 
-const MODULES: { num: string; kicker: string; title: string; body: string }[] = [
+const MODULES: { num: string; kicker: string; title: string; body: string; points: string[] }[] = [
   {
     num: "01",
     kicker: "Core Security Layer",
     title: "MasterTrust Protocol",
-    body: "MasterTrust delivers cryptographically enforced custody and tamper-proof verification. Every transaction, data transfer, and asset log is immutably anchored to prevent unauthorized access or state-level tampering.",
+    body: "Cryptographically enforced custody and immutable asset verification designed for high-assurance enterprise environments.",
+    points: [
+      "Tamper-proof ledger anchoring",
+      "Zero-leakage decentralized custody",
+      "Instant cryptographic proof-of-origin",
+    ],
   },
   {
     num: "02",
     kicker: "Regulatory Standard",
-    title: "Government & Institutional Infrastructure",
-    body: "Engineered for state agencies and high-security enterprises requiring absolute jurisdictional clarity, decentralized audit trails, and automated regulatory reporting without third-party intermediaries.",
+    title: "Government & Institutional Compliance",
+    body: "Engineered for government agencies requiring absolute jurisdictional clarity and automated regulatory auditing.",
+    points: [
+      "Automated regulatory reporting pipelines",
+      "Jurisdictional boundary enforcement",
+      "Secure state-level settlement layers",
+    ],
   },
   {
     num: "03",
     kicker: "Interactive Distribution",
     title: "Video Game Marketing & Asset Integration",
-    body: "Integrating sovereign assets and audio rights directly into interactive gaming environments. This module manages in-game licensing verification, dynamic royalty settlement, and high-engagement promotional pipelines across modern gaming engines.",
+    body: "High-engagement promotional and licensing integration connecting sovereign media assets directly into interactive gaming engines.",
+    points: [
+      "In-engine cryptographic rights validation",
+      "Dynamic programmatic royalty settlement",
+      "Interactive promotional distribution",
+    ],
   },
   {
     num: "04",
     kicker: "Reach & Analytics",
     title: "Social Media Protocol & Amplification",
-    body: "Automated syndication and cryptographic content tracking across major social networks. Ensures secure attribution, tracking of derivative reach, and instant micro-settlements for viral media distribution.",
+    body: "Automated syndication and tracking across social networks ensuring secure attribution and micro-settlements for viral reach.",
+    points: [
+      "Cross-platform cryptographic syndication",
+      "Derivative reach tracking & attribution",
+      "Instant micro-settlement for viral assets",
+    ],
   },
 ];
 
@@ -81,14 +101,15 @@ export default function SspFramework() {
       <section className="mx-auto max-w-[1100px] px-6 py-16 md:py-20">
         <div className="text-center max-w-3xl mx-auto">
           <h2 className="font-display text-[clamp(1.9rem,4vw,2.9rem)] leading-tight">
-            Modular Sovereign Infrastructure
+            Sovereign Infrastructure &amp; Protocol Modules
           </h2>
           <p className="text-muted mt-4 leading-relaxed">
-            Four operating layers, deployed as one protocol stack.
+            Institutional-grade pillars, government compliance systems, video game marketing pipelines, and
+            social media amplification protocols.
           </p>
         </div>
 
-        <div className="mt-12 space-y-6">
+        <div className="mt-12 grid grid-cols-1 md:grid-cols-2 gap-8">
           {MODULES.map((m, i) => (
             <motion.article
               key={m.num}
@@ -96,7 +117,7 @@ export default function SspFramework() {
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true, margin: "-80px" }}
               transition={{ duration: 0.55, delay: i * 0.07, ease: [0.22, 1, 0.36, 1] }}
-              className="card-surface rounded-3xl p-8 md:p-10 space-y-5"
+              className="card-surface rounded-3xl p-8 flex flex-col gap-6"
             >
               <div className="flex items-center gap-4">
                 <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl border border-gold/30 bg-gold/10 font-mono text-base font-bold text-gold">
@@ -104,10 +125,20 @@ export default function SspFramework() {
                 </div>
                 <div className="min-w-0">
                   <span className="eyebrow block">{m.kicker}</span>
-                  <h3 className="font-display text-xl md:text-2xl mt-1.5">{m.title}</h3>
+                  <h3 className="font-display text-lg md:text-xl mt-1.5">{m.title}</h3>
                 </div>
               </div>
-              <p className="text-muted text-sm md:text-base leading-relaxed">{m.body}</p>
+
+              <p className="text-muted text-sm leading-relaxed">{m.body}</p>
+
+              <ul className="mt-auto space-y-2.5 border-t border-gold/10 pt-5">
+                {m.points.map((pt) => (
+                  <li key={pt} className="flex items-center gap-2.5 text-xs text-bone/80">
+                    <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-gold" aria-hidden="true" />
+                    <span>{pt}</span>
+                  </li>
+                ))}
+              </ul>
             </motion.article>
           ))}
         </div>
