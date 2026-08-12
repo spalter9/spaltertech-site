@@ -1,7 +1,6 @@
 import { Link } from "wouter";
 import { motion } from "motion/react";
-import { ArrowUpRight, Lock, ShieldCheck, Fingerprint, Coins } from "lucide-react";
-import { Crest } from "../brand";
+import { Lock, ShieldCheck, Fingerprint, Coins } from "lucide-react";
 import { HeroVideo } from "../hero-video";
 
 const STATS = [
@@ -13,61 +12,65 @@ const STATS = [
 export function Hero() {
   return (
     <section className="relative pt-[68px] overflow-hidden">
-      <div className="absolute inset-0 bg-grid opacity-60" />
+      <div className="absolute inset-0 bg-grid opacity-60" aria-hidden="true" />
       <div
         className="absolute inset-0"
+        aria-hidden="true"
         style={{ background: "radial-gradient(ellipse at 50% -10%, rgba(197,160,89,0.14), transparent 55%)" }}
       />
-      <div className="relative mx-auto max-w-[1200px] px-6 pt-16 pb-24 md:pt-20">
+
+      {/* Mockup layout: max-w-6xl, pt-12 pb-20, space-y-12 rhythm */}
+      <div className="relative mx-auto max-w-6xl px-6 pt-12 pb-20 space-y-12">
+        {/* Headline & introduction */}
         <motion.div
           initial={{ opacity: 0, y: 24 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.8 }}
-          className="flex flex-col items-center text-center"
+          className="text-center space-y-4 max-w-3xl mx-auto"
         >
-          <Crest size={60} />
-          <p className="eyebrow mt-6">Spalter Entertainment Technologies</p>
-          <h1 className="font-display mt-4 text-[clamp(2.3rem,6vw,4.6rem)] leading-[0.98] font-semibold max-w-4xl">
+          {/* Pill-style eyebrow */}
+          <span className="inline-block font-mono text-gold text-[0.7rem] font-semibold tracking-[0.22em] uppercase bg-gold/10 border border-gold/25 px-4 py-1.5 rounded-full">
+            The Sparta Catalog Reimagined
+          </span>
+          <h1 className="font-display text-4xl md:text-6xl font-semibold tracking-tight leading-[1.02] text-bone">
             The sovereign infrastructure for the{" "}
             <span className="gold-text">next era of media assets.</span>
           </h1>
-          <p className="text-muted mt-6 max-w-2xl leading-relaxed text-[15px] md:text-base">
+          <p className="text-muted text-base md:text-lg leading-relaxed max-w-2xl mx-auto">
             Spalter Tech is building the ownership layer of the creative economy — where every
             work is cryptographically proven, every legacy catalog is reawakened as a living
             asset, and every payment settles the instant it is earned.
           </p>
         </motion.div>
 
-        {/* Cinematic hero player */}
+        {/* Prime cinematic hero player — rounded frame per mockup */}
         <motion.div
           initial={{ opacity: 0, y: 30 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.9, delay: 0.15 }}
-          className="mx-auto mt-10 max-w-[1000px]"
         >
-          <HeroVideo src="/videos/mt-orphan-16x9-v1.mp4" poster="/videos/mt-orphan-poster.jpg" />
+          <HeroVideo src="/videos/mt-orphan-16x9-v1.mp4" poster="/videos/mt-orphan-poster.jpg" rounded />
         </motion.div>
 
-        <div className="mt-9 flex flex-wrap items-center justify-center gap-4">
+        {/* Quick action CTAs — full-width on mobile, gradient primary */}
+        <div className="flex flex-col sm:flex-row items-center justify-center gap-4 pt-4">
           <Link
             to="/data-room"
-            className="group flex items-center gap-2 px-7 py-3.5 bg-gold text-obsidian font-mono text-xs uppercase tracking-[0.2em] hover:bg-gold-bright transition-colors"
+            className="group w-full sm:w-auto flex items-center justify-center gap-2 px-8 py-4 rounded-xl bg-gradient-to-r from-gold to-gold-bright text-obsidian font-mono text-xs font-bold uppercase tracking-[0.18em] hover:opacity-90 transition-opacity"
+            style={{ boxShadow: "0 0 44px -14px rgba(197,160,89,0.6)" }}
           >
-            <Lock size={13} /> Enter the Data Room
-            <ArrowUpRight
-              size={15}
-              className="group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-transform"
-            />
+            <Lock size={13} /> Enter The Data Room
           </Link>
           <a
             href="#manifesto"
-            className="px-7 py-3.5 border border-obsidian-line hover:border-gold text-bone font-mono text-xs uppercase tracking-[0.2em] transition-colors"
+            className="w-full sm:w-auto text-center px-8 py-4 rounded-xl bg-obsidian-raised border border-gold/30 text-gold font-mono text-xs font-bold uppercase tracking-[0.18em] hover:bg-gold/10 transition-colors"
           >
-            Read the Manifesto
+            Read The Manifesto
           </a>
         </div>
 
-        <div className="mt-14 grid grid-cols-3 gap-6 md:gap-16 max-w-2xl mx-auto">
+        {/* Trust signals */}
+        <div className="grid grid-cols-3 gap-6 md:gap-16 max-w-2xl mx-auto">
           {STATS.map((s) => (
             <div key={s.k} className="flex flex-col items-center gap-2">
               <s.icon size={20} className="text-gold" />

@@ -8,7 +8,7 @@ import { Volume2, VolumeX, Play, Maximize2, RotateCcw } from "lucide-react";
  * Plays through exactly once (no loop); on end, holds on the final frame and
  * shows a replay control.
  */
-export function HeroVideo({ src, poster }: { src: string; poster?: string }) {
+export function HeroVideo({ src, poster, rounded = false }: { src: string; poster?: string; rounded?: boolean }) {
   const ref = useRef<HTMLVideoElement | null>(null);
   const wrapRef = useRef<HTMLDivElement | null>(null);
   const [muted, setMuted] = useState(true);
@@ -62,7 +62,11 @@ export function HeroVideo({ src, poster }: { src: string; poster?: string }) {
   return (
     <div
       ref={wrapRef}
-      className="group relative w-full overflow-hidden border border-obsidian-line bg-black shadow-[0_0_80px_-30px_rgba(197,160,89,0.5)]"
+      className={`group relative w-full overflow-hidden bg-black ${
+        rounded
+          ? "rounded-3xl border border-gold/30 shadow-[0_0_100px_-30px_rgba(197,160,89,0.45)]"
+          : "border border-obsidian-line shadow-[0_0_80px_-30px_rgba(197,160,89,0.5)]"
+      }`}
       style={{ aspectRatio: "16 / 9" }}
     >
       <video
@@ -125,9 +129,17 @@ export function HeroVideo({ src, poster }: { src: string; poster?: string }) {
       </div>
 
       {/* Live badge */}
-      <div className="absolute top-3 left-3 flex items-center gap-2 bg-obsidian/70 border border-obsidian-line px-3 py-1.5 backdrop-blur-sm">
-        <span className="w-1.5 h-1.5 rounded-full bg-danger animate-pulse" />
-        <span className="font-mono text-[9px] uppercase tracking-[0.22em] text-bone/90">The Sovereign Briefing · 0:60</span>
+      <div
+        className={`absolute flex items-center gap-2 bg-obsidian/80 backdrop-blur-md ${
+          rounded
+            ? "top-4 left-4 rounded-full border border-gold/20 px-3 py-1.5"
+            : "top-3 left-3 border border-obsidian-line px-3 py-1.5"
+        }`}
+      >
+        <span className={`w-1.5 h-1.5 rounded-full animate-pulse ${rounded ? "bg-gold" : "bg-danger"}`} />
+        <span className={`font-mono text-[9px] uppercase tracking-[0.22em] ${rounded ? "text-gold/90" : "text-bone/90"}`}>
+          The Sovereign Briefing · 0:60
+        </span>
       </div>
     </div>
   );
