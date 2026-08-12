@@ -39,7 +39,7 @@ export function Closing() {
             </div>
           </div>
           <div className="font-mono text-[10px] uppercase tracking-[0.2em] text-muted">
-            Sovereign Sign Protocol · Anchored on Polygon
+            Sovereign Sign Protocol™ · Anchored on Polygon
           </div>
           <a
             href="mailto:info@spaltentech.com"

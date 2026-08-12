@@ -8,6 +8,7 @@ import { ping } from "./routes/ping";
 import { masterTrust } from "./routes/master-trust";
 import { ssp } from "./routes/ssp";
 import { surealizer } from "./routes/surealizer";
+import { compliance } from "./routes/compliance";
 import { withUser } from "./middleware/auth";
 
 // Three-pillar core architecture:
@@ -38,6 +39,9 @@ export const router = {
   masterTrust,
   ssp,
   surealizer,
+  // Cross-cutting compliance & settlement infrastructure (dual-layer
+  // provenance, invisible AA + fiat off-ramp, 90-day unclaimed escrow).
+  compliance,
 };
 
 export type AppRouter = typeof router;
@@ -120,6 +124,39 @@ app.get("/api/surealizer", async (c) => {
         "HRTF 3D spatial re-mastering",
       ],
       jobsProcessed: agg?.jobs ?? 0,
+    },
+    200,
+  );
+});
+
+/* ───────────────────────────────────────────────────────────
+   COMPLIANCE & SETTLEMENT INFRASTRUCTURE status route
+   Regulatory + settlement posture across the three capability groups.
+   GET /api/compliance → C2PA / EU AI Act readiness + live counts
+   ─────────────────────────────────────────────────────────── */
+app.get("/api/compliance", async (c) => {
+  const [prov] = await db
+    .select({ count: sql<number>`count(*)` })
+    .from(schema.provenanceManifests);
+  const [pay] = await db
+    .select({ usd: sql<number>`coalesce(sum(${schema.fiatPayouts.usdAmount}), 0)` })
+    .from(schema.fiatPayouts);
+  const [esc] = await db
+    .select({
+      held: sql<number>`coalesce(sum(case when ${schema.unclaimedEscrow.releaseState} != 'released' then ${schema.unclaimedEscrow.amount} else 0 end), 0)`,
+    })
+    .from(schema.unclaimedEscrow);
+  return c.json(
+    {
+      layer: "Compliance & Settlement Infrastructure",
+      chain: "Polygon",
+      status: "operational",
+      standards: ["C2PA v2", "EU AI Act — Article 50", "ERC-4337"],
+      settlement: "stablecoin → fiat off-ramp (ACH / wire / RTP)",
+      escrowLockDays: 90,
+      manifestsAnchored: prov?.count ?? 0,
+      fiatSettledUsd: pay?.usd ?? 0,
+      escrowHeldUsd: esc?.held ?? 0,
     },
     200,
   );

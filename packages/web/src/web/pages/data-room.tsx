@@ -10,6 +10,8 @@ import { Nav } from "../components/nav";
 import { Crest } from "../components/brand";
 import { ProForma } from "../components/pro-forma";
 import { VideoPlayer } from "../components/video-player";
+import { WhitePaperDoc } from "../components/whitepaper";
+import { ExecSummaryDoc } from "../components/exec-summary";
 import { authClient } from "../lib/auth";
 import {
   useMe, useSegments, useEscrow, useSettleAsset, useLedger, useSspStats, useTripwire,
@@ -24,7 +26,7 @@ const KIND_ICON: Record<string, typeof FileText> = {
 const SECTIONS = [
   { id: "briefing", label: "Briefing" },
   { id: "data-room", label: "Data Room" },
-  { id: "vault", label: "Master Trust Vault" },
+  { id: "vault", label: "MasterTrust Vault" },
   { id: "ledger", label: "SSP Ledger" },
   { id: "surrealizer", label: "Surrealizer Engine" },
   { id: "proforma", label: "Pro Forma" },
@@ -58,7 +60,7 @@ export default function DataRoom() {
             <div className="flex items-center gap-5">
               <Crest size={54} />
               <div>
-                <p className="eyebrow">The Master Trust · Privileged</p>
+                <p className="eyebrow">The MasterTrust · Privileged</p>
                 <h1 className="font-display text-3xl md:text-4xl mt-1">Data Room</h1>
                 <p className="text-muted text-sm mt-1">{me.data && me.data.id !== "guest" ? `Signed in as ${me.data.email}` : "Guest · Open Access"}</p>
               </div>
@@ -116,19 +118,19 @@ function BriefingModule() {
         desc="A full walkthrough of the Sovereign infrastructure — the three-pillar ecosystem reclaiming control, transparency, and valuation for premier creative catalogs."
       />
 
-      {/* Orphan cut — opening companion player (first) */}
+      {/* Cinematic overview — opening companion player (first) */}
       <div className="grid gap-6 lg:grid-cols-[minmax(0,1.6fr)_minmax(0,1fr)] lg:items-center">
         <div className="lg:order-2">
-          <p className="eyebrow">Companion · 4:22</p>
-          <h3 className="font-display text-2xl mt-2">The Orphan Cut</h3>
+          <p className="eyebrow">Companion · Cinematic</p>
+          <h3 className="font-display text-2xl mt-2">The Sovereign Overview</h3>
           <p className="text-muted text-sm mt-2 leading-relaxed">
-            The origin story — how the world's masters were orphaned, and how the Master Trust reclaims them. The opening chapter ahead of the full feature below.
+            The cinematic overview of the sovereign infrastructure — the ownership layer of the creative economy, in motion. The opening chapter ahead of the full feature below.
           </p>
         </div>
         <div className="lg:order-1 card-surface p-2">
           <VideoPlayer
-            sources={[{ src: "/videos/mt-orphan-16x9-v1.mp4", type: "video/mp4" }]}
-            poster="/videos/mt-orphan-poster.jpg"
+            sources={[{ src: "/videos/mt-landing-16x9-v4.mp4", type: "video/mp4" }]}
+            poster="/videos/mt-landing-poster.jpg"
             ratio="16 / 9"
           />
         </div>
@@ -140,7 +142,7 @@ function BriefingModule() {
           <p className="eyebrow">Narrated · 1:15</p>
           <h3 className="font-display text-2xl mt-2">The Sovereign Directive</h3>
           <p className="text-muted text-sm mt-2 leading-relaxed">
-            A tight, narrated primer on the three pillars — the Master Trust, the Sovereign Sign Ledger, and the Surrealizer Engine. The fastest path to the full picture.
+            A tight, narrated primer on the three pillars — the MasterTrust, the Sovereign Sign Ledger, and the Surrealizer Engine. The fastest path to the full picture.
           </p>
         </div>
         <div className="card-surface p-2">
@@ -193,7 +195,7 @@ function DataRoomModule() {
 
   return (
     <section id="data-room" className="scroll-mt-32">
-      <ModuleHead tag="Pillar I — Legal" title="Segment Library" desc="Eight structured IP and financial disclosure modules. Served securely from the Master Trust. Select any module to open it." />
+      <ModuleHead tag="Pillar I — Legal" title="Segment Library" desc="Eight structured IP and financial disclosure modules. Served securely from the MasterTrust. Select any module to open it." />
       {segs.isLoading ? (
         <Grid><SkeletonCards n={8} /></Grid>
       ) : (
@@ -249,6 +251,9 @@ function SegmentModal({ segment, onClose }: { segment: Segment | null; onClose: 
 
   const jump = segment ? JUMP_FOR[segment.kind] : undefined;
   const Icon = segment ? (KIND_ICON[segment.kind] ?? FileText) : FileText;
+  const isWhitePaper = segment?.kind === "WHITE_PAPER";
+  const isExecSummary = segment?.kind === "EXECUTIVE_SUMMARY";
+  const isDoc = isWhitePaper || isExecSummary;
 
   return (
     <AnimatePresence>
@@ -266,7 +271,7 @@ function SegmentModal({ segment, onClose }: { segment: Segment | null; onClose: 
           <motion.div
             aria-modal="true"
             aria-label={segment.title}
-            className="relative w-full max-w-xl card-surface border border-gold/30 p-8 shadow-[0_40px_120px_-30px_rgba(0,0,0,0.9)] max-h-[85vh] overflow-y-auto"
+            className={`relative w-full ${isDoc ? "max-w-3xl" : "max-w-xl"} card-surface border border-gold/30 p-8 shadow-[0_40px_120px_-30px_rgba(0,0,0,0.9)] max-h-[85vh] overflow-y-auto`}
             initial={{ opacity: 0, y: 24, scale: 0.98 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 16, scale: 0.98 }}
@@ -283,10 +288,18 @@ function SegmentModal({ segment, onClose }: { segment: Segment | null; onClose: 
               <span className="font-mono text-3xl text-obsidian-line">{segment.code}</span>
             </div>
 
-            <p className="eyebrow mt-6">{segment.kind.replace("_", " ")}</p>
-            <h3 className="font-display text-2xl md:text-3xl mt-2 leading-tight">{segment.title}</h3>
-            <p className="text-gold/90 text-sm leading-relaxed mt-5">{segment.summary}</p>
-            <p className="text-muted text-sm leading-relaxed mt-3 whitespace-pre-line">{segment.body}</p>
+            {isWhitePaper ? (
+              <WhitePaperDoc />
+            ) : isExecSummary ? (
+              <ExecSummaryDoc />
+            ) : (
+              <>
+                <p className="eyebrow mt-6">{segment.kind.replace("_", " ")}</p>
+                <h3 className="font-display text-2xl md:text-3xl mt-2 leading-tight">{segment.title}</h3>
+                <p className="text-gold/90 text-sm leading-relaxed mt-5">{segment.summary}</p>
+                <p className="text-muted text-sm leading-relaxed mt-3 whitespace-pre-line">{segment.body}</p>
+              </>
+            )}
 
             <div className="mt-8 border-t border-obsidian-line pt-5 flex items-center gap-3 flex-wrap">
               {jump && (
@@ -311,7 +324,7 @@ function SegmentModal({ segment, onClose }: { segment: Segment | null; onClose: 
   );
 }
 
-/* ── Module: Master Trust Vault ────────────────────────────── */
+/* ── Module: MasterTrust Vault ────────────────────────────── */
 function VaultModule() {
   const escrow = useEscrow();
   const settle = useSettleAsset();
@@ -320,7 +333,7 @@ function VaultModule() {
   };
   return (
     <section id="vault" className="scroll-mt-32">
-      <ModuleHead tag="Pillar I — Escrow" title="Master Trust Vault" desc="Cryptographic multi-sig escrow. Verified ownership titles with concurrent split settlement to Creators, Labels, and Publishers." />
+      <ModuleHead tag="Pillar I — Escrow" title="MasterTrust Vault" desc="Cryptographic multi-sig escrow. Verified ownership titles with concurrent split settlement to Creators, Labels, and Publishers." />
       <div className="card-surface overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full font-mono text-xs min-w-[820px]">
@@ -445,7 +458,7 @@ function SurrealizerModule() {
 
   return (
     <section id="surrealizer" className="scroll-mt-32">
-      <ModuleHead tag="Pillar III — Signal" title="The Surrealizer Engine" desc="Neural stem extraction with forensic, DNA-level credit detection and steganographic phase-coded provenance." />
+      <ModuleHead tag="Pillar III — Signal" title="The Surrealizer Engine™" desc="Neural stem extraction with forensic, DNA-level credit detection and steganographic phase-coded provenance." />
 
       <div className="card-surface p-6 mb-6 flex flex-col sm:flex-row gap-3 items-stretch sm:items-end">
         <label className="flex-1">
@@ -562,7 +575,7 @@ function AccessPending({ email }: { email: string }) {
               <LockIcon size={16} className="text-gold" />
             </div>
           </div>
-          <p className="eyebrow mt-6">The Master Trust · Restricted</p>
+          <p className="eyebrow mt-6">The MasterTrust · Restricted</p>
           <h1 className="font-display text-3xl mt-2">Access Pending</h1>
           <p className="text-muted text-sm mt-3 leading-relaxed">
             This Data Room is invitation-only. Your account is authenticated, but

@@ -6,7 +6,7 @@ import { db } from "../database";
 import * as schema from "../database/schema";
 
 /**
- * PILLAR 1 — THE MASTER TRUST (Legal)
+ * PILLAR 1 — THE MASTERTRUST (Legal)
  * Serves the 8 structured IP/financial Data Room modules and the
  * cryptographic escrow Vault. All procedures are auth-gated: the Data Room
  * is privileged legal/financial disclosure and must never be public.
@@ -28,7 +28,7 @@ export const masterTrust = {
       return seg;
     }),
 
-  // Master Trust Vault — cryptographic escrow table
+  // MasterTrust Vault — cryptographic escrow table
   listEscrow: authedAllowed.handler(() =>
     db.select().from(schema.escrowAssets).orderBy(asc(schema.escrowAssets.id)),
   ),

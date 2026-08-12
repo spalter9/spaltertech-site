@@ -1,7 +1,7 @@
 /** Pure-CSS brand marks — no image files. */
 
 export function Crest({ size = 44 }: { size?: number }) {
-  return <div className="crest" style={{ width: size, height: size }} aria-label="Master Trust keyhole crest" />;
+  return <div className="crest" style={{ width: size, height: size }} aria-label="MasterTrust keyhole crest" />;
 }
 
 export function Monogram({ compact = false }: { compact?: boolean }) {

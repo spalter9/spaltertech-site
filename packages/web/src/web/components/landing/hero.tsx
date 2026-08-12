@@ -45,7 +45,7 @@ export function Hero() {
           transition={{ duration: 0.9, delay: 0.15 }}
           className="mx-auto mt-10 max-w-[1000px]"
         >
-          <HeroVideo src="/videos/mt-landing-16x9-v4.mp4" poster="/videos/mt-landing-poster.jpg" />
+          <HeroVideo src="/videos/mt-orphan-16x9-v1.mp4" poster="/videos/mt-orphan-poster.jpg" />
         </motion.div>
 
         <div className="mt-9 flex flex-wrap items-center justify-center gap-4">

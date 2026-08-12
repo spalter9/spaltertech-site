@@ -54,7 +54,7 @@ export default function Login() {
       >
         <div className="flex flex-col items-center text-center">
           <Crest size={58} />
-          <p className="eyebrow mt-6">The Master Trust</p>
+          <p className="eyebrow mt-6">The MasterTrust</p>
           <h1 className="font-display text-3xl mt-2">Data Room Access</h1>
           <p className="text-muted text-sm mt-2">Privileged disclosure. Verified credentials required.</p>
         </div>

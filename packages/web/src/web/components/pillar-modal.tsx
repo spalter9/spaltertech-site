@@ -30,7 +30,7 @@ export const PILLAR_DETAILS: Record<PillarSlug, PillarDetail> = {
     icon: ShieldCheck,
     index: "01",
     tag: "Ownership, Absolute",
-    name: "Master Trust",
+    name: "MasterTrust",
     maps: "Cryptographic Sovereignty",
     lead: "Proprietary asset holding framework and secure, modernized distribution infrastructure.",
     body: "Every master, every split, every attestation is cryptographically sealed and anchored on-chain. Chain-of-title stops being a claim and becomes mathematical fact — multi-sig escrow, immutable provenance, and instant concurrent settlement retire the ledgers and lawyers of the old regime.",
@@ -124,7 +124,10 @@ export function PillarModal({
             </div>
 
             <p className="eyebrow mt-6">{detail.tag}</p>
-            <h3 className="font-display text-3xl mt-2 leading-tight">{detail.name}</h3>
+            <h3 className="font-display text-3xl mt-2 leading-tight">
+              {detail.name}
+              <sup className="ml-0.5 align-super font-mono text-[0.4em] text-gold">TM</sup>
+            </h3>
             <p className="font-mono text-[10px] uppercase tracking-[0.18em] text-muted mt-2">
               {detail.maps}
             </p>

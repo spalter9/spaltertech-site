@@ -17,7 +17,7 @@ export const allowlist = sqliteTable("allowlist", {
 });
 
 /* ─────────────────────────────────────────────────────────────
-   PILLAR 1 — THE MASTER TRUST (Legal)
+   PILLAR 1 — THE MASTERTRUST (Legal)
    Data Room segments + cryptographic escrow vault
    ───────────────────────────────────────────────────────────── */
 
@@ -34,7 +34,7 @@ export const dataRoomSegments = sqliteTable("data_room_segments", {
   sortOrder: integer("sort_order").notNull().default(0),
 });
 
-// Master Trust Vault — cryptographic escrow assets with instant split settlement
+// MasterTrust Vault — cryptographic escrow assets with instant split settlement
 export const escrowAssets = sqliteTable("escrow_assets", {
   id: integer("id").primaryKey({ autoIncrement: true }),
   assetKey: text("asset_key").notNull().unique(), // MTV-0x… multi-sig key
@@ -94,5 +94,66 @@ export const stemJobs = sqliteTable("stem_jobs", {
   forensicLayers: text("forensic_layers"), // JSON: [{ layer, attribution, confidence }]
   provenanceHash: text("provenance_hash"), // steganographic phase-coding signature
   assetKey: text("asset_key"),
+  createdAt: integer("created_at", { mode: "timestamp" }).notNull().$defaultFn(() => new Date()),
+});
+
+/* ─────────────────────────────────────────────────────────────
+   COMPLIANCE & SETTLEMENT INFRASTRUCTURE
+   The cross-cutting layer that makes the three pillars enterprise-
+   and regulator-ready:
+     1. Dual-layer provenance — signed C2PA v2 manifest + acoustic
+        watermark, anchored on Polygon (EU AI Act Art. 50 ready).
+     2. Invisible account abstraction + stablecoin→fiat off-ramp.
+     3. 90-day time-locked escrow for disputed / orphaned splits.
+   ───────────────────────────────────────────────────────────── */
+
+// 1 · Dual-Layer Provenance — C2PA v2 manifest + acoustic watermark + on-chain anchor
+export const provenanceManifests = sqliteTable("provenance_manifests", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  assetKey: text("asset_key"),
+  title: text("title").notNull(),
+  manifestHash: text("manifest_hash").notNull().unique(), // C2PA v2 manifest digest
+  humanRatio: real("human_ratio").notNull().default(0), // % human contribution
+  aiRatio: real("ai_ratio").notNull().default(0), // % AI contribution
+  sessionHash: text("session_hash").notNull(), // signing-session hash
+  watermarkId: text("watermark_id").notNull(), // multi-bit acoustic watermark payload id
+  watermarkBits: integer("watermark_bits").notNull().default(128), // payload length (bits)
+  survives: text("survives"), // JSON: ["MP3","AAC","stream-compression"]
+  signer: text("signer").notNull().default("Spalter Trust Services CA"), // C2PA signing cert
+  anchorTxHash: text("anchor_tx_hash").notNull(), // Polygon anchor transaction
+  chain: text("chain").notNull().default("Polygon"),
+  blockHeight: integer("block_height").notNull(),
+  status: text("status").notNull().default("anchored"), // signed | anchored | pending
+  createdAt: integer("created_at", { mode: "timestamp" }).notNull().$defaultFn(() => new Date()),
+});
+
+// 2 · Invisible Account Abstraction + Fiat Off-Ramp — Polygon USDC → USD bank
+export const fiatPayouts = sqliteTable("fiat_payouts", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  payoutRef: text("payout_ref").notNull().unique(),
+  recipient: text("recipient").notNull(), // rights-holder name
+  smartAccount: text("smart_account").notNull(), // ERC-4337 abstracted wallet 0x…
+  loginMethod: text("login_method").notNull().default("email"), // email | oauth | sso
+  usdcAmount: real("usdc_amount").notNull().default(0), // USDC micro-payout on Polygon
+  usdAmount: real("usd_amount").notNull().default(0), // settled USD to bank
+  rail: text("rail").notNull().default("ACH"), // ACH | wire | RTP
+  bankLast4: text("bank_last4").notNull(),
+  provider: text("provider").notNull().default("Circle"), // Circle | Stripe Connect
+  status: text("status").notNull().default("settled"), // settled | in_transit | queued | held
+  createdAt: integer("created_at", { mode: "timestamp" }).notNull().$defaultFn(() => new Date()),
+});
+
+// 3 · Unclaimed Split Escrow — 90-day time-locked programmatic hold
+export const unclaimedEscrow = sqliteTable("unclaimed_escrow", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  claimKey: text("claim_key").notNull().unique(),
+  title: text("title").notNull(),
+  assetKey: text("asset_key"),
+  amount: real("amount").notNull().default(0), // USD held
+  reason: text("reason").notNull(), // disputed | orphaned | unmatched
+  claimant: text("claimant"), // resolved claimant, or null while unmatched
+  lockedAt: integer("locked_at", { mode: "timestamp" }).notNull().$defaultFn(() => new Date()),
+  releaseAt: integer("release_at", { mode: "timestamp" }).notNull(), // lockedAt + 90 days
+  releaseState: text("release_state").notNull().default("locked"), // locked | claimable | released | disputed
   createdAt: integer("created_at", { mode: "timestamp" }).notNull().$defaultFn(() => new Date()),
 });

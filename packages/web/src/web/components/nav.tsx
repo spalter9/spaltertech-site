@@ -8,13 +8,13 @@ import { authClient } from "../lib/auth";
 import { PillarModal, type PillarSlug } from "./pillar-modal";
 
 const LINKS: { slug: PillarSlug; href: string; label: string; sub: string }[] = [
-  { slug: "master-trust", href: "/pillar/master-trust", label: "Cryptographic Sovereignty", sub: "Master Trust" },
-  { slug: "surrealizer", href: "/pillar/surrealizer", label: "Catalog Modernization", sub: "Surrealizer Engine" },
-  { slug: "ssp", href: "/pillar/ssp", label: "Ecosystem Integration", sub: "Sovereign Sign Protocol" },
+  { slug: "master-trust", href: "/pillar/master-trust", label: "Cryptographic Sovereignty", sub: "MasterTrust™" },
+  { slug: "surrealizer", href: "/pillar/surrealizer", label: "Catalog Modernization", sub: "Surrealizer Engine™" },
+  { slug: "ssp", href: "/pillar/ssp", label: "Ecosystem Integration", sub: "Sovereign Sign Protocol™" },
 ];
 
 export function Nav() {
-  const [loc] = useLocation();
+  const [loc, navigate] = useLocation();
   const me = useMe();
   const authed = !!me.data;
   const [open, setOpen] = useState(false);
@@ -55,6 +55,36 @@ export function Nav() {
               </span>
             </button>
           ))}
+          <Link
+            to="/infrastructure"
+            aria-label="Compliance & Settlement Infrastructure"
+            title="Compliance & Settlement"
+            className={`font-mono text-[11px] uppercase tracking-[0.2em] transition-colors ${
+              loc === "/infrastructure" ? "text-gold" : "text-muted hover:text-bone"
+            }`}
+          >
+            Compliance
+          </Link>
+          <Link
+            to="/enterprise"
+            aria-label="Enterprise infrastructure for master trusts, labels, and platforms"
+            title="Enterprise"
+            className={`font-mono text-[11px] uppercase tracking-[0.2em] transition-colors ${
+              loc === "/enterprise" ? "text-gold" : "text-muted hover:text-bone"
+            }`}
+          >
+            Enterprise
+          </Link>
+          <Link
+            to="/ssp-framework"
+            aria-label="Sovereign Sign Protocol"
+            title="Sovereign Sign Protocol™"
+            className={`font-mono text-[11px] uppercase tracking-[0.2em] transition-colors ${
+              loc === "/ssp-framework" ? "text-gold" : "text-muted hover:text-bone"
+            }`}
+          >
+            SSP Protocol
+          </Link>
         </nav>
 
         <div className="flex items-center gap-3">
@@ -137,6 +167,61 @@ export function Nav() {
                   </button>
                 );
               })}
+
+              <button
+                type="button"
+                aria-label="Compliance & Settlement Infrastructure"
+                onClick={() => {
+                  setOpen(false);
+                  navigate("/infrastructure");
+                }}
+                className={`flex items-center justify-between gap-4 py-4 border-b border-obsidian-line text-left transition-colors ${
+                  loc === "/infrastructure" ? "text-gold" : "text-bone hover:text-gold"
+                }`}
+              >
+                <span>
+                  <span className="block font-display text-xl leading-tight">Compliance &amp; Settlement</span>
+                  <span className="block font-mono text-[10px] uppercase tracking-[0.2em] text-muted mt-1">
+                    Infrastructure Layer
+                  </span>
+                </span>
+                <span className="w-1.5 h-1.5 rounded-full bg-gold shrink-0" />
+              </button>
+
+              <button
+                type="button"
+                aria-label="Enterprise infrastructure for master trusts, labels, and platforms"
+                onClick={() => {
+                  setOpen(false);
+                  navigate("/enterprise");
+                }}
+                className={`flex items-center justify-between gap-4 py-4 border-b border-obsidian-line text-left transition-colors ${
+                  loc === "/enterprise" ? "text-gold" : "text-bone hover:text-gold"
+                }`}
+              >
+                <span>
+                  <span className="block font-display text-xl leading-tight">Enterprise</span>
+                  <span className="block font-mono text-[10px] uppercase tracking-[0.2em] text-muted mt-1">
+                    For Trusts, Labels &amp; Platforms
+                  </span>
+                </span>
+                <span className="w-1.5 h-1.5 rounded-full bg-gold shrink-0" />
+              </button>
+
+              <Link
+                to="/ssp-framework"
+                aria-label="Sovereign Sign Protocol"
+                onClick={() => setOpen(false)}
+                className="flex items-center justify-between gap-4 py-4 border-b border-obsidian-line text-left text-bone hover:text-gold transition-colors"
+              >
+                <span>
+                  <span className="block font-display text-xl leading-tight">SSP Protocol</span>
+                  <span className="block font-mono text-[10px] uppercase tracking-[0.2em] text-muted mt-1">
+                    Sovereign Sign Protocol™
+                  </span>
+                </span>
+                <span className="w-1.5 h-1.5 rounded-full bg-gold shrink-0" />
+              </Link>
 
               <div className="mt-6 flex flex-col gap-3">
                 <Link

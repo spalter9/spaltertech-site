@@ -12,7 +12,7 @@ import {
 const usd = (n: number) =>
   n.toLocaleString("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 2 });
 
-/* ── Pillar I — Master Trust Vault ─────────────────────────── */
+/* ── Pillar I — MasterTrust Vault ─────────────────────────── */
 export function VaultModule() {
   const escrow = useEscrow();
   const settle = useSettleAsset();

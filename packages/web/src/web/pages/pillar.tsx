@@ -32,7 +32,7 @@ const PILLARS: PillarDef[] = [
     slug: "master-trust",
     icon: Scale,
     tag: "Pillar I — Legal",
-    name: "The Master Trust",
+    name: "MasterTrust",
     tagline: "Asset protection. Isolation. Hyper-targeted segmentation.",
     intro:
       "The legal bedrock of the Sovereign infrastructure. Every catalog is placed in a cryptographic multi-signature escrow vault where chain-of-title is verified, ownership is isolated from counterparties, and value is segmented down to the individual split — then settled concurrently to Creators, Labels, and Publishers.",
@@ -43,7 +43,7 @@ const PILLARS: PillarDef[] = [
       { icon: Coins, title: "Concurrent Split Settlement", body: "On settlement, Creator / Label / Publisher shares pay out in a single atomic pass — instantly, with no reconciliation lag." },
     ],
     dataTag: "Live · Escrow",
-    dataTitle: "Master Trust Vault",
+    dataTitle: "MasterTrust Vault",
     dataDesc: "Verified ownership titles under multi-sig escrow with concurrent split settlement. Trigger a live settlement to watch splits pay out.",
     DataView: () => <VaultModule />,
     metrics: [
@@ -136,7 +136,10 @@ export default function Pillar() {
               <div className="w-14 h-14 grid place-items-center border border-gold/40 text-gold"><Icon size={26} /></div>
               <p className="eyebrow">{p.tag}</p>
             </div>
-            <h1 className="font-display text-[clamp(2.4rem,6vw,4.6rem)] leading-[1.02] mt-6 max-w-3xl">{p.name}</h1>
+            <h1 className="font-display text-[clamp(2.4rem,6vw,4.6rem)] leading-[1.02] mt-6 max-w-3xl">
+              {p.name}
+              <sup className="ml-1 align-super font-mono text-[0.32em] text-gold">TM</sup>
+            </h1>
             <p className="gold-text font-display text-2xl md:text-3xl mt-3">{p.tagline}</p>
             <p className="text-muted text-lg leading-relaxed mt-6 max-w-2xl">{p.intro}</p>
             <div className="mt-10 flex gap-8">
