@@ -20,6 +20,7 @@ import {
   type LucideIcon,
 } from "lucide-react";
 import { Link } from "wouter";
+import { AccessGate } from "../components/access-gate";
 
 /* ------------------------------------------------------------------ */
 /* Enterprise B2B landing — deep-slate + indigo/cyan glassmorphism.    */
@@ -917,6 +918,7 @@ function ClosingCTA() {
 export default function Enterprise() {
   return (
     <div className="min-h-screen bg-[#0B0F17] text-white antialiased selection:bg-cyan-400 selection:text-[#0B0F17]">
+      <AccessGate />
       <TopBar />
       <Hero />
       <InfraMatrix />
