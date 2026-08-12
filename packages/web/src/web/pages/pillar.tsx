@@ -10,6 +10,7 @@ import { Crest } from "../components/brand";
 import {
   VaultModule, LedgerModule, LedgerStats, SurrealizerModule, ModuleHead, Reveal,
 } from "../components/pillar-modules";
+import { AccessGate } from "../components/access-gate";
 
 type Mechanic = { icon: LucideIcon; title: string; body: string };
 type PillarDef = {
@@ -119,6 +120,7 @@ export default function Pillar() {
 
   return (
     <div className="min-h-screen bg-obsidian text-bone">
+      <AccessGate />
       <Nav />
 
       {/* Header */}

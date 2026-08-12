@@ -6,6 +6,7 @@ import { Nav } from "../components/nav";
 import { Crest } from "../components/brand";
 import { WhitePaperDoc } from "../components/whitepaper";
 import { ExecSummaryDoc } from "../components/exec-summary";
+import { AccessGate } from "../components/access-gate";
 
 type Tab = "whitepaper" | "summary";
 
@@ -19,6 +20,7 @@ export default function SspFramework() {
 
   return (
     <div className="min-h-screen bg-obsidian text-bone">
+      <AccessGate />
       <Nav />
 
       {/* Header */}
