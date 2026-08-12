@@ -11,7 +11,7 @@ const STATS = [
 
 export function Hero() {
   return (
-    <section className="relative pt-[68px] overflow-hidden">
+    <section className="relative pt-20 overflow-hidden">
       <div className="absolute inset-0 bg-grid opacity-60" aria-hidden="true" />
       <div
         className="absolute inset-0"
@@ -30,7 +30,7 @@ export function Hero() {
         >
           {/* Pill-style eyebrow */}
           <span className="inline-block font-mono text-gold text-[0.7rem] font-semibold tracking-[0.22em] uppercase bg-gold/10 border border-gold/25 px-4 py-1.5 rounded-full">
-            The Sparta Catalog Reimagined
+            Sovereign Infrastructure
           </span>
           <h1 className="font-display text-4xl md:text-6xl font-semibold tracking-tight leading-[1.02] text-bone">
             The sovereign infrastructure for the{" "}

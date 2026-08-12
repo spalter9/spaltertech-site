@@ -52,7 +52,7 @@ export default function DataRoom() {
   return (
     <div className="min-h-screen bg-obsidian text-bone">
       <Nav />
-      <div className="pt-[68px]">
+      <div className="pt-20">
         {/* Header */}
         <div className="relative border-b border-obsidian-line overflow-hidden">
           <div className="absolute inset-0 bg-grid opacity-40" />
@@ -72,7 +72,7 @@ export default function DataRoom() {
         </div>
 
         {/* Sticky section nav */}
-        <div className="sticky top-[68px] z-40 backdrop-blur-md bg-obsidian/85 border-b border-obsidian-line">
+        <div className="sticky top-20 z-40 backdrop-blur-md bg-obsidian/85 border-b border-obsidian-line">
           <div className="mx-auto max-w-[1200px] px-6 flex gap-6 overflow-x-auto">
             {SECTIONS.map((s) => (
               <a key={s.id} href={`#${s.id}`} className="py-4 font-mono text-[11px] uppercase tracking-[0.18em] text-muted hover:text-gold whitespace-nowrap transition-colors">

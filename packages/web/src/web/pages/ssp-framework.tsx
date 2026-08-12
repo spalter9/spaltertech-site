@@ -24,7 +24,7 @@ export default function SspFramework() {
       <Nav />
 
       {/* Header */}
-      <div className="relative border-b border-obsidian-line overflow-hidden pt-[68px]">
+      <div className="relative border-b border-obsidian-line overflow-hidden pt-20">
         <div className="absolute inset-0 bg-grid opacity-40" />
         <div
           className="absolute inset-0"
@@ -50,7 +50,7 @@ export default function SspFramework() {
       </div>
 
       {/* Tab switcher */}
-      <div className="sticky top-[68px] z-30 border-b border-obsidian-line bg-obsidian/85 backdrop-blur-md">
+      <div className="sticky top-20 z-30 border-b border-obsidian-line bg-obsidian/85 backdrop-blur-md">
         <div className="mx-auto max-w-[1100px] px-6 flex gap-2">
           {TABS.map((t) => {
             const active = tab === t.id;

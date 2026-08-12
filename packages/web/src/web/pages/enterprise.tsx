@@ -57,7 +57,7 @@ function Reveal({
 function TopBar() {
   return (
     <header className="fixed top-0 inset-x-0 z-50 border-b border-white/[0.06] bg-[#0B0F17]/80 backdrop-blur-xl">
-      <div className="mx-auto max-w-[1200px] px-6 h-[68px] flex items-center justify-between">
+      <div className="mx-auto max-w-[1200px] px-6 h-20 flex items-center justify-between">
         <Link
           to="/enterprise"
           className="flex items-center gap-2.5"
@@ -138,7 +138,7 @@ function PipelineNode({
 
 function Hero() {
   return (
-    <section className="relative overflow-hidden pt-[68px]">
+    <section className="relative overflow-hidden pt-20">
       {/* ambient glow */}
       <div
         className="absolute inset-0 pointer-events-none"
@@ -332,7 +332,7 @@ function InfraMatrix() {
   return (
     <section
       id="infrastructure"
-      className="relative border-t border-white/[0.06] scroll-mt-[68px]"
+      className="relative border-t border-white/[0.06] scroll-mt-20"
     >
       <div className="mx-auto max-w-[1200px] px-6 py-24">
         <Reveal>
@@ -403,7 +403,7 @@ function ComparisonTable() {
   return (
     <section
       id="comparison"
-      className="relative border-t border-white/[0.06] scroll-mt-[68px]"
+      className="relative border-t border-white/[0.06] scroll-mt-20"
     >
       <div
         className="absolute inset-0 pointer-events-none"
@@ -850,7 +850,7 @@ function ClosingCTA() {
   return (
     <section
       id="contact"
-      className="relative border-t border-white/[0.06] scroll-mt-[68px]"
+      className="relative border-t border-white/[0.06] scroll-mt-20"
     >
       <div className="mx-auto max-w-[1100px] px-6 py-24">
         <Reveal>

@@ -30,17 +30,15 @@ export function Closing() {
       </section>
 
       {/* Footer */}
-      <footer className="border-t border-obsidian-line py-12">
-        <div className="mx-auto max-w-[1200px] px-6 flex flex-col md:flex-row items-center justify-between gap-6">
-          <div className="flex items-center gap-3">
-            <Crest size={30} />
-            <div className="font-mono text-[10px] uppercase tracking-[0.24em] text-muted">
-              Spalter Entertainment Technologies
-            </div>
-          </div>
-          <div className="font-mono text-[10px] uppercase tracking-[0.2em] text-muted">
-            Sovereign Sign Protocol™ · Anchored on Polygon
-          </div>
+      <footer className="border-t border-gold/10 py-12">
+        <div className="mx-auto max-w-7xl px-6 flex flex-col items-center gap-4 text-center">
+          <Crest size={28} />
+          <p className="font-mono text-[10px] uppercase tracking-[0.22em] text-muted leading-relaxed">
+            Protected by MasterTrust Secure Protocol Infrastructure
+            <span className="hidden sm:inline"> · </span>
+            <br className="sm:hidden" />
+            Spalter Entertainment Technologies
+          </p>
           <a
             href="mailto:info@spaltentech.com"
             className="font-mono text-[11px] text-gold hover:text-gold-bright transition-colors"

@@ -124,7 +124,7 @@ export default function Pillar() {
       <Nav />
 
       {/* Header */}
-      <div className="relative border-b border-obsidian-line overflow-hidden pt-[68px]">
+      <div className="relative border-b border-obsidian-line overflow-hidden pt-20">
         <div className="absolute inset-0 bg-grid opacity-40" />
         <div className="absolute inset-0" style={{ background: "radial-gradient(ellipse at 50% -10%, rgba(197,160,89,0.12), transparent 55%)" }} />
         <div className="relative mx-auto max-w-[1100px] px-6 py-16 md:py-24">
