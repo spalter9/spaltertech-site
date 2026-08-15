@@ -1,5 +1,5 @@
 import type { LucideIcon } from "lucide-react";
-import { Bot, Clapperboard, Gamepad2, Landmark, Music2 } from "lucide-react";
+import { Bot, Clapperboard, Gamepad2, Landmark, Layers, Music2 } from "lucide-react";
 import type { EngineModuleId } from "../../lib/engine-data";
 
 interface TabDef {
@@ -10,6 +10,7 @@ interface TabDef {
 }
 
 const TABS: TabDef[] = [
+  { id: "multitask", label: "Multitask · All Rails", short: "Multitask", icon: Layers },
   { id: "gaming", label: "Video Games & Virtual Economies", short: "Games", icon: Gamepad2 },
   { id: "film", label: "Film, Television & Streaming", short: "Film", icon: Clapperboard },
   { id: "music", label: "Music & Spatial Audio", short: "Music", icon: Music2 },
@@ -44,7 +45,9 @@ export function ModuleTabs({ active, onChange }: ModuleTabsProps) {
               "inline-flex shrink-0 items-center gap-2 rounded-xl border px-3.5 py-2.5 text-sm font-medium transition-all duration-200",
               "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gold/50",
               selected
-                ? "border-gold/45 bg-gold/10 text-gold"
+                ? tab.id === "multitask"
+                  ? "border-gold bg-gradient-to-r from-gold/20 to-gold/5 text-gold"
+                  : "border-gold/45 bg-gold/10 text-gold"
                 : "border-obsidian-line bg-obsidian-raised/50 text-muted hover:border-gold/30 hover:text-bone",
             ].join(" ")}
           >
