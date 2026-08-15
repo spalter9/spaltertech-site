@@ -85,6 +85,16 @@ export function Nav() {
           >
             SSP Protocol
           </Link>
+          <Link
+            to="/engine"
+            aria-label="SSP Master Engine"
+            title="SSP Master Engine™"
+            className={`font-mono whitespace-nowrap text-[10px] uppercase tracking-[0.14em] transition-colors ${
+              loc === "/engine" ? "text-gold" : "text-muted hover:text-bone"
+            }`}
+          >
+            Master Engine
+          </Link>
         </nav>
 
         <div className="flex items-center gap-3">
@@ -220,6 +230,23 @@ export function Nav() {
                   <span className="block font-display text-xl leading-tight">SSP Protocol</span>
                   <span className="block font-mono text-[10px] uppercase tracking-[0.2em] text-muted mt-1">
                     Sovereign Sign Protocol™
+                  </span>
+                </span>
+                <span className="w-1.5 h-1.5 rounded-full bg-gold shrink-0" />
+              </Link>
+
+              <Link
+                to="/engine"
+                aria-label="SSP Master Engine"
+                onClick={() => setOpen(false)}
+                className={`flex items-center justify-between gap-4 py-4 border-b border-obsidian-line text-left transition-colors ${
+                  loc === "/engine" ? "text-gold" : "text-bone hover:text-gold"
+                }`}
+              >
+                <span>
+                  <span className="block font-display text-xl leading-tight">Master Engine</span>
+                  <span className="block font-mono text-[10px] uppercase tracking-[0.2em] text-muted mt-1">
+                    Multi-Industry SSP Engine™
                   </span>
                 </span>
                 <span className="w-1.5 h-1.5 rounded-full bg-gold shrink-0" />

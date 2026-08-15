@@ -6,6 +6,7 @@ import Pillar from "./pages/pillar";
 import SspFramework from "./pages/ssp-framework";
 import Infrastructure from "./pages/infrastructure";
 import Enterprise from "./pages/enterprise";
+import Engine from "./pages/engine";
 import { Provider } from "./components/provider";
 import { AgentFeedback } from "@runablehq/website-runtime";
 
@@ -17,6 +18,7 @@ function App() {
         <Route path="/login" component={Login} />
         <Route path="/pillar/:slug" component={Pillar} />
         <Route path="/ssp-framework" component={SspFramework} />
+        <Route path="/engine" component={Engine} />
         <Route path="/infrastructure" component={Infrastructure} />
         <Route path="/enterprise" component={Enterprise} />
         <Route path="/data-room" component={DataRoom} />
