@@ -1,6 +1,6 @@
 import { useEffect, useState, type ReactNode } from "react";
 import { Activity, CheckCircle2, Loader2 } from "lucide-react";
-import { formatUsd } from "../../lib/engine-format";
+import { formatUsd } from "../../../lib/engine-format";
 import { GamingModule } from "./gaming-module";
 import { FilmModule } from "./film-module";
 import { MusicModule } from "./music-module";
