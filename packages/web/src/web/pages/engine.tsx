@@ -1,7 +1,6 @@
 import { useState } from "react";
 import { motion } from "motion/react";
 import type { EngineModuleId } from "../lib/engine-data";
-import { AccessGate } from "../components/access-gate";
 import { Nav } from "../components/nav";
 import { EngineHeader } from "../components/engine/engine-header";
 import { LiveMetricsBar } from "../components/engine/live-metrics-bar";
@@ -17,7 +16,6 @@ export default function Engine() {
 
   return (
     <div className="min-h-screen bg-obsidian text-bone">
-      <AccessGate />
       <Nav />
 
       <div className="relative overflow-hidden pt-20">

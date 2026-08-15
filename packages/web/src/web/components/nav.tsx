@@ -1,11 +1,12 @@
 import { useState, useEffect } from "react";
 import { Link, useLocation } from "wouter";
 import { motion, AnimatePresence } from "motion/react";
-import { Lock, LogOut, Menu, X } from "lucide-react";
+import { ArrowLeftRight, Lock, LogOut, Menu, X } from "lucide-react";
 import { Monogram } from "./brand";
 import { useMe } from "../queries/pillars";
 import { authClient } from "../lib/auth";
 import { PillarModal, type PillarSlug } from "./pillar-modal";
+import { useGatewayOptional } from "./root-passcode-lock";
 
 const LINKS: { slug: PillarSlug; href: string; label: string; sub: string }[] = [
   { slug: "master-trust", href: "/pillar/master-trust", label: "Cryptographic Sovereignty", sub: "MasterTrust™" },
@@ -16,6 +17,7 @@ const LINKS: { slug: PillarSlug; href: string; label: string; sub: string }[] = 
 export function Nav() {
   const [loc, navigate] = useLocation();
   const me = useMe();
+  const gateway = useGatewayOptional();
   const authed = !!me.data;
   const [open, setOpen] = useState(false);
   const [modal, setModal] = useState<PillarSlug | null>(null);
@@ -98,6 +100,16 @@ export function Nav() {
         </nav>
 
         <div className="flex items-center gap-3">
+          {gateway && (
+            <button
+              type="button"
+              onClick={gateway.returnToPortals}
+              className="hidden sm:inline-flex items-center gap-1.5 rounded-lg border border-obsidian-line px-3 py-2 font-mono text-[10px] uppercase tracking-[0.14em] text-muted transition-colors hover:border-gold/40 hover:text-gold"
+              title="Back to Portal Selection"
+            >
+              <ArrowLeftRight size={12} /> Gateways
+            </button>
+          )}
           {authed ? (
             <>
               <Link
