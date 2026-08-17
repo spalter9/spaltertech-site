@@ -1,4 +1,4 @@
-export type EngineModuleId = "gaming" | "film" | "music" | "ai" | "tax";
+export type EngineModuleId = "multitask" | "gaming" | "film" | "music" | "ai" | "tax";
 
 export interface LiveMetric {
   id: string;

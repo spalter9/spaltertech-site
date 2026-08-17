@@ -1,7 +1,6 @@
 import { useState } from "react";
 import { motion } from "motion/react";
 import type { EngineModuleId } from "../lib/engine-data";
-import { AccessGate } from "../components/access-gate";
 import { Nav } from "../components/nav";
 import { EngineHeader } from "../components/engine/engine-header";
 import { LiveMetricsBar } from "../components/engine/live-metrics-bar";
@@ -11,13 +10,13 @@ import { FilmModule } from "../components/engine/modules/film-module";
 import { MusicModule } from "../components/engine/modules/music-module";
 import { AiLicensingModule } from "../components/engine/modules/ai-licensing-module";
 import { TaxSettlementTerminal } from "../components/engine/modules/tax-settlement-terminal";
+import { MultitaskModule } from "../components/engine/modules/multitask-module";
 
 export default function Engine() {
-  const [activeModule, setActiveModule] = useState<EngineModuleId>("gaming");
+  const [activeModule, setActiveModule] = useState<EngineModuleId>("multitask");
 
   return (
     <div className="min-h-screen bg-obsidian text-bone">
-      <AccessGate />
       <Nav />
 
       <div className="relative overflow-hidden pt-20">
@@ -61,6 +60,7 @@ export default function Engine() {
               id={`panel-${activeModule}`}
               aria-labelledby={`tab-${activeModule}`}
             >
+              {activeModule === "multitask" && <MultitaskModule />}
               {activeModule === "gaming" && <GamingModule />}
               {activeModule === "film" && <FilmModule />}
               {activeModule === "music" && <MusicModule />}
