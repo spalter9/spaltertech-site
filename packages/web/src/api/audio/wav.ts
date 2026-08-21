@@ -5,6 +5,11 @@ const WAVE = 0x45564157;
 const FMT = 0x20746d66;
 const DATA = 0x61746164;
 const IEEE_FLOAT = 3;
+const WAVE_FORMAT_EXTENSIBLE = 0xfffe;
+/** KSDATAFORMAT_SUBTYPE_IEEE_FLOAT GUID data1 (little-endian). */
+const SUBTYPE_IEEE_FLOAT = 0x00000003;
+/** KSDATAFORMAT_SUBTYPE_PCM GUID data1 (little-endian). */
+const SUBTYPE_PCM = 0x00000001;
 
 function readFourCC(view: DataView, offset: number): number {
   return view.getUint32(offset, true);
@@ -47,6 +52,12 @@ export function decodeWav(bytes: ArrayBuffer | Uint8Array): AudioBuffer32 {
       channels = view.getUint16(chunkData + 2, true);
       sampleRate = view.getUint32(chunkData + 4, true);
       bitsPerSample = view.getUint16(chunkData + 14, true);
+      // WAVE_FORMAT_EXTENSIBLE: resolve real codec from SubFormat GUID.
+      if (audioFormat === WAVE_FORMAT_EXTENSIBLE && chunkSize >= 40) {
+        const subFormat = view.getUint32(chunkData + 24, true);
+        if (subFormat === SUBTYPE_IEEE_FLOAT) audioFormat = IEEE_FLOAT;
+        else if (subFormat === SUBTYPE_PCM) audioFormat = 1;
+      }
     } else if (chunkId === DATA) {
       dataOffset = chunkData;
       dataSize = chunkSize;

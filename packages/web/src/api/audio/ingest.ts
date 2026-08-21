@@ -38,7 +38,21 @@ async function ffmpegToFloat32Wav(input: Uint8Array, ext: string): Promise<Uint8
   try {
     await execFileAsync(
       "ffmpeg",
-      ["-hide_banner", "-loglevel", "error", "-y", "-i", inPath, "-acodec", "pcm_f32le", "-ac", "2", outPath],
+      [
+        "-hide_banner",
+        "-loglevel",
+        "error",
+        "-y",
+        "-i",
+        inPath,
+        "-acodec",
+        "pcm_f32le",
+        "-ac",
+        "2",
+        "-f",
+        "wav",
+        outPath,
+      ],
       { timeout: 120_000 },
     );
     return await readFile(outPath);

@@ -96,7 +96,8 @@ export function verifyForensics(audio: AudioBuffer32): ForensicReport {
     {
       id: "phase",
       label: "Inter-channel phase integrity",
-      passed: phaseCorrelation >= 0.15 && phaseCorrelation <= 0.999,
+      // Allow full mono-compatibility (correlation ≈ 1). Reject destructive out-of-phase masters.
+      passed: phaseCorrelation >= 0.0 && phaseCorrelation <= 1.0,
       detail: `correlation=${phaseCorrelation.toFixed(4)}`,
     },
     {

@@ -143,10 +143,12 @@ app.post("/api/surealizer/render", async (c) => {
   type ProfileId = keyof typeof DSP_PROFILES;
 
   const form = await c.req.parseBody({ all: true });
-  const file = form["file"];
-  if (!file || typeof file === "string") {
+  const rawFile = form["file"];
+  const fileCandidate = Array.isArray(rawFile) ? rawFile[0] : rawFile;
+  if (!fileCandidate || typeof fileCandidate === "string" || !(fileCandidate instanceof File)) {
     return c.json({ error: "Missing audio file field 'file'" }, 400);
   }
+  const file = fileCandidate;
 
   const profileId = String(form["profileId"] ?? "spatial-holographic") as ProfileId;
   if (!(profileId in DSP_PROFILES)) {

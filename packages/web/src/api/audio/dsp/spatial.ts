@@ -31,8 +31,11 @@ export function spatialStage(
     if (delaySamples > 0 && i >= delaySamples) {
       const dl = samples[(i - delaySamples) * 2]!;
       const dr = samples[(i - delaySamples) * 2 + 1]!;
-      const delayedSide = ((dl - dr) * 0.5) * 0.22;
-      side += delayedSide;
+      const delayedMid = (dl + dr) * 0.5;
+      const delayedSide = (dl - dr) * 0.5;
+      // Haas-style depth: delayed mid feeds the side channel so mono-compatible
+      // sources still gain holographic width without hard out-of-phase collapse.
+      side += delayedSide * 0.22 + delayedMid * Math.max(0, opts.width - 1) * 0.16;
     }
 
     out[i * 2] = mid + side;
