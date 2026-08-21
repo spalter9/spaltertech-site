@@ -1,11 +1,12 @@
 import { useState, useEffect } from "react";
 import { Link, useLocation } from "wouter";
 import { motion, AnimatePresence } from "motion/react";
-import { Lock, LogOut, Menu, X } from "lucide-react";
+import { ArrowLeftRight, Lock, LogOut, Menu, X } from "lucide-react";
 import { Monogram } from "./brand";
 import { useMe } from "../queries/pillars";
 import { authClient } from "../lib/auth";
 import { PillarModal, type PillarSlug } from "./pillar-modal";
+import { useGatewayOptional } from "./root-passcode-lock";
 
 const LINKS: { slug: PillarSlug; href: string; label: string; sub: string }[] = [
   { slug: "master-trust", href: "/pillar/master-trust", label: "Cryptographic Sovereignty", sub: "MasterTrust™" },
@@ -16,6 +17,7 @@ const LINKS: { slug: PillarSlug; href: string; label: string; sub: string }[] = 
 export function Nav() {
   const [loc, navigate] = useLocation();
   const me = useMe();
+  const gateway = useGatewayOptional();
   const authed = !!me.data;
   const [open, setOpen] = useState(false);
   const [modal, setModal] = useState<PillarSlug | null>(null);
@@ -85,9 +87,29 @@ export function Nav() {
           >
             SSP Protocol
           </Link>
+          <Link
+            to="/engine"
+            aria-label="SSP Master Engine"
+            title="SSP Master Engine™"
+            className={`font-mono whitespace-nowrap text-[10px] uppercase tracking-[0.14em] transition-colors ${
+              loc === "/engine" ? "text-gold" : "text-muted hover:text-bone"
+            }`}
+          >
+            Master Engine
+          </Link>
         </nav>
 
         <div className="flex items-center gap-3">
+          {gateway && (
+            <button
+              type="button"
+              onClick={gateway.returnToPortals}
+              className="hidden sm:inline-flex items-center gap-1.5 rounded-lg border border-obsidian-line px-3 py-2 font-mono text-[10px] uppercase tracking-[0.14em] text-muted transition-colors hover:border-gold/40 hover:text-gold"
+              title="Back to Portal Selection"
+            >
+              <ArrowLeftRight size={12} /> Gateways
+            </button>
+          )}
           {authed ? (
             <>
               <Link
@@ -220,6 +242,23 @@ export function Nav() {
                   <span className="block font-display text-xl leading-tight">SSP Protocol</span>
                   <span className="block font-mono text-[10px] uppercase tracking-[0.2em] text-muted mt-1">
                     Sovereign Sign Protocol™
+                  </span>
+                </span>
+                <span className="w-1.5 h-1.5 rounded-full bg-gold shrink-0" />
+              </Link>
+
+              <Link
+                to="/engine"
+                aria-label="SSP Master Engine"
+                onClick={() => setOpen(false)}
+                className={`flex items-center justify-between gap-4 py-4 border-b border-obsidian-line text-left transition-colors ${
+                  loc === "/engine" ? "text-gold" : "text-bone hover:text-gold"
+                }`}
+              >
+                <span>
+                  <span className="block font-display text-xl leading-tight">Master Engine</span>
+                  <span className="block font-mono text-[10px] uppercase tracking-[0.2em] text-muted mt-1">
+                    Multi-Industry SSP Engine™
                   </span>
                 </span>
                 <span className="w-1.5 h-1.5 rounded-full bg-gold shrink-0" />
