@@ -7,6 +7,7 @@ import SspFramework from "./pages/ssp-framework";
 import Infrastructure from "./pages/infrastructure";
 import Enterprise from "./pages/enterprise";
 import Engine from "./pages/engine";
+import SurrealStudio from "./pages/surreal-studio";
 import { Provider } from "./components/provider";
 import { RootPasscodeLock } from "./components/root-passcode-lock";
 import { AgentFeedback } from "@runablehq/website-runtime";
@@ -22,6 +23,7 @@ function App() {
           <Route path="/pillar/:slug" component={Pillar} />
           <Route path="/ssp-framework" component={SspFramework} />
           <Route path="/engine" component={Engine} />
+          <Route path="/surreal-studio" component={SurrealStudio} />
           <Route path="/infrastructure" component={Infrastructure} />
           <Route path="/enterprise" component={Enterprise} />
           <Route path="/data-room" component={DataRoom} />

@@ -97,6 +97,16 @@ export function Nav() {
           >
             Master Engine
           </Link>
+          <Link
+            to="/surreal-studio"
+            aria-label="Surreal Engine Float32 Studio"
+            title="Surreal Studio™"
+            className={`font-mono whitespace-nowrap text-[10px] uppercase tracking-[0.14em] transition-colors ${
+              loc === "/surreal-studio" ? "text-gold" : "text-muted hover:text-bone"
+            }`}
+          >
+            Surreal Studio
+          </Link>
         </nav>
 
         <div className="flex items-center gap-3">
@@ -259,6 +269,23 @@ export function Nav() {
                   <span className="block font-display text-xl leading-tight">Master Engine</span>
                   <span className="block font-mono text-[10px] uppercase tracking-[0.2em] text-muted mt-1">
                     Multi-Industry SSP Engine™
+                  </span>
+                </span>
+                <span className="w-1.5 h-1.5 rounded-full bg-gold shrink-0" />
+              </Link>
+
+              <Link
+                to="/surreal-studio"
+                aria-label="Surreal Engine Float32 Studio"
+                onClick={() => setOpen(false)}
+                className={`flex items-center justify-between gap-4 py-4 border-b border-obsidian-line text-left transition-colors ${
+                  loc === "/surreal-studio" ? "text-gold" : "text-bone hover:text-gold"
+                }`}
+              >
+                <span>
+                  <span className="block font-display text-xl leading-tight">Surreal Studio</span>
+                  <span className="block font-mono text-[10px] uppercase tracking-[0.2em] text-muted mt-1">
+                    Float32 DSP · SSP Stamp™
                   </span>
                 </span>
                 <span className="w-1.5 h-1.5 rounded-full bg-gold shrink-0" />

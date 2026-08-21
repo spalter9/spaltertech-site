@@ -72,3 +72,6 @@ scripts/
 !packages/mobile/scripts/
 packages/mobile/scripts/*
 !packages/mobile/scripts/generate-ios-certs.py
+
+# Surreal Engine Float32 masters (local render output)
+packages/web/.data/

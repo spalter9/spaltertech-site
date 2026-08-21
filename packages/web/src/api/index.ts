@@ -3,7 +3,7 @@ import { createApp } from "./__core/app";
 import { auth } from "./auth";
 import { db } from "./database";
 import * as schema from "./database/schema";
-import { desc, sql } from "drizzle-orm";
+import { desc, eq, sql } from "drizzle-orm";
 import { ping } from "./routes/ping";
 import { masterTrust } from "./routes/master-trust";
 import { ssp } from "./routes/ssp";
@@ -113,6 +113,9 @@ app.get("/api/surealizer", async (c) => {
   const [agg] = await db
     .select({ jobs: sql<number>`count(*)` })
     .from(schema.stemJobs);
+  const [masters] = await db
+    .select({ count: sql<number>`count(*)` })
+    .from(schema.float32Masters);
   return c.json(
     {
       engine: "The Surrealizer Engine",
@@ -122,11 +125,90 @@ app.get("/api/surealizer", async (c) => {
         "forensic signal-layer attribution",
         "steganographic phase-coded provenance",
         "HRTF 3D spatial re-mastering",
+        "32-bit float DSP pipeline",
+        "SSP cryptographic asset stamping",
       ],
       jobsProcessed: agg?.jobs ?? 0,
+      float32Masters: masters?.count ?? 0,
+      bitDepth: 32,
+      sampleFormat: "pcm_f32le",
     },
     200,
   );
+});
+
+app.post("/api/surealizer/render", async (c) => {
+  const { renderFloat32Master } = await import("./audio/render");
+  const { DSP_PROFILES } = await import("./audio/types");
+  type ProfileId = keyof typeof DSP_PROFILES;
+
+  const form = await c.req.parseBody({ all: true });
+  const file = form["file"];
+  if (!file || typeof file === "string") {
+    return c.json({ error: "Missing audio file field 'file'" }, 400);
+  }
+
+  const profileId = String(form["profileId"] ?? "spatial-holographic") as ProfileId;
+  if (!(profileId in DSP_PROFILES)) {
+    return c.json({ error: `Unknown profileId: ${profileId}` }, 400);
+  }
+
+  const title = String(form["title"] ?? file.name ?? "Untitled Master").trim() || "Untitled Master";
+  const creatorName = String(form["creatorName"] ?? "Spalter Creator").trim() || "Spalter Creator";
+  const creatorId = String(form["creatorId"] ?? "creator-open-access").trim();
+  const rightsTypeRaw = String(form["rightsType"] ?? "MASTER");
+  const rightsType =
+    rightsTypeRaw === "COMPOSITION" || rightsTypeRaw === "NEIGHBORING" ? rightsTypeRaw : "MASTER";
+  const isrc = form["isrc"] ? String(form["isrc"]) : undefined;
+
+  const arrayBuf = await file.arrayBuffer();
+  const fileBytes = new Uint8Array(arrayBuf);
+
+  try {
+    const result = await renderFloat32Master({
+      fileBytes,
+      fileName: file.name || "upload.wav",
+      profileId,
+      ownership: { title, creatorName, creatorId, rightsType, isrc },
+    });
+    return c.json(
+      {
+        ...result,
+        downloadPath: `/api/surealizer/masters/${result.masterId}/download`,
+      },
+      201,
+    );
+  } catch (err) {
+    const message = err instanceof Error ? err.message : "Render failed";
+    return c.json({ error: message }, 422);
+  }
+});
+
+app.get("/api/surealizer/masters/:masterId/download", async (c) => {
+  const masterId = c.req.param("masterId");
+  const [row] = await db
+    .select()
+    .from(schema.float32Masters)
+    .where(eq(schema.float32Masters.masterId, masterId));
+  if (!row) return c.json({ error: "Master not found" }, 404);
+
+  const { readFile } = await import("node:fs/promises");
+  try {
+    const bytes = await readFile(row.filePath);
+    return new Response(bytes, {
+      status: 200,
+      headers: {
+        "Content-Type": "audio/wav",
+        "Content-Disposition": `attachment; filename="${row.fileName}"`,
+        "Content-Length": String(bytes.byteLength),
+        "X-SSP-Asset-Key": row.assetKey,
+        "X-SSP-Asset-Hash": row.assetHash,
+        "X-SSP-Provenance": row.provenanceHash,
+      },
+    });
+  } catch {
+    return c.json({ error: "Master file missing on disk" }, 404);
+  }
 });
 
 /* ───────────────────────────────────────────────────────────
