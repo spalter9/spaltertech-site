@@ -97,6 +97,29 @@ export const stemJobs = sqliteTable("stem_jobs", {
   createdAt: integer("created_at", { mode: "timestamp" }).notNull().$defaultFn(() => new Date()),
 });
 
+/** Surreal Engine Float32 masters stamped onto the SSP ledger. */
+export const float32Masters = sqliteTable("float32_masters", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  masterId: text("master_id").notNull().unique(),
+  assetKey: text("asset_key").notNull().unique(),
+  title: text("title").notNull(),
+  creatorName: text("creator_name").notNull(),
+  profileId: text("profile_id").notNull(),
+  fileName: text("file_name").notNull(),
+  filePath: text("file_path").notNull(),
+  byteLength: integer("byte_length").notNull(),
+  sampleRate: integer("sample_rate").notNull(),
+  channels: integer("channels").notNull().default(2),
+  durationSec: real("duration_sec").notNull(),
+  assetHash: text("asset_hash").notNull(),
+  provenanceHash: text("provenance_hash").notNull(),
+  ledgerTxHash: text("ledger_tx_hash").notNull(),
+  anchorTxHash: text("anchor_tx_hash").notNull(),
+  forensicJson: text("forensic_json").notNull(),
+  status: text("status").notNull().default("stamped"),
+  createdAt: integer("created_at", { mode: "timestamp" }).notNull().$defaultFn(() => new Date()),
+});
+
 /* ─────────────────────────────────────────────────────────────
    COMPLIANCE & SETTLEMENT INFRASTRUCTURE
    The cross-cutting layer that makes the three pillars enterprise-

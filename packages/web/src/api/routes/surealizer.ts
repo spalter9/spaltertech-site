@@ -4,13 +4,12 @@ import { ORPCError } from "@orpc/server";
 import { authedAllowed } from "../middleware/auth";
 import { db } from "../database";
 import * as schema from "../database/schema";
+import { DSP_PROFILES } from "../audio/types";
 
 /**
  * PILLAR 3 — THE SURREALIZER ENGINE (Signal / Audio Processing)
- * Forensic signal layers + neural stem extraction. Embeds inaudible
- * steganographic phase-coded provenance and attributes every contribution
- * (DNA-level credit detection). Also exposed as a plain HTTP status route at
- * /api/surealizer (see api/index.ts).
+ * Forensic signal layers + neural stem extraction + Float32 spatial mastering.
+ * HTTP render/download routes live in api/index.ts.
  */
 
 const CONTRIBUTORS = [
@@ -34,7 +33,6 @@ export const surealizer = {
       return job;
     }),
 
-  // Submit a track for forensic neural stem extraction + provenance embedding
   analyze: authedAllowed
     .input(z.object({ trackTitle: z.string().min(1), assetKey: z.string().optional() }))
     .handler(async ({ input }) => {
@@ -59,5 +57,52 @@ export const surealizer = {
         })
         .returning();
       return job;
+    }),
+
+  listProfiles: authedAllowed.handler(() =>
+    Object.values(DSP_PROFILES).map((p) => ({
+      id: p.id,
+      label: p.label,
+      description: p.description,
+    })),
+  ),
+
+  listMasters: authedAllowed.handler(() =>
+    db
+      .select({
+        masterId: schema.float32Masters.masterId,
+        assetKey: schema.float32Masters.assetKey,
+        title: schema.float32Masters.title,
+        creatorName: schema.float32Masters.creatorName,
+        profileId: schema.float32Masters.profileId,
+        fileName: schema.float32Masters.fileName,
+        byteLength: schema.float32Masters.byteLength,
+        sampleRate: schema.float32Masters.sampleRate,
+        channels: schema.float32Masters.channels,
+        durationSec: schema.float32Masters.durationSec,
+        assetHash: schema.float32Masters.assetHash,
+        provenanceHash: schema.float32Masters.provenanceHash,
+        ledgerTxHash: schema.float32Masters.ledgerTxHash,
+        status: schema.float32Masters.status,
+        createdAt: schema.float32Masters.createdAt,
+      })
+      .from(schema.float32Masters)
+      .orderBy(desc(schema.float32Masters.createdAt))
+      .limit(40),
+  ),
+
+  getMaster: authedAllowed
+    .input(z.object({ masterId: z.string().min(1) }))
+    .handler(async ({ input }) => {
+      const [row] = await db
+        .select()
+        .from(schema.float32Masters)
+        .where(eq(schema.float32Masters.masterId, input.masterId));
+      if (!row) throw new ORPCError("NOT_FOUND", { message: "Master not found" });
+      return {
+        ...row,
+        forensic: JSON.parse(row.forensicJson) as unknown,
+        downloadPath: `/api/surealizer/masters/${row.masterId}/download`,
+      };
     }),
 };
