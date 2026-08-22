@@ -1,7 +1,7 @@
 "use strict";
 
 const VALID_CODES = new Set(["8888", "SPALTER", "SSP2026"]);
-const WORKLET_MODULE = "surrealProcessor.js";
+const WORKLET_MODULE = "surreal-master-processor.js";
 const WORKLET_PROCESSOR = "surreal-master-processor";
 
 const authGate = document.getElementById("auth-gate");
