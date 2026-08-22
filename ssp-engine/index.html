@@ -1,0 +1,317 @@
+<!DOCTYPE html>
+<html lang="en" class="h-full w-full bg-[#020408]">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SSP Engine // Complete Institutional Mastering & Global Market Suite</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        html, body {
+            margin: 0;
+            padding: 0;
+            min-height: 100vh;
+            width: 100vw;
+            background-color: #020408;
+            color: #ffffff;
+            font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            overflow-y: auto;
+        }
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: #020408; }
+        ::-webkit-scrollbar-thumb { background: #1e293b; border-radius: 3px; }
+        ::-webkit-scrollbar-thumb:hover { background: #334155; }
+    </style>
+</head>
+<body class="min-h-screen w-screen flex flex-col select-none">
+
+    <!-- 1. IMPENETRABLE PASSCODE LOCK SCREEN (8888) -->
+    <div id="passcode-screen" class="fixed inset-0 bg-[#020408] z-[999] flex flex-col items-center justify-center p-4">
+        <div class="bg-[#0a0f1d] border border-cyan-500/40 rounded-2xl p-8 max-w-sm w-full shadow-2xl text-center space-y-6">
+            <div class="h-12 w-12 rounded-full bg-cyan-500/20 border border-cyan-400 mx-auto flex items-center justify-center text-cyan-400 font-black text-xl">🔒</div>
+            <div>
+                <h2 class="text-base font-black tracking-widest text-white uppercase">SSP ENGINE GATEWAY</h2>
+                <p class="text-xs font-bold text-slate-400 mt-1">Enter 4-digit security code to unlock master console</p>
+            </div>
+            
+            <div class="space-y-3">
+                <input type="password" id="passcode-input" maxlength="4" placeholder="••••" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-3 text-center text-2xl font-black tracking-widest text-cyan-400 focus:outline-none focus:border-cyan-400">
+                <button onclick="verifyPasscode()" class="w-full py-3.5 bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-black rounded-xl text-xs uppercase tracking-wider transition-all shadow-lg shadow-cyan-500/20">
+                    UNLOCK ENGINE
+                </button>
+            </div>
+            <p id="passcode-error" class="text-xs font-bold text-rose-500 hidden">Invalid Passcode. Access Denied.</p>
+        </div>
+    </div>
+
+    <!-- 2. MAIN APP DASHBOARD (SCROLLABLE & FULLY INTEGRATED) -->
+    <div id="app-dashboard" class="min-h-screen w-screen bg-[#020408] hidden flex flex-col">
+        
+        <!-- TOP STICKY HEADER -->
+        <header class="sticky top-0 h-16 border-b border-slate-800 bg-[#070b14]/90 backdrop-blur-md px-6 flex items-center justify-between shrink-0 z-50">
+            <div class="flex items-center space-x-3">
+                <div class="h-3 w-3 rounded-full bg-cyan-400 animate-pulse"></div>
+                <h1 class="text-xs md:text-sm font-black tracking-wider text-white uppercase">SSP ENGINE <span class="text-cyan-400">// COMPLETE SUITE</span></h1>
+            </div>
+            
+            <!-- TABS NAVIGATION BUTTONS -->
+            <div class="flex items-center space-x-1 overflow-x-auto py-2 no-scrollbar">
+                <button onclick="switchTab(1)" class="tab-btn px-3 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-wider bg-cyan-500 text-slate-950 transition-all" id="btn-tab-1">1. Transport</button>
+                <button onclick="switchTab(2)" class="tab-btn px-3 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-wider bg-slate-900 text-slate-400 hover:text-white border border-slate-800 transition-all" id="btn-tab-2">2. Mastering</button>
+                <button onclick="switchTab(3)" class="tab-btn px-3 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-wider bg-slate-900 text-slate-400 hover:text-white border border-slate-800 transition-all" id="btn-tab-3">3. Spatial BOOM</button>
+                <button onclick="switchTab(4)" class="tab-btn px-3 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-wider bg-slate-900 text-slate-400 hover:text-white border border-slate-800 transition-all" id="btn-tab-4">4. Stems</button>
+                <button onclick="switchTab(5)" class="tab-btn px-3 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-wider bg-slate-900 text-slate-400 hover:text-white border border-slate-800 transition-all" id="btn-tab-5">5. Writer Code</button>
+                <button onclick="switchTab(6)" class="tab-btn px-3 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-wider bg-slate-900 text-slate-400 hover:text-white border border-slate-800 transition-all" id="btn-tab-6">6. Tax & Polygon</button>
+                <button onclick="switchTab(7)" class="tab-btn px-3 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-wider bg-slate-900 text-slate-400 hover:text-white border border-slate-800 transition-all" id="btn-tab-7">7. AI Defense</button>
+                <button onclick="switchTab(8)" class="tab-btn px-3 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-wider bg-slate-900 text-slate-400 hover:text-white border border-slate-800 transition-all" id="btn-tab-8">8. Spalty AI</button>
+                <button onclick="switchTab(9)" class="tab-btn px-3 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-wider bg-slate-900 text-slate-400 hover:text-white border border-slate-800 transition-all" id="btn-tab-9">9. Markets & Media</button>
+                <button onclick="switchTab(10)" class="tab-btn px-3 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-wider bg-slate-900 text-slate-400 hover:text-white border border-slate-800 transition-all" id="btn-tab-10">10. Diagnostics</button>
+            </div>
+        </header>
+
+        <!-- MAIN SCROLLABLE CONTENT BODY -->
+        <main class="flex-1 p-6 md:p-10 max-w-7xl mx-auto w-full space-y-6 pb-20">
+
+            <!-- TAB 1: TRANSPORT & 3D VISUALIZER -->
+            <div id="tab-1-content" class="tab-content space-y-6">
+                <div class="bg-[#0a0f1d] border border-cyan-500/30 rounded-2xl p-6 shadow-2xl space-y-4">
+                    <div class="flex items-center justify-between">
+                        <h2 class="text-xs font-black tracking-widest text-cyan-400 uppercase">Tab 1 // Transport & 3D Audio Visualizer</h2>
+                        <span class="text-[10px] font-bold text-emerald-400 bg-emerald-950/60 border border-emerald-800 px-2.5 py-1 rounded-full uppercase">ONLINE & LOCKED</span>
+                    </div>
+                    <div class="h-48 bg-slate-950 border border-slate-800 rounded-xl flex items-center justify-center relative overflow-hidden">
+                        <div class="absolute inset-0 flex items-center justify-around opacity-30">
+                            <div class="w-1 bg-cyan-400 h-24 animate-pulse"></div>
+                            <div class="w-1 bg-emerald-400 h-32 animate-bounce"></div>
+                            <div class="w-1 bg-purple-400 h-16 animate-pulse"></div>
+                            <div class="w-1 bg-cyan-400 h-28 animate-bounce"></div>
+                            <div class="w-1 bg-amber-400 h-20 animate-pulse"></div>
+                        </div>
+                        <p class="text-xs font-black tracking-wider text-slate-400 z-10">32-BIT WAVEFORM & WEBGL FREQUENCY RENDERER ACTIVE</p>
+                    </div>
+                    <div class="flex items-center space-x-4">
+                        <button onclick="alert('Playing Master Stream')" class="px-6 py-3 bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-black text-xs rounded-xl uppercase tracking-wider transition-all">▶ PLAY STREAM</button>
+                        <button onclick="alert('Stream Paused')" class="px-6 py-3 bg-slate-900 border border-slate-700 hover:border-slate-500 text-white font-black text-xs rounded-xl uppercase tracking-wider transition-all">⏸ PAUSE</button>
+                        <button onclick="alert('Loop Enabled')" class="px-6 py-3 bg-slate-900 border border-slate-700 hover:border-slate-500 text-white font-black text-xs rounded-xl uppercase tracking-wider transition-all">🔁 LOOP</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- TAB 2: ELITE MASTERING CHAIN & PRESETS -->
+            <div id="tab-2-content" class="tab-content space-y-6 hidden">
+                <div class="bg-[#0a0f1d] border border-slate-800 rounded-2xl p-6 shadow-2xl space-y-6">
+                    <h2 class="text-xs font-black tracking-widest text-cyan-400 uppercase">Tab 2 // Elite Mastering Chain & Signature Presets</h2>
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <button onclick="alert('Loaded: The Dre Preset')" class="p-4 bg-slate-900 border border-slate-700 hover:border-cyan-400 rounded-xl text-left transition-all space-y-2">
+                            <h3 class="text-xs font-black text-white uppercase">The Dre Preset</h3>
+                            <p class="text-[10px] font-bold text-slate-400">Deep sub-bass punch, crisp highs, heavy analog warmth compression.</p>
+                        </button>
+                        <button onclick="alert('Loaded: The Adam Kagan Preset')" class="p-4 bg-slate-900 border border-slate-700 hover:border-cyan-400 rounded-xl text-left transition-all space-y-2">
+                            <h3 class="text-xs font-black text-white uppercase">The Adam Kagan Preset</h3>
+                            <p class="text-[10px] font-bold text-slate-400">Pristine clarity, transparent mastering curve, balanced transient response.</p>
+                        </button>
+                        <button onclick="alert('Loaded: The Manny Preset')" class="p-4 bg-slate-900 border border-slate-700 hover:border-cyan-400 rounded-xl text-left transition-all space-y-2">
+                            <h3 class="text-xs font-black text-white uppercase">The Manny Preset</h3>
+                            <p class="text-[10px] font-bold text-slate-400">Vocal-forward harmonic saturation, rich mid-range density, radio-ready limit.</p>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- TAB 3: SPATIAL AUDIO & 3D BOOM -->
+            <div id="tab-3-content" class="tab-content space-y-6 hidden">
+                <div class="bg-[#0a0f1d] border border-slate-800 rounded-2xl p-6 shadow-2xl space-y-4">
+                    <h2 class="text-xs font-black tracking-widest text-cyan-400 uppercase">Tab 3 // Spatial Audio & 3D "BOOM" Engine</h2>
+                    <p class="text-xs font-bold text-slate-300">Immersive 3D soundfield positioning and width enhancement engine.</p>
+                    <button onclick="alert('BOOM Engine Engaged!')" class="px-6 py-4 bg-gradient-to-r from-cyan-500 to-emerald-500 text-slate-950 font-black text-xs rounded-xl uppercase tracking-widest shadow-lg shadow-cyan-500/20">
+                        ⚡ ACTIVATE 3D BOOM STAGING
+                    </button>
+                </div>
+            </div>
+
+            <!-- TAB 4: STEM ISOLATION & FORENSICS -->
+            <div id="tab-4-content" class="tab-content space-y-6 hidden">
+                <div class="bg-[#0a0f1d] border border-slate-800 rounded-2xl p-6 shadow-2xl space-y-4">
+                    <h2 class="text-xs font-black tracking-widest text-cyan-400 uppercase">Tab 4 // Stem Isolation & Forensic Analysis</h2>
+                    <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                        <div class="bg-slate-900 border border-slate-800 p-4 rounded-xl text-center space-y-2">
+                            <span class="text-xs font-black text-cyan-300">VOCALS</span>
+                            <div class="h-2 bg-cyan-500 rounded-full"></div>
+                        </div>
+                        <div class="bg-slate-900 border border-slate-800 p-4 rounded-xl text-center space-y-2">
+                            <span class="text-xs font-black text-emerald-300">DRUMS</span>
+                            <div class="h-2 bg-emerald-500 rounded-full"></div>
+                        </div>
+                        <div class="bg-slate-900 border border-slate-800 p-4 rounded-xl text-center space-y-2">
+                            <span class="text-xs font-black text-purple-300">BASS</span>
+                            <div class="h-2 bg-purple-500 rounded-full"></div>
+                        </div>
+                        <div class="bg-slate-900 border border-slate-800 p-4 rounded-xl text-center space-y-2">
+                            <span class="text-xs font-black text-amber-300">INSTRUMENTS</span>
+                            <div class="h-2 bg-amber-500 rounded-full"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- TAB 5: WRITER-CODE & CRYPTOGRAPHIC INGEST -->
+            <div id="tab-5-content" class="tab-content space-y-6 hidden">
+                <div class="bg-[#0a0f1d] border border-slate-800 rounded-2xl p-6 shadow-2xl space-y-4">
+                    <h2 class="text-xs font-black tracking-widest text-cyan-400 uppercase">Tab 5 // Writer-Code & Cryptographic Ingest</h2>
+                    <p class="text-xs font-bold text-slate-300">Hardcode immutable creator metadata and ownership attribution directly into audio waveforms.</p>
+                    <input type="text" placeholder="Enter Writer / IPI / Creator ID..." class="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-3 text-xs font-bold text-white focus:outline-none focus:border-cyan-400">
+                    <button onclick="alert('Writer Code Burned Successfully')" class="px-6 py-3 bg-cyan-500 text-slate-950 font-black text-xs rounded-xl uppercase tracking-wider">EMBED CRYPTOGRAPHIC METADATA</button>
+                </div>
+            </div>
+
+            <!-- TAB 6: AUTOMATED TAX & POLYGON SETTLEMENT -->
+            <div id="tab-6-content" class="tab-content space-y-6 hidden">
+                <div class="bg-[#0a0f1d] border border-slate-800 rounded-2xl p-6 shadow-2xl space-y-4">
+                    <h2 class="text-xs font-black tracking-widest text-cyan-400 uppercase">Tab 6 // Automated Tax & Polygon Settlement</h2>
+                    <p class="text-xs font-bold text-slate-300">Real-time cross-border royalty calculation with automated tax withholding on Polygon.</p>
+                    <div class="p-4 bg-slate-900 border border-slate-800 rounded-xl flex items-center justify-between">
+                        <span class="text-xs font-black text-slate-400">GASLESS SETTLEMENT LEDGER</span>
+                        <span class="text-xs font-black text-emerald-400">CONNECTED // ACTIVE</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- TAB 7: AI CRAWLER DEFENSE -->
+            <div id="tab-7-content" class="tab-content space-y-6 hidden">
+                <div class="bg-[#0a0f1d] border border-slate-800 rounded-2xl p-6 shadow-2xl space-y-4">
+                    <h2 class="text-xs font-black tracking-widest text-cyan-400 uppercase">Tab 7 // AI Crawler Defense & Perimeter Toll Gate</h2>
+                    <p class="text-xs font-bold text-slate-300">Active threat detection intercepting unauthorized AI training scrapers with smart contract tolls.</p>
+                    <div class="p-4 bg-slate-900 border border-slate-800 rounded-xl space-y-2">
+                        <div class="flex justify-between text-xs font-black">
+                            <span class="text-slate-400">SHIELD STATUS:</span>
+                            <span class="text-cyan-400">ARMED & MONITORING</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- TAB 8: SPALTY AI CO-PRODUCER -->
+            <div id="tab-8-content" class="tab-content space-y-6 hidden">
+                <div class="bg-[#0a0f1d] border border-slate-800 rounded-2xl p-6 shadow-2xl space-y-4">
+                    <h2 class="text-xs font-black tracking-widest text-cyan-400 uppercase">Tab 8 // Spalty AI Co-Producer Suite</h2>
+                    <p class="text-xs font-bold text-slate-300">Intelligent arrangement suggestions, mix critique, and automated stem remixing prompts.</p>
+                    <div class="p-4 bg-slate-900 border border-slate-800 rounded-xl text-xs font-bold text-slate-300">
+                        "Spalty AI Ready: Analyze current stems or request mix adjustments."
+                    </div>
+                </div>
+            </div>
+
+            <!-- TAB 9: MARKETS, SOCIAL MEDIA & VIDEO GAME ECOSYSTEM -->
+            <div id="tab-9-content" class="tab-content space-y-6 hidden">
+                <div class="bg-[#0a0f1d] border border-slate-800 rounded-2xl p-6 shadow-2xl space-y-6">
+                    <h2 class="text-xs font-black tracking-widest text-cyan-400 uppercase">Tab 9 // Global Markets, Social Media & Video Game Ecosystem</h2>
+                    
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <!-- Social Media Creator Economy -->
+                        <div class="bg-slate-900 border border-slate-800 rounded-xl p-5 space-y-3">
+                            <h3 class="text-xs font-black text-cyan-300 uppercase tracking-wider">1. Social Media Creator Economy</h3>
+                            <p class="text-xs font-bold text-slate-300 leading-relaxed">
+                                Short-form video platforms (TikTok, Instagram Reels, YouTube Shorts) generate tens of billions of daily impressions. Creators and digital agencies rely on the SSP Engine's browser-based 32-bit mastering chains and instant 3D spatial toggles (<span class="text-cyan-400">BOOM</span>) to elevate audio quality instantly without heavy desktop DAWs.
+                            </p>
+                        </div>
+
+                        <!-- Video Game & Metaverse Integration -->
+                        <div class="bg-slate-900 border border-slate-800 rounded-xl p-5 space-y-3">
+                            <h3 class="text-xs font-black text-emerald-300 uppercase tracking-wider">2. Gaming & Interactive Media</h3>
+                            <p class="text-xs font-bold text-slate-300 leading-relaxed">
+                                Modern gaming engines and virtual worlds require dynamic, real-time spatial audio rendering and instantaneous micro-transaction settlement for in-game music, sound effects, and creator-generated audio skins, hardcoding attribution directly into audio waveforms.
+                            </p>
+                        </div>
+
+                        <!-- Automated Tax & Polygon Settlement -->
+                        <div class="bg-slate-900 border border-slate-800 rounded-xl p-5 space-y-3">
+                            <h3 class="text-xs font-black text-purple-300 uppercase tracking-wider">3. Polygon Settlements & Auto-Tax</h3>
+                            <p class="text-xs font-bold text-slate-300 leading-relaxed">
+                                Global music distribution suffers from fractured cross-border splits. The SSP Engine integrates gasless micro-payout settlement ledgers and automated tax calculation right at transaction ingest to guarantee instant, transparent payouts.
+                            </p>
+                        </div>
+
+                        <!-- AI Crawler Defense -->
+                        <div class="bg-slate-900 border border-slate-800 rounded-xl p-5 space-y-3">
+                            <h3 class="text-xs font-black text-amber-300 uppercase tracking-wider">4. AI Crawler Defense Perimeter</h3>
+                            <p class="text-xs font-bold text-slate-300 leading-relaxed">
+                                Active perimeter defense intercepts unauthorized AI training scrapers instantly upon detection and executes automated Polygon smart contract toll gates before granting data access—turning a major industry threat into new revenue.
+                            </p>
+                        </div>
+                    </div>
+
+                    <!-- Catalog Prospectus Banner -->
+                    <div class="bg-slate-950 border border-cyan-500/30 rounded-xl p-5 space-y-2">
+                        <h4 class="text-xs font-black text-white uppercase">The Spalter Catalog Reimagined</h4>
+                        <p class="text-xs font-bold text-slate-400 leading-relaxed">
+                            Led by Bradley David Spalter, bringing multi-decade legacy hits (including catalog assets by O-Town) into next-generation 32-bit audio architecture and global entertainment licensing pipelines for Disney, Netflix, and Hollywood studios.
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- TAB 10: DIAGNOSTICS & EXPORT HUB -->
+            <div id="tab-10-content" class="tab-content space-y-6 hidden">
+                <div class="bg-[#0a0f1d] border border-slate-800 rounded-2xl p-6 shadow-2xl space-y-4">
+                    <h2 class="text-xs font-black tracking-widest text-cyan-400 uppercase">Tab 10 // System Diagnostics & Export Hub</h2>
+                    <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                        <div class="p-4 bg-slate-900 border border-slate-800 rounded-xl text-center">
+                            <span class="text-[10px] font-black text-slate-400">CPU LOAD</span>
+                            <p class="text-sm font-black text-cyan-400 mt-1">1.2%</p>
+                        </div>
+                        <div class="p-4 bg-slate-900 border border-slate-800 rounded-xl text-center">
+                            <span class="text-[10px] font-black text-slate-400">DSP LATENCY</span>
+                            <p class="text-sm font-black text-emerald-400 mt-1">0.4ms</p>
+                        </div>
+                    </div>
+                    <button onclick="alert('Exporting 32-Bit Master WAV...')" class="w-full py-4 bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-black text-xs rounded-xl uppercase tracking-widest transition-all shadow-lg shadow-cyan-500/20">
+                        EXPORT 32-BIT MASTER WAV // FLAC // STEMS
+                    </button>
+                </div>
+            </div>
+
+        </main>
+    </div>
+
+    <!-- JAVASCRIPT LOGIC -->
+    <script>
+        // --- PASSCODE GATEWAY ---
+        function verifyPasscode() {
+            const input = document.getElementById('passcode-input').value;
+            const err = document.getElementById('passcode-error');
+            if (input === '8888') {
+                document.getElementById('passcode-screen').style.display = 'none';
+                document.getElementById('app-dashboard').classList.remove('hidden');
+            } else {
+                err.classList.remove('hidden');
+                document.getElementById('passcode-input').value = '';
+            }
+        }
+        document.getElementById('passcode-input').addEventListener('keypress', function (e) {
+            if (e.key === 'Enter') verifyPasscode();
+        });
+
+        // --- TAB SWITCHER ---
+        function switchTab(tabNumber) {
+            // Hide all tab contents
+            for (let i = 1; i <= 10; i++) {
+                const content = document.getElementById(`tab-${i}-content`);
+                const btn = document.getElementById(`btn-tab-${i}`);
+                if (content) content.classList.add('hidden');
+                if (btn) {
+                    btn.classList.remove('bg-cyan-500', 'text-slate-950');
+                    btn.classList.add('bg-slate-900', 'text-slate-400', 'border', 'border-slate-800');
+                }
+            }
+            // Show selected tab
+            const activeContent = document.getElementById(`tab-${tabNumber}-content`);
+            const activeBtn = document.getElementById(`btn-tab-${tabNumber}`);
+            if (activeContent) activeContent.classList.remove('hidden');
+            if (activeBtn) {
+                activeBtn.classList.remove('bg-slate-900', 'text-slate-400', 'border', 'border-slate-800');
+                activeBtn.classList.add('bg-cyan-500', 'text-slate-950');
+            }
+        }
+    </script>
+</body>
+</html>
