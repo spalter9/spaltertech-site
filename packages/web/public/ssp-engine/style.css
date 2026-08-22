@@ -141,3 +141,20 @@ button:disabled { opacity: 0.45; cursor: not-allowed; }
 }
 
 input[type="range"] { accent-color: var(--accent-color); width: 100%; }
+
+input[type="file"] {
+    font-size: 0.75rem;
+    color: var(--text-secondary);
+    width: 100%;
+}
+
+input[type="file"]::file-selector-button {
+    background-color: #262633;
+    color: var(--text-primary);
+    border: 1px solid #333342;
+    border-radius: 4px;
+    padding: 6px 10px;
+    margin-right: 8px;
+    cursor: pointer;
+    font-size: 0.75rem;
+}

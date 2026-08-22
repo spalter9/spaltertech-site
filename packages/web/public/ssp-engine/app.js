@@ -12,13 +12,17 @@ const modeDisplay = document.getElementById("mode-display");
 const playBtn = document.getElementById("playBtn");
 const stopBtn = document.getElementById("stopBtn");
 const masterGainInput = document.getElementById("masterGain");
+const audioFileInput = document.getElementById("audioFile");
 const canvas = document.getElementById("dspCanvas");
 const ctx = canvas.getContext("2d");
 
 let audioCtx = null;
 let masterGain = null;
 let analyser = null;
+let surrealProcessor = null;
+let sourceNodes = [];
 let oscillators = [];
+let uploadedBuffer = null;
 let animationId = null;
 let running = false;
 
@@ -101,34 +105,76 @@ function drawVisualizer() {
   animationId = requestAnimationFrame(drawVisualizer);
 }
 
-function buildDspChain() {
-  if (audioCtx) return;
+function connectStereoDemoSource(merger) {
+  const leftFreqs = [55, 220];
+  const rightFreqs = [82.5, 330];
 
-  audioCtx = new AudioContext();
-  masterGain = audioCtx.createGain();
-  analyser = audioCtx.createAnalyser();
-  analyser.fftSize = 256;
-
-  masterGain.gain.value = Number(masterGainInput.value);
-  masterGain.connect(analyser);
-  analyser.connect(audioCtx.destination);
-
-  const freqs = [55, 110, 220, 440];
-  freqs.forEach((freq, i) => {
+  leftFreqs.forEach((freq, i) => {
     const osc = audioCtx.createOscillator();
     const gain = audioCtx.createGain();
     osc.type = i % 2 === 0 ? "sine" : "triangle";
     osc.frequency.value = freq;
-    gain.gain.value = 0.08 / freqs.length;
+    gain.gain.value = 0.12 / (leftFreqs.length + rightFreqs.length);
     osc.connect(gain);
-    gain.connect(masterGain);
+    gain.connect(merger, 0, 0);
+    osc.start();
+    oscillators.push({ osc, gain });
+  });
+
+  rightFreqs.forEach((freq, i) => {
+    const osc = audioCtx.createOscillator();
+    const gain = audioCtx.createGain();
+    osc.type = i % 2 === 0 ? "triangle" : "sine";
+    osc.frequency.value = freq;
+    gain.gain.value = 0.12 / (leftFreqs.length + rightFreqs.length);
+    osc.connect(gain);
+    gain.connect(merger, 0, 1);
     osc.start();
     oscillators.push({ osc, gain });
   });
 }
 
+function connectUploadedSource() {
+  const source = audioCtx.createBufferSource();
+  source.buffer = uploadedBuffer;
+  source.loop = true;
+  source.connect(surrealProcessor);
+  source.start();
+  sourceNodes.push(source);
+}
+
+async function buildDspChain() {
+  if (audioCtx) return;
+
+  audioCtx = new AudioContext();
+  await audioCtx.audioWorklet.addModule("surreal-master-processor.js");
+
+  surrealProcessor = new AudioWorkletNode(audioCtx, "surreal-master-processor", {
+    numberOfInputs: 1,
+    numberOfOutputs: 1,
+    outputChannelCount: [2],
+  });
+
+  masterGain = audioCtx.createGain();
+  analyser = audioCtx.createAnalyser();
+  analyser.fftSize = 256;
+
+  masterGain.gain.value = Number(masterGainInput.value);
+  surrealProcessor.connect(masterGain);
+  masterGain.connect(analyser);
+  analyser.connect(audioCtx.destination);
+
+  if (uploadedBuffer) {
+    connectUploadedSource();
+  } else {
+    const merger = audioCtx.createChannelMerger(2);
+    connectStereoDemoSource(merger);
+    merger.connect(surrealProcessor);
+  }
+}
+
 async function startEngine() {
-  buildDspChain();
+  await buildDspChain();
   if (audioCtx.state === "suspended") {
     await audioCtx.resume();
   }
@@ -136,7 +182,11 @@ async function startEngine() {
   running = true;
   playBtn.disabled = true;
   stopBtn.disabled = false;
-  setStatus(true, "DSP Chain: Active");
+  audioFileInput.disabled = true;
+
+  const sourceLabel = uploadedBuffer ? "File Upload" : "Stereo Demo";
+  setStatus(true, `DSP Chain: Active — Artifact Cleaner (${sourceLabel})`);
+
   cancelAnimationFrame(animationId);
   drawVisualizer();
 }
@@ -155,27 +205,61 @@ function haltEngine() {
   });
   oscillators = [];
 
+  sourceNodes.forEach((source) => {
+    try {
+      source.stop();
+    } catch {
+      /* already stopped */
+    }
+  });
+  sourceNodes = [];
+
   if (audioCtx) {
     audioCtx.close();
     audioCtx = null;
     masterGain = null;
     analyser = null;
+    surrealProcessor = null;
   }
 
   playBtn.disabled = false;
   stopBtn.disabled = true;
+  audioFileInput.disabled = false;
   setStatus(false, "DSP Chain: Standby");
   drawIdleFrame();
 }
 
 playBtn.addEventListener("click", () => {
-  startEngine().catch(console.error);
+  startEngine().catch((err) => {
+    console.error(err);
+    setStatus(false, "DSP Chain: Worklet load failed");
+  });
 });
 stopBtn.addEventListener("click", haltEngine);
 
 masterGainInput.addEventListener("input", () => {
   if (masterGain) {
     masterGain.gain.value = Number(masterGainInput.value);
+  }
+});
+
+audioFileInput.addEventListener("change", async (e) => {
+  const file = e.target.files?.[0];
+  if (!file) {
+    uploadedBuffer = null;
+    return;
+  }
+
+  try {
+    const arrayBuffer = await file.arrayBuffer();
+    const tempCtx = new AudioContext();
+    uploadedBuffer = await tempCtx.decodeAudioData(arrayBuffer);
+    await tempCtx.close();
+    setStatus(false, `Source loaded: ${file.name}`);
+  } catch (err) {
+    console.error(err);
+    uploadedBuffer = null;
+    setStatus(false, "Source load failed — using stereo demo");
   }
 });
 
