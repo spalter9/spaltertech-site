@@ -7,13 +7,13 @@
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
-    <!-- Passcode Gate Overlay (Passcode: 8888) -->
+    <!-- Passcode Gate Overlay -->
     <div id="auth-gate" class="gate-overlay">
         <div class="gate-box">
             <h2>SSP // Restricted Access</h2>
             <p>Enter master passcode to initialize processing node.</p>
             <form id="passcode-form">
-                <input type="password" id="passcode-input" placeholder="••••" maxlength="4" autocomplete="current-password" required>
+                <input type="password" id="passcode-input" placeholder="Passcode" maxlength="8" autocomplete="current-password" required>
                 <button type="submit" class="primary-btn">Unlock Engine</button>
             </form>
             <p id="error-msg" class="error-hidden">Invalid passcode. Access denied.</p>
@@ -41,7 +41,10 @@
             <div class="audio-params">
                 <label for="audioFile">Source Audio (optional — defaults to stereo demo)</label>
                 <input type="file" id="audioFile" accept="audio/*">
-                <label for="masterGain">Master Output Gain</label>
+                <div class="gain-row">
+                    <label for="masterGain">Master Output Gain</label>
+                    <span id="masterGainValue" class="gain-value">90%</span>
+                </div>
                 <input type="range" id="masterGain" min="0" max="1" step="0.01" value="0.9">
             </div>
         </main>
