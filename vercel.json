@@ -4,7 +4,11 @@
   "installCommand": "bun install",
   "buildCommand": "bun run build:web",
   "outputDirectory": "packages/web/dist",
+  "redirects": [
+    { "source": "/ssp-engine", "destination": "/ssp-engine/", "permanent": false }
+  ],
   "rewrites": [
-    { "source": "/(.*)", "destination": "/index.html" }
+    { "source": "/ssp-engine/", "destination": "/ssp-engine/index.html" },
+    { "source": "/((?!ssp-engine(?:/|$)).*)", "destination": "/index.html" }
   ]
 }
