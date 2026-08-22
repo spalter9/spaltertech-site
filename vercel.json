@@ -5,6 +5,8 @@
   "buildCommand": "bun run build:web",
   "outputDirectory": "packages/web/dist",
   "rewrites": [
+    { "source": "/ssp-engine", "destination": "/ssp-engine/index.html" },
+    { "source": "/ssp-engine/", "destination": "/ssp-engine/index.html" },
     { "source": "/(.*)", "destination": "/index.html" }
   ]
 }

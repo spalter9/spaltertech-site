@@ -5,6 +5,7 @@ import path from "path";
 import runableAnalyticsPlugin from "./vite/__plugins/runable-analytics-plugin";
 import honoDevPlugin from "./vite/__plugins/hono-dev-plugin";
 import assetOptimizerPlugin from "./vite/__plugins/asset-optimizer-plugin";
+import sspEngineStaticPlugin from "./vite/__plugins/ssp-engine-static-plugin";
 
 const root = path.resolve(__dirname, "../..");
 
@@ -16,7 +17,7 @@ export default defineConfig(({ mode }) => {
 		// All env files live at the repo root — keep Vite's own env loading there too,
 		// so packages/web/.env* files can never shadow the root .env.
 		envDir: root,
-		plugins: [honoDevPlugin(), react(), runableAnalyticsPlugin(), tailwind(), assetOptimizerPlugin()],
+		plugins: [honoDevPlugin(), sspEngineStaticPlugin(), react(), runableAnalyticsPlugin(), tailwind(), assetOptimizerPlugin()],
 		resolve: {
 			alias: {
 				"@": path.resolve(__dirname, "./src/web"),
