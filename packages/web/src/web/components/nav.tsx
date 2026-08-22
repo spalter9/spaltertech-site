@@ -107,6 +107,14 @@ export function Nav() {
           >
             Surreal Studio
           </Link>
+          <a
+            href="/ssp-engine/"
+            aria-label="Surreal Engine Mastering Grade"
+            title="Surreal Engine — Mastering Grade"
+            className="font-mono whitespace-nowrap text-[10px] uppercase tracking-[0.14em] text-muted transition-colors hover:text-bone"
+          >
+            Mastering Grade
+          </a>
         </nav>
 
         <div className="flex items-center gap-3">
@@ -290,6 +298,21 @@ export function Nav() {
                 </span>
                 <span className="w-1.5 h-1.5 rounded-full bg-gold shrink-0" />
               </Link>
+
+              <a
+                href="/ssp-engine/"
+                aria-label="Surreal Engine Mastering Grade"
+                onClick={() => setOpen(false)}
+                className="flex items-center justify-between gap-4 py-4 border-b border-obsidian-line text-left text-bone transition-colors hover:text-gold"
+              >
+                <span>
+                  <span className="block font-display text-xl leading-tight">Mastering Grade</span>
+                  <span className="block font-mono text-[10px] uppercase tracking-[0.2em] text-muted mt-1">
+                    Standalone DSP Console
+                  </span>
+                </span>
+                <span className="w-1.5 h-1.5 rounded-full bg-gold shrink-0" />
+              </a>
 
               <div className="mt-6 flex flex-col gap-3">
                 <Link

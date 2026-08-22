@@ -1,0 +1,105 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>SSP // The Surreal Engine (Mastering Grade)</title>
+    <link rel="icon" href="/favicon.ico" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;500;600;700&family=Manrope:wght@400;500;600&family=Sora:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body>
+    <!-- Passcode gate -->
+    <div id="passcode-gate" class="gate" aria-hidden="false">
+      <div class="gate-card">
+        <div class="gate-crest" aria-hidden="true"></div>
+        <p class="gate-eyebrow">Sovereign Sign Protocol</p>
+        <h1 class="gate-title">The Surreal Engine</h1>
+        <p class="gate-sub">Mastering Grade · Authorized Access Only</p>
+        <form id="passcode-form" class="gate-form" autocomplete="off">
+          <label for="passcode-input" class="sr-only">Access passcode</label>
+          <input
+            id="passcode-input"
+            type="password"
+            inputmode="numeric"
+            maxlength="16"
+            placeholder="Enter passcode"
+            autocomplete="off"
+            autofocus
+          />
+          <button type="submit" class="btn btn-gold">Unlock Engine</button>
+          <p id="passcode-error" class="gate-error" role="alert" hidden>Invalid passcode</p>
+        </form>
+      </div>
+    </div>
+
+    <!-- Main application -->
+    <div id="app" class="app" hidden>
+      <header class="header">
+        <div class="header-brand">
+          <p class="eyebrow">SSP // The Surreal Engine</p>
+          <h1 class="title">Mastering Grade</h1>
+        </div>
+        <div class="header-status">
+          <div class="status-row">
+            <span class="status-label">Deck</span>
+            <span id="deck-status" class="status-pill status-offline">Offline</span>
+          </div>
+          <div class="status-row">
+            <span class="status-label">Mode</span>
+            <span id="mode-display" class="mode-display">Standby</span>
+          </div>
+        </div>
+      </header>
+
+      <main class="deck">
+        <section class="visualizer-panel" aria-label="DSP spectrum visualizer">
+          <div class="panel-head">
+            <span class="panel-label">Master Bus · Analyser</span>
+            <span id="viz-fps" class="panel-meta">— fps</span>
+          </div>
+          <canvas id="viz-canvas" width="960" height="280" aria-label="Real-time frequency spectrum"></canvas>
+        </section>
+
+        <section class="controls-panel" aria-label="Engine controls">
+          <div class="transport">
+            <button id="btn-init" type="button" class="btn btn-gold btn-lg">
+              Initialize Master DSP
+            </button>
+            <button id="btn-halt" type="button" class="btn btn-outline btn-lg" disabled>
+              Halt Engine
+            </button>
+          </div>
+
+          <div class="gain-control">
+            <label for="master-gain" class="gain-label">
+              Master Gain
+              <span id="gain-value" class="gain-value">0.75</span>
+            </label>
+            <input
+              id="master-gain"
+              type="range"
+              min="0"
+              max="1"
+              step="0.01"
+              value="0.75"
+            />
+          </div>
+        </section>
+      </main>
+
+      <footer class="footer">
+        <span>Spalter Entertainment Technologies</span>
+        <span class="footer-sep">·</span>
+        <span>Sovereign Sign Protocol</span>
+      </footer>
+    </div>
+
+    <script src="app.js" defer></script>
+  </body>
+</html>
