@@ -168,6 +168,14 @@ body {
   }
 }
 
+.gate[hidden] {
+  display: none !important;
+}
+
+.gate-unlock {
+  pointer-events: none;
+}
+
 .gate-unlock .gate-card {
   animation: fadeUp 0.5s ease forwards;
 }

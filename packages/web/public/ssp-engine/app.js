@@ -33,12 +33,13 @@ let lastFpsTime = performance.now();
 // ── Passcode gate ──────────────────────────────────────────────
 
 function unlockApp() {
+  gate.style.pointerEvents = "none";
   gate.classList.add("gate-unlock");
   gate.setAttribute("aria-hidden", "true");
-  setTimeout(() => {
+  app.hidden = false;
+  modeDisplay.textContent = "Standby";
+  window.setTimeout(() => {
     gate.hidden = true;
-    app.hidden = false;
-    modeDisplay.textContent = "Standby";
   }, 480);
 }
 
