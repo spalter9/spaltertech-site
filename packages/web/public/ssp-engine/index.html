@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SSP // The Surreal Engine (Mastering Grade)</title>
+    <base href="./">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <!-- Passcode Gate Overlay -->
+    <div id="auth-gate" class="gate-overlay">
+        <div class="gate-box">
+            <h2>SSP // Restricted Access</h2>
+            <p>Enter master passcode to initialize processing node.</p>
+            <form id="passcode-form">
+                <input type="password" id="passcode-input" placeholder="Passcode" maxlength="8" autocomplete="current-password" required>
+                <button type="submit" class="primary-btn">Unlock Engine</button>
+            </form>
+            <p id="error-msg" class="error-hidden">Invalid passcode. Access denied.</p>
+        </div>
+    </div>
+
+    <!-- Main Application Container -->
+    <div id="main-app" class="engine-container hidden">
+        <header>
+            <h1>SSP // The Surreal Engine</h1>
+            <p class="subtitle">Sovereign Sign Protocol — Holographic Master Bus &amp; Artifact Cleaner</p>
+        </header>
+        <main>
+            <div class="deck-status">
+                <span id="status-indicator" class="status-offline">Offline</span>
+                <span id="mode-display">DSP Chain: Standby</span>
+            </div>
+            <div class="visualizer-box">
+                <canvas id="dspCanvas"></canvas>
+            </div>
+            <div class="controls-grid">
+                <button id="playBtn" type="button" class="primary-btn">Initialize Master DSP</button>
+                <button id="stopBtn" type="button" class="secondary-btn" disabled>Halt Engine</button>
+            </div>
+            <div class="audio-params">
+                <label for="audioFile">Source Audio (optional — defaults to stereo demo)</label>
+                <input type="file" id="audioFile" accept="audio/*">
+                <div class="gain-row">
+                    <label for="masterGain">Master Output Gain</label>
+                    <span id="masterGainValue" class="gain-value">90%</span>
+                </div>
+                <input type="range" id="masterGain" min="0" max="1" step="0.01" value="0.9">
+            </div>
+        </main>
+    </div>
+    <script src="app.js"></script>
+</body>
+</html>

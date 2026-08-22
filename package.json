@@ -7,6 +7,7 @@
   ],
   "scripts": {
     "dev": "cd packages/web && bunx vite",
+    "engine:local": "bash packages/web/public/ssp-engine/start-engine.sh",
     "dev:desktop": "cd packages/desktop && bunx vite",
     "dev:mobile": "cd packages/mobile && bunx expo start --port 4300",
     "build": "turbo build",

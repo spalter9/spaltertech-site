@@ -1,0 +1,229 @@
+:root {
+    --bg-color: #0b0b0d;
+    --panel-bg: #141418;
+    --accent-color: #00f0ff;
+    --text-primary: #f0f0f5;
+    --text-secondary: #8a8a9e;
+}
+
+*,
+*::before,
+*::after {
+    box-sizing: border-box;
+}
+
+body {
+    margin: 0;
+    padding: 16px;
+    background-color: var(--bg-color);
+    color: var(--text-primary);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+}
+
+.gate-overlay {
+    position: fixed;
+    inset: 0;
+    background-color: var(--bg-color);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 9999;
+}
+
+.gate-box {
+    background-color: var(--panel-bg);
+    border: 1px solid #22222d;
+    border-radius: 12px;
+    padding: 40px;
+    width: min(360px, calc(100vw - 32px));
+    text-align: center;
+    box-shadow: 0 15px 35px rgba(0, 0, 0, 0.7);
+}
+
+.gate-box h2 {
+    font-size: 1.2rem;
+    margin: 0 0 10px;
+    letter-spacing: 1px;
+}
+
+.gate-box p {
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+    margin: 0 0 25px;
+}
+
+.gate-box input[type="password"] {
+    width: 100%;
+    padding: 12px;
+    background-color: #0b0b0d;
+    border: 1px solid #333342;
+    border-radius: 6px;
+    color: #fff;
+    font-size: 1.1rem;
+    text-align: center;
+    letter-spacing: 2px;
+    margin-bottom: 15px;
+}
+
+.gate-box input[type="password"]:focus {
+    outline: none;
+    border-color: var(--accent-color);
+}
+
+.error-hidden { display: none; }
+.error-visible { display: block; color: #ff4a4a; font-size: 0.75rem; margin-top: 12px; }
+.hidden { display: none !important; }
+
+.engine-container {
+    background-color: var(--panel-bg);
+    border: 1px solid #22222d;
+    border-radius: 12px;
+    padding: 30px;
+    width: min(480px, calc(100vw - 32px));
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+}
+
+header h1 {
+    font-size: 1.5rem;
+    margin: 0 0 5px;
+    letter-spacing: 1px;
+}
+
+.subtitle {
+    font-size: 0.75rem;
+    color: var(--text-secondary);
+    margin: 0 0 20px;
+}
+
+.deck-status {
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    margin-bottom: 15px;
+}
+
+#mode-display {
+    text-align: right;
+    color: var(--text-secondary);
+    line-height: 1.3;
+}
+
+.status-offline { color: #ff4a4a; }
+.status-online { color: #00ff88; }
+
+.visualizer-box {
+    background: #000;
+    height: 120px;
+    border-radius: 6px;
+    margin-bottom: 20px;
+    overflow: hidden;
+    border: 1px solid #222;
+}
+
+canvas {
+    width: 100%;
+    height: 100%;
+    display: block;
+}
+
+.controls-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+    margin-bottom: 20px;
+}
+
+button {
+    padding: 12px;
+    border-radius: 6px;
+    border: none;
+    font-weight: 600;
+    cursor: pointer;
+    transition: opacity 0.2s ease;
+}
+
+button:hover:not(:disabled) { opacity: 0.85; }
+button:disabled { opacity: 0.45; cursor: not-allowed; }
+
+.primary-btn {
+    background-color: var(--accent-color);
+    color: #000;
+    width: 100%;
+}
+
+.secondary-btn {
+    background-color: #262633;
+    color: var(--text-primary);
+}
+
+.audio-params {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+}
+
+.audio-params label {
+    color: var(--text-secondary);
+}
+
+.gain-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
+}
+
+.gain-value {
+    color: var(--accent-color);
+    font-variant-numeric: tabular-nums;
+    font-weight: 600;
+}
+
+input[type="file"] {
+    width: 100%;
+    padding: 8px;
+    background-color: #0b0b0d;
+    border: 1px solid #333342;
+    border-radius: 6px;
+    color: var(--text-primary);
+    font-size: 0.8rem;
+}
+
+input[type="file"]::file-selector-button {
+    margin-right: 12px;
+    padding: 6px 12px;
+    border: none;
+    border-radius: 4px;
+    background-color: var(--accent-color);
+    color: #000;
+    font-weight: 600;
+    cursor: pointer;
+}
+
+input[type="range"] {
+    accent-color: var(--accent-color);
+    width: 100%;
+}
+
+@media (max-width: 520px) {
+    .controls-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .deck-status {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+
+    #mode-display {
+        text-align: left;
+    }
+}
