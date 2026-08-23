@@ -16,6 +16,21 @@ This monorepo (Bun workspaces + Turborepo) implements the **Sovereign Sign Proto
 
 ### Running / dev server
 - `bun run dev` starts a **single Vite process on port 5173**; the Hono API is mounted at `/api/*` inside that same process via `vite/__plugins/hono-dev-plugin.ts` (there is no separate API server in dev). Health check: `GET /api/health` → `{"status":"ok"}`.
+
+### Surreal Engine (Mastering Grade) — standalone preview
+The DSP console lives at `packages/web/public/ssp-engine/` and **must be served over HTTP** (AudioWorklet will not run from `file://`).
+
+**Fastest way to test right now** (no DB, no `.env`, no Vite):
+
+```bash
+bun run preview:ssp-engine
+```
+
+Then open **http://127.0.0.1:8790/** (or http://localhost:8790/ssp-engine/). Passcode `8888` (also `SPALTER`, `SSP2026`), click **Initialize Master DSP**.
+
+Via the full site dev server (after passcode + Website portal): **http://localhost:5173/ssp-engine/** or nav link **Mastering Grade**.
+
+Do **not** open `index.html` via `file://` — browsers block AudioWorklet on that scheme.
 - After schema changes, refresh the local DB: `bun run db:push`. Seed demo data (pillars, ledger, escrow, stems, compliance): `cd packages/web && bun --env-file=../../.env run src/api/database/seed.ts`.
 
 ### Access gates (important when testing the UI)
