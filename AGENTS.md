@@ -26,11 +26,11 @@ The DSP console lives at `packages/web/public/ssp-engine/` and **must be served 
 bun run preview:ssp-engine
 ```
 
-Then open **http://localhost:8790/ssp-engine/** — passcode `8888` (also `SPALTER`, `SSP2026`), click **Initialize Master DSP**.
+Then open **http://127.0.0.1:8790/** (or http://localhost:8790/ssp-engine/). Passcode `8888` (also `SPALTER`, `SSP2026`), click **Initialize Master DSP**.
 
 Via the full site dev server (after passcode + Website portal): **http://localhost:5173/ssp-engine/** or nav link **Mastering Grade**.
 
-Do **not** open `index.html` directly in the browser or serve only the inner `ssp-engine/` folder; `<base href="/ssp-engine/">` requires the parent `public/` root.
+Do **not** open `index.html` via `file://` — browsers block AudioWorklet on that scheme.
 - After schema changes, refresh the local DB: `bun run db:push`. Seed demo data (pillars, ledger, escrow, stems, compliance): `cd packages/web && bun --env-file=../../.env run src/api/database/seed.ts`.
 
 ### Access gates (important when testing the UI)

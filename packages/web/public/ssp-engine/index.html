@@ -4,17 +4,16 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>SSP // The Surreal Engine (Mastering Grade)</title>
-    <base href="/ssp-engine/">
-    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="./style.css">
 </head>
 <body>
-    <!-- Passcode Gate Overlay -->
+    <!-- Passcode Gate Overlay (Passcode: 8888) -->
     <div id="auth-gate" class="gate-overlay">
         <div class="gate-box">
             <h2>SSP // Restricted Access</h2>
             <p>Enter master passcode to initialize processing node.</p>
             <form id="passcode-form">
-                <input type="password" id="passcode-input" placeholder="Passcode" maxlength="8" autocomplete="current-password" required>
+                <input type="password" id="passcode-input" placeholder="••••" maxlength="8" autocomplete="current-password" required>
                 <button type="submit" class="primary-btn">Unlock Engine</button>
             </form>
             <p id="error-msg" class="error-hidden">Invalid passcode. Access denied.</p>
@@ -50,6 +49,6 @@
             </div>
         </main>
     </div>
-    <script src="app.js"></script>
+    <script src="./app.js"></script>
 </body>
 </html>

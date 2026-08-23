@@ -1,7 +1,8 @@
 "use strict";
 
 const VALID_CODES = new Set(["8888", "SPALTER", "SSP2026"]);
-const WORKLET_MODULE = "/ssp-engine/surrealProcessor.js";
+/** Resolve next to this page so file://, /ssp-engine/, or suite-as-root all work. */
+const WORKLET_MODULE = new URL("./surrealProcessor.js", window.location.href).href;
 const WORKLET_PROCESSOR = "surreal-master-processor";
 
 const authGate = document.getElementById("auth-gate");
