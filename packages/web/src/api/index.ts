@@ -9,6 +9,7 @@ import { masterTrust } from "./routes/master-trust";
 import { ssp } from "./routes/ssp";
 import { surealizer } from "./routes/surealizer";
 import { compliance } from "./routes/compliance";
+import { content } from "./routes/content";
 import { withUser } from "./middleware/auth";
 
 // Three-pillar core architecture:
@@ -42,6 +43,9 @@ export const router = {
   // Cross-cutting compliance & settlement infrastructure (dual-layer
   // provenance, invisible AA + fiat off-ramp, 90-day unclaimed escrow).
   compliance,
+  // Claude-generated homepage marketing copy (falls back to static copy
+  // client-side when no ANTHROPIC_API_KEY is configured).
+  content,
 };
 
 export type AppRouter = typeof router;

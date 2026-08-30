@@ -17,6 +17,7 @@
     "db:push": "bun --env-file=../../.env drizzle-kit push"
   },
   "dependencies": {
+    "@anthropic-ai/sdk": "^0.122.0",
     "@better-auth/expo": "1.6.19",
     "@libsql/client": "^0.17.2",
     "@orpc/client": "^1.14.7",
