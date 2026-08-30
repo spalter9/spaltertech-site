@@ -10,6 +10,7 @@ import { ssp } from "./routes/ssp";
 import { surealizer } from "./routes/surealizer";
 import { compliance } from "./routes/compliance";
 import { content } from "./routes/content";
+import { spalty } from "./routes/spalty";
 import { withUser } from "./middleware/auth";
 
 // Three-pillar core architecture:
@@ -46,6 +47,9 @@ export const router = {
   // Claude-generated homepage marketing copy (falls back to static copy
   // client-side when no ANTHROPIC_API_KEY is configured).
   content,
+  // Spalty — the SSP Master Engine's interactive voice guide (text chat;
+  // audio is a separate plain route, POST /api/spalty/speak, below).
+  spalty,
 };
 
 export type AppRouter = typeof router;
@@ -215,6 +219,48 @@ app.get("/api/surealizer/masters/:masterId/download", async (c) => {
   } catch {
     return c.json({ error: "Master file missing on disk" }, 404);
   }
+});
+
+/* ───────────────────────────────────────────────────────────
+   SPALTY — voice synthesis
+   Reads a Spalty chat reply aloud in the cloned ElevenLabs voice model.
+   POST /api/spalty/speak { text } → audio/mpeg
+   ─────────────────────────────────────────────────────────── */
+app.post("/api/spalty/speak", async (c) => {
+  const apiKey = process.env.ELEVENLABS_API_KEY;
+  const voiceId = process.env.ELEVENLABS_VOICE_ID;
+  if (!apiKey || !voiceId) {
+    return c.json({ error: "Spalty voice is not configured" }, 503);
+  }
+
+  const body = await c.req.json().catch(() => ({}) as Record<string, unknown>);
+  const text = String((body as { text?: string }).text ?? "").trim().slice(0, 2000);
+  if (!text) return c.json({ error: "Missing text" }, 400);
+
+  const upstream = await fetch(`https://api.elevenlabs.io/v1/text-to-speech/${voiceId}`, {
+    method: "POST",
+    headers: {
+      "xi-api-key": apiKey,
+      "Content-Type": "application/json",
+      Accept: "audio/mpeg",
+    },
+    body: JSON.stringify({
+      text,
+      model_id: "eleven_turbo_v2_5",
+      voice_settings: { stability: 0.5, similarity_boost: 0.75 },
+    }),
+  });
+
+  if (!upstream.ok) {
+    const detail = await upstream.text().catch(() => "");
+    return c.json({ error: "ElevenLabs request failed", detail: detail.slice(0, 300) }, 502);
+  }
+
+  const audio = await upstream.arrayBuffer();
+  return new Response(audio, {
+    status: 200,
+    headers: { "Content-Type": "audio/mpeg", "Content-Length": String(audio.byteLength) },
+  });
 });
 
 /* ───────────────────────────────────────────────────────────

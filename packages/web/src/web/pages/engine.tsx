@@ -11,6 +11,7 @@ import { MusicModule } from "../components/engine/modules/music-module";
 import { AiLicensingModule } from "../components/engine/modules/ai-licensing-module";
 import { TaxSettlementTerminal } from "../components/engine/modules/tax-settlement-terminal";
 import { MultitaskModule } from "../components/engine/modules/multitask-module";
+import { SpaltyAssistant } from "../components/spalty-assistant";
 
 export default function Engine() {
   const [activeModule, setActiveModule] = useState<EngineModuleId>("multitask");
@@ -70,6 +71,8 @@ export default function Engine() {
           </motion.div>
         </div>
       </div>
+
+      <SpaltyAssistant />
     </div>
   );
 }
