@@ -2,6 +2,7 @@ import { Nav } from "../components/nav";
 import { Hero } from "../components/landing/hero";
 import { Manifesto } from "../components/landing/manifesto";
 import { Pillars } from "../components/landing/pillars";
+import { Authorship } from "../components/landing/authorship";
 import { Closing } from "../components/landing/closing";
 
 export default function Index() {
@@ -11,6 +12,7 @@ export default function Index() {
       <Hero />
       <Manifesto />
       <Pillars />
+      <Authorship />
       <Closing />
     </div>
   );
