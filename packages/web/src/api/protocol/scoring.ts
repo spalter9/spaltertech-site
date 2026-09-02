@@ -147,12 +147,29 @@ const DRUM_SPECS: FeatureSpec[] = [
   },
 ];
 
+/**
+ * Weights below were rebalanced after direct validation against synthesized
+ * signals (see services/forensics/validate_measurements.py — the one part of
+ * the pipeline that never ran before that pass, since the worker needs
+ * torch+demucs). `micro_timing_std_ms` and `note_duration_cv` both derive
+ * from the same onset-detection pass, which proved noisy on legato/sustained
+ * material: spectral-flux onset detection with backtracking is tuned for
+ * percussive transients (where it validated cleanly against drums) and can
+ * over-trigger or misplace onsets on continuously-voiced tonal parts,
+ * corrupting both features together since they share that input. The other
+ * three features are each derived independently (pitch tracking, frame-wise
+ * spectral analysis, raw STFT phase) and separated human from synthetic
+ * material cleanly and repeatably in that same validation. Weight moved from
+ * the correlated, less reliable pair toward the independent, robust three,
+ * rather than discarding the onset-based pair outright — they still carry
+ * real signal on well-articulated material, just less of it.
+ */
 const HARMONY_SPECS: FeatureSpec[] = [
   {
     id: "micro_timing_std_ms",
     label: "Micro-timing deviation across beat grid",
     unit: "ms",
-    weight: 0.3,
+    weight: 0.15,
     score: (v) => band(v, 0.5, 3, 35, 70),
     read: (v, s) => `${v.toFixed(2)} ms std-dev — ${humanish(s)}`,
   },
@@ -160,7 +177,7 @@ const HARMONY_SPECS: FeatureSpec[] = [
     id: "note_duration_cv",
     label: "Note duration variance",
     unit: "cv",
-    weight: 0.2,
+    weight: 0.15,
     score: (v) => band(v, 0.02, 0.1, 0.7, 1.2),
     read: (v, s) => `duration CV ${v.toFixed(3)} — ${humanish(s)}`,
   },
@@ -168,7 +185,7 @@ const HARMONY_SPECS: FeatureSpec[] = [
     id: "harmonic_drift_cents",
     label: "Intonation drift",
     unit: "cents",
-    weight: 0.2,
+    weight: 0.3,
     score: (v) => band(v, 0.5, 3, 45, 100),
     read: (v, s) => `${v.toFixed(1)} cents drift — ${s >= 0.5 ? "played intonation" : "fixed-pitch generation"}`,
   },
@@ -176,7 +193,7 @@ const HARMONY_SPECS: FeatureSpec[] = [
     id: "spectral_flatness",
     label: "Spectral flatness",
     unit: "ratio",
-    weight: 0.15,
+    weight: 0.2,
     score: (v) => 1 - ramp(v, 0.15, 0.45),
     read: (v, s) => `flatness ${v.toFixed(3)} — ${s >= 0.5 ? "structured harmonic content" : "elevated diffusion noise floor"}`,
   },
@@ -184,7 +201,7 @@ const HARMONY_SPECS: FeatureSpec[] = [
     id: "hf_phase_correlation",
     label: "16–22 kHz inter-channel coherence",
     unit: "ratio",
-    weight: 0.15,
+    weight: 0.2,
     score: (v) => 1 - ramp(v, 0.55, 0.95),
     read: (v, s) => `coherence ${v.toFixed(3)} — ${humanish(s)}`,
   },

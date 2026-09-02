@@ -93,11 +93,26 @@ async def analyze(file: UploadFile = File(...)) -> JSONResponse:
     payload = []
     for name, stem in stems.items():
         logger.info("measuring stem %s", name)
+        try:
+            features = measurements.measure_stem(name, stem, stem_sr)
+        except Exception:  # noqa: BLE001
+            # One stem hitting a pathological edge case (a mathematically
+            # perfect tone, a numerically degenerate frame) should not lose
+            # the other three, which separately took real GPU/CPU time to
+            # produce. Fall back to the same "insufficient evidence" shape
+            # the scoring policy already gives a silent stem — every key
+            # present, every value null — by re-running the extractor on
+            # silence of the same duration, which is guaranteed to take the
+            # early-return branch rather than the code path that just
+            # failed. Report it that way rather than 500ing the whole
+            # request and losing the entire audit job over one stem.
+            logger.exception("feature extraction failed for stem %s — reporting unmeasured", name)
+            features = measurements.measure_stem(name, np.zeros_like(stem), stem_sr)
         payload.append(
             {
                 "stem": name,
                 "energy_share": round(shares.get(name, 0.0), 6),
-                "features": measurements.measure_stem(name, stem, stem_sr),
+                "features": features,
             }
         )
 

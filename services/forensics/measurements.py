@@ -153,18 +153,36 @@ def onset_grid_deviation(mono: np.ndarray, sr: int) -> tuple[float | None, np.nd
         return None, np.array([])
 
     envelope = librosa.onset.onset_strength(y=mono, sr=sr, hop_length=HOP)
-    onsets = librosa.onset.onset_detect(
-        onset_envelope=envelope, sr=sr, hop_length=HOP, units="time", backtrack=True
-    )
-    if onsets.size < 8:
-        return None, onsets
 
+    # Tempo is estimated from the envelope directly, before peak-picking, so
+    # it can inform peak-picking rather than only interpret its output.
     tempo, _ = librosa.beat.beat_track(onset_envelope=envelope, sr=sr, hop_length=HOP)
     tempo = float(np.atleast_1d(tempo)[0])
     if not np.isfinite(tempo) or tempo <= 0:
-        return None, onsets
+        return None, np.array([])
 
     grid = (60.0 / tempo) / 4.0
+
+    # Sustained, pitch-modulated material (vibrato, drift, legato) can ripple
+    # the onset envelope within a single held note and trigger a run of
+    # spurious detections around it — the default peak-picker has no notion
+    # of how close together two real notes could plausibly be. `wait`
+    # enforces a minimum spacing derived from the tempo estimate itself
+    # (half a 16th note — faster than almost any real articulation, so a
+    # genuine fast passage is not suppressed) rather than a fixed constant
+    # that would either be too loose for a slow ballad or too tight for a
+    # fast one.
+    min_spacing_frames = max(1, int(round((grid / 2) * sr / HOP)))
+    onsets = librosa.onset.onset_detect(
+        onset_envelope=envelope,
+        sr=sr,
+        hop_length=HOP,
+        units="time",
+        backtrack=True,
+        wait=min_spacing_frames,
+    )
+    if onsets.size < 8:
+        return None, onsets
     relative = onsets - onsets[0]
     deviation = relative - np.round(relative / grid) * grid
     return float(np.std(deviation) * 1000.0), onsets
@@ -286,7 +304,19 @@ def _formant_cv(mono: np.ndarray, sr: int, voiced: np.ndarray) -> float | None:
             coeffs = librosa.lpc(windowed, order=order)
         except Exception:  # noqa: BLE001 - LPC is ill-conditioned on some frames
             continue
-        roots = np.roots(coeffs)
+        # A near-perfectly periodic frame (a clean synthetic tone, a test
+        # sine, a heavily denoised vocal) can singularize the Levinson-Durbin
+        # recursion: lpc returns without raising, but with inf/nan
+        # coefficients. np.roots does not guard against that — it fails
+        # eigenvalue decomposition outright — so a single pathological frame
+        # would otherwise crash the whole stem's measurement rather than
+        # just being skipped as "no formant found here."
+        if not np.all(np.isfinite(coeffs)):
+            continue
+        try:
+            roots = np.roots(coeffs)
+        except np.linalg.LinAlgError:
+            continue
         roots = roots[np.imag(roots) > 0]
         if roots.size == 0:
             continue

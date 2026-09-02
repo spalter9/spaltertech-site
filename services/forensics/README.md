@@ -64,6 +64,32 @@ A feature that could not be measured (silent stem, no voiced frames, no
 detectable onsets) is returned as `null`. The API drops it and renormalises the
 remaining weights rather than treating a missing measurement as evidence.
 
+A single stem whose feature extraction raises is not allowed to fail the whole
+request: `app.py` catches it, logs it, and reports that stem as unmeasured
+(every key present, every value `null` — the same shape a silent stem
+produces) rather than 500ing and losing the other three stems' results.
+
+## Validating without a GPU
+
+`measurements.py` only imports numpy/scipy/librosa — no torch, no model
+weights — so it can be exercised directly against synthesized audio:
+
+```bash
+python3 -m venv .venv-validate
+.venv-validate/bin/pip install -r requirements-validate.txt
+.venv-validate/bin/python validate_measurements.py
+```
+
+It builds paired human-like/synthetic signals per stem, changing one property
+at a time, and checks that each feature separates in the direction its
+scoring band in `scoring.ts` assumes. This is the only thing in the repo that
+actually runs the DSP against real signal rather than checking it compiles —
+worth re-running after any change to `measurements.py`. It does not validate
+HTDemucs separation quality, which needs real audio and a GPU to assess
+honestly; see the "Validating the measurement code without a GPU" section of
+[the protocol docs](../../docs/sovereign-audio-protocol.md) for what it has
+already found running here.
+
 ## Environment
 
 | Variable | Default | Notes |

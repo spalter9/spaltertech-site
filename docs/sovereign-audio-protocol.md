@@ -178,6 +178,57 @@ The job completes as `degraded_no_demix`: container preflight only, verdict
 is not an examiner-grade result. A forensic report with an invented verdict is
 worse than no report, so the pipeline refuses to produce one.
 
+### Validating the measurement code without a GPU
+
+`services/forensics/app.py` and `separation.py` need torch + HTDemucs, which
+is a heavy dependency to stand up just to check the DSP is sound.
+`measurements.py` itself only imports numpy/scipy/librosa, so it can be
+exercised directly against synthesized signals — no GPU, no model weights:
+
+```bash
+cd services/forensics
+python3 -m venv .venv-validate
+.venv-validate/bin/pip install -r requirements-validate.txt
+.venv-validate/bin/python validate_measurements.py
+```
+
+It builds paired "human-like" and "AI-generated-like" signals per stem —
+isolating one property at a time (timing jitter, intonation, stereo
+decorrelation, noise floor) against an otherwise identical signal — runs the
+real feature extractors on them, and checks that each feature separates in
+the direction its scoring band assumes. This is what actually running it
+found, and fixed:
+
+- **A real crash.** A near-perfectly periodic signal — precisely what a clean
+  synthetic vocal often is — could singularize the LPC coefficients inside
+  `formant_stability_cv`'s Levinson–Durbin step; `librosa.lpc` returned
+  without raising, but `np.roots` on the resulting non-finite coefficients did
+  not. One pathological vocal stem would 500 the whole `/analyze` request and
+  fail the entire audit — the worker now checks the coefficients are finite
+  before rooting them, and a per-stem exception in `app.py` falls back to an
+  unmeasured (all-null) reading for that stem rather than losing the other
+  three.
+- **A real reliability limit.** `onset_grid_deviation` — spectral-flux onset
+  detection with backtracking, shared by drums and bass/harmony — validated
+  cleanly against percussive material (drums separated correctly on every
+  run) but proved noisy on sustained, legato tonal material: backtracking can
+  land on an ambiguous point in an overlapping decay tail rather than the true
+  attack, and a track with no silence before its first note can pick up a
+  spurious extra onset that then corrupts the whole sequence, since the grid
+  phase-locks to the first detected onset. `micro_timing_std_ms` and
+  `note_duration_cv` both derive from that same onset list and inherit the
+  failure together. Their weight in `HARMONY_SPECS` was reduced (0.30/0.20 →
+  0.15/0.15) and moved toward the three independently-derived features that
+  separated cleanly and repeatably (`harmonic_drift_cents`,
+  `spectral_flatness`, `hf_phase_correlation` — now 0.30/0.20/0.20). This is
+  not fixed, only mitigated by weighting it down; a more reliable onset method
+  for tonal material (pitch-contour segmentation rather than spectral flux)
+  is future work.
+
+This does not validate separation quality — HTDemucs needs real audio and a
+GPU to evaluate honestly — only that the measurement code that runs *after*
+separation is correct and behaves the way the scoring policy assumes.
+
 ---
 
 ## 3. Module B — outbound 4-valve export matrix
