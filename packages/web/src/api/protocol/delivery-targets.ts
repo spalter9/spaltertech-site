@@ -44,16 +44,23 @@ export type DeliveryStatus =
   /** Louder than target; the platform will turn it down. */
   | "loud"
   /** Normalising to target would push the true peak past the ceiling. */
-  | "would_clip";
+  | "would_clip"
+  /**
+   * The programme has no measurable loudness, so there is no normalisation
+   * answer to give. Digital silence gates every BS.1770 block away and the
+   * integrated value is -Infinity; normalising from it is infinite gain,
+   * which is arithmetic rather than advice.
+   */
+  | "unmeasurable";
 
 export type DeliveryVerdict = {
   platform: string;
   target_lufs: number;
   target_true_peak_dbtp: number;
-  /** Gain the platform will apply to reach its target, dB. */
-  normalisation_gain_db: number;
-  /** True peak after that gain is applied, dBTP. */
-  true_peak_after_gain_dbtp: number;
+  /** Gain the platform will apply to reach its target, dB. Null when unmeasurable. */
+  normalisation_gain_db: number | null;
+  /** True peak after that gain is applied, dBTP. Null when unmeasurable. */
+  true_peak_after_gain_dbtp: number | null;
   status: DeliveryStatus;
   note: string;
 };
@@ -80,7 +87,23 @@ export function evaluateDelivery(
   truePeakDbtp: number,
   targets: readonly PlatformTarget[] = PLATFORM_TARGETS,
 ): DeliveryVerdict[] {
+  // Silence is not a quiet master — it has no loudness to normalise from, and
+  // treating it as one yields infinite gain and a false "would clip".
+  const measurable = Number.isFinite(integratedLufs) && Number.isFinite(truePeakDbtp);
+
   return targets.map((target) => {
+    if (!measurable) {
+      return {
+        platform: target.name,
+        target_lufs: target.lufs,
+        target_true_peak_dbtp: target.truePeakDbtp,
+        normalisation_gain_db: null,
+        true_peak_after_gain_dbtp: null,
+        status: "unmeasurable" as const,
+        note: describe("unmeasurable", 0, 0, target),
+      };
+    }
+
     const gain = target.lufs - integratedLufs;
     const peakAfter = truePeakDbtp + gain;
     const clips = peakAfter > target.truePeakDbtp;
@@ -118,10 +141,17 @@ function describe(
       return `${Math.abs(gain).toFixed(1)} dB above target; the platform turns it down, so the extra level buys nothing but lost dynamics.`;
     case "would_clip":
       return `Normalising to ${target.lufs} LUFS lifts the true peak to ${peakAfter.toFixed(2)} dBTP, past the ${target.truePeakDbtp} dBTP ceiling — limit before delivery.`;
+    case "unmeasurable":
+      return "No measurable programme loudness, so no normalisation applies — check the container carries audio before delivering.";
   }
 }
 
-/** True when every platform would accept the master as rendered. */
+/**
+ * True when every platform would accept the master as rendered.
+ *
+ * An unmeasurable programme is not a clipping risk, so it does not fail here
+ * — it fails earlier, on having no audio to deliver.
+ */
 export function clearsAllPlatforms(verdicts: DeliveryVerdict[]): boolean {
   return verdicts.every((v) => v.status !== "would_clip");
 }
