@@ -11,27 +11,35 @@ import { ArrowUpRight, FileCheck2, Lock, Mic2, ShieldAlert } from "lucide-react"
  * below leads with that, and keeps the claims to what the system actually does.
  */
 
+/**
+ * The protocol has two halves and the page should say so: audio coming in is
+ * examined, audio going out is sealed. `side` labels which half each step is.
+ */
 const STEPS = [
   {
     n: "01",
+    side: "Coming in",
     icon: Mic2,
     title: "Drop the track in",
     body: "One file. It is fingerprinted the moment it lands, before anything touches it, so the chain of custody starts at your desk.",
   },
   {
     n: "02",
+    side: "Coming in",
     icon: ShieldAlert,
     title: "It pulls the record apart",
     body: "Vocals, drums, bass and instruments are separated on your own hardware, then each one is examined on its own for the physical traces of a human performance.",
   },
   {
     n: "03",
+    side: "Coming in",
     icon: FileCheck2,
     title: "You get the filing language",
     body: "A stem-by-stem finding, and the exact wording to paste into the Copyright Office application — what to disclaim, what to claim — with a one-page examiner report behind it.",
   },
   {
     n: "04",
+    side: "Going out",
     icon: Lock,
     title: "Every export leaves sealed",
     body: "Four versions render at once — vault, streaming master, sync mix, AI-licensing copy — each carrying that record inside the file, signed, so tampering shows.",
@@ -126,10 +134,15 @@ export function Authorship() {
 
         {/* How it runs — four steps, because it genuinely is a sequence. */}
         <div className="mt-24">
-          <p className="eyebrow">Four steps, start to finish</p>
+          <p className="eyebrow">Audio in, audio out</p>
           <h3 className="mt-3 max-w-2xl font-display text-3xl leading-[1.1] md:text-4xl">
-            Upload a track. Get back a filing you can defend.
+            Coming in, it is examined. Going out, it is sealed.
           </h3>
+          <p className="mt-4 max-w-2xl leading-relaxed text-muted">
+            Three steps establish who made what. The fourth writes that finding into every
+            file you ship, so the answer travels with the audio instead of living in a PDF
+            somebody has to go and find.
+          </p>
 
           <div className="mt-12 grid gap-px bg-obsidian-line sm:grid-cols-2 lg:grid-cols-4">
             {STEPS.map((s, i) => (
@@ -144,6 +157,15 @@ export function Authorship() {
                 <div className="flex items-center gap-3">
                   <s.icon className="h-5 w-5 shrink-0 text-gold" aria-hidden />
                   <span className="font-mono text-xs text-gold">{s.n}</span>
+                  <span
+                    className={`ml-auto rounded-full border px-2.5 py-0.5 font-mono text-[9px] uppercase tracking-[0.14em] ${
+                      s.side === "Coming in"
+                        ? "border-obsidian-line text-muted"
+                        : "border-gold/40 bg-gold/10 text-gold"
+                    }`}
+                  >
+                    {s.side}
+                  </span>
                 </div>
                 <h4 className="mt-4 font-display text-xl leading-tight text-bone">{s.title}</h4>
                 <p className="mt-2 text-sm leading-relaxed text-muted">{s.body}</p>

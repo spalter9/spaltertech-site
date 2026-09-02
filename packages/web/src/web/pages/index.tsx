@@ -11,8 +11,8 @@ export default function Index() {
       <Nav />
       <Hero />
       <Manifesto />
-      <Pillars />
       <Authorship />
+      <Pillars />
       <Closing />
     </div>
   );
