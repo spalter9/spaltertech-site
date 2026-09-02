@@ -86,14 +86,5 @@ export async function ingestToFloat32(bytes: Uint8Array, fileName: string): Prom
     return ensureStereo(decodeWav(wavBytes));
   }
 
-  // AIFF and FLAC arrive through the forensic audit path; ffmpeg decodes both
-  // to the same Float32 tensor the rest of the pipeline expects.
-  for (const ext of ["aiff", "aif", "flac"] as const) {
-    if (lower.endsWith(`.${ext}`)) {
-      const wavBytes = await ffmpegToFloat32Wav(bytes, ext);
-      return ensureStereo(decodeWav(wavBytes));
-    }
-  }
-
-  throw new Error("Unsupported audio type. Upload WAV, AIFF, FLAC, or MP3.");
+  throw new Error("Unsupported audio type. Upload MP3 or WAV.");
 }

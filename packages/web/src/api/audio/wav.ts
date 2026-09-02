@@ -11,9 +11,6 @@ const SUBTYPE_IEEE_FLOAT = 0x00000003;
 /** KSDATAFORMAT_SUBTYPE_PCM GUID data1 (little-endian). */
 const SUBTYPE_PCM = 0x00000001;
 
-/** WAV stores samples little-endian; only then can we blit a typed array in. */
-const LITTLE_ENDIAN = new Uint8Array(new Uint16Array([1]).buffer)[0] === 1;
-
 function readFourCC(view: DataView, offset: number): number {
   return view.getUint32(offset, true);
 }
@@ -134,15 +131,8 @@ export function encodeWavFloat32(audio: AudioBuffer32): Uint8Array {
   writeString(view, 36, "data");
   view.setUint32(40, dataBytes, true);
 
-  // The 44-byte canonical header is 4-byte aligned, so on a little-endian host
-  // the sample block can be copied straight in — a typed-array set instead of
-  // millions of DataView calls, which dominates the cost of a long render.
-  if (LITTLE_ENDIAN) {
-    new Float32Array(buffer, 44, samples.length).set(samples);
-  } else {
-    for (let i = 0; i < samples.length; i += 1) {
-      view.setFloat32(44 + i * 4, samples[i]!, true);
-    }
+  for (let i = 0; i < samples.length; i += 1) {
+    view.setFloat32(44 + i * 4, samples[i]!, true);
   }
 
   return new Uint8Array(buffer);

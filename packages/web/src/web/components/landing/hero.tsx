@@ -1,10 +1,9 @@
 import { Link } from "wouter";
 import { motion } from "motion/react";
-import { ArrowRight, Coins, Fingerprint, Lock, ShieldCheck, UserCheck } from "lucide-react";
+import { Lock, ShieldCheck, Fingerprint, Coins } from "lucide-react";
 import { HeroVideo } from "../hero-video";
 
 const STATS = [
-  { icon: UserCheck, k: "Human authorship", v: "Measured" },
   { icon: ShieldCheck, k: "Chain of title", v: "Verified" },
   { icon: Fingerprint, k: "Provenance", v: "Embedded" },
   { icon: Coins, k: "Settlement", v: "Instant" },
@@ -44,36 +43,6 @@ export function Hero() {
           </p>
         </motion.div>
 
-        {/* The capability that runs today, named before the fold — everything
-            else on this page is architecture, this is a thing you can use. */}
-        <motion.div
-          initial={{ opacity: 0, y: 16 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.7, delay: 0.1 }}
-          className="flex justify-center"
-        >
-          <a
-            href="#authorship"
-            className="group flex max-w-4xl flex-wrap items-center justify-center gap-x-3 gap-y-2 rounded-xl border border-gold/25 bg-gold/[0.06] px-5 py-3 text-center transition-colors hover:border-gold/45 hover:bg-gold/10"
-          >
-            <span className="rounded-full bg-gold/15 px-2.5 py-0.5 font-mono text-[9px] font-semibold uppercase tracking-[0.18em] text-gold">
-              Now live
-            </span>
-            {/* The arrow sits inside the sentence so it trails the last line
-                when the band wraps to three lines on a phone. */}
-            <span className="text-sm leading-relaxed text-bone">
-              <span className="text-gold">The Examiner</span> — upload a record, get a
-              stem-by-stem finding on which parts a person actually performed, and the
-              Copyright Office wording that goes with it.{" "}
-              <ArrowRight
-                size={13}
-                className="inline-block align-[-1px] text-gold transition-transform group-hover:translate-x-0.5"
-                aria-hidden
-              />
-            </span>
-          </a>
-        </motion.div>
-
         {/* Prime cinematic hero player — rounded frame per mockup */}
         <motion.div
           initial={{ opacity: 0, y: 30 }}
@@ -101,7 +70,7 @@ export function Hero() {
         </div>
 
         {/* Trust signals */}
-        <div className="grid grid-cols-2 gap-8 md:grid-cols-4 md:gap-12 max-w-3xl mx-auto">
+        <div className="grid grid-cols-3 gap-6 md:gap-16 max-w-2xl mx-auto">
           {STATS.map((s) => (
             <div key={s.k} className="flex flex-col items-center gap-2">
               <s.icon size={20} className="text-gold" />

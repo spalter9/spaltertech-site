@@ -17,7 +17,6 @@
     "lint": "bun run internal:check-conventions && oxlint . --deny-warnings --no-error-on-unmatched-pattern",
     "lint:fix": "oxlint . --fix --deny-warnings --no-error-on-unmatched-pattern",
     "typecheck": "turbo typecheck",
-    "test:protocol": "cd packages/web && bun --env-file=../../.env run src/api/protocol/tests/protocol.test.ts",
     "db:generate": "turbo db:generate",
     "db:migrate": "turbo db:migrate",
     "db:push": "turbo db:push",
