@@ -16,6 +16,30 @@ makes is to your own separation worker.
 
 ---
 
+## 0. Where this can run
+
+**Not on the current Vercel deployment.** `vercel.json` builds the SPA only
+(`outputDirectory: packages/web/dist`) with a catch-all rewrite to
+`index.html` — there is no API function in that deployment, so every
+`/api/*` path falls through to the SPA shell. That is true of the existing
+Surrealizer and Spalty routes too, not just this protocol.
+
+This system needs a **persistent host**, because it:
+
+- writes to disk (`packages/web/.data/protocol/`) and reads those files back later;
+- holds the signing key on that disk between requests;
+- runs audits on an in-process queue that outlives the request that created it;
+- reaches a Demucs container over the local network;
+- moves hundreds of megabytes per operation, well past serverless body and
+  duration limits.
+
+The repo already ships the right shape for that: `ecosystem.config.cjs` runs
+`packages/web/src/__server.ts` under pm2, which serves the built SPA *and*
+mounts the Hono API on one port. Put that behind your reverse proxy, run the
+forensics container alongside it, and give the box real disk.
+
+---
+
 ## 1. Running it
 
 ### The separation worker
@@ -224,6 +248,13 @@ USCO_Examiner_Dossier_*.pdf     when the seal cites an audit
 Stored, not deflated: float PCM does not compress meaningfully, and storing
 keeps each member's hash inside the archive equal to its hash outside it.
 
+The archive is **assembled on request** rather than written to disk, so a
+delivery is not stored twice — for float PCM that is the difference between one
+and two copies of the entire render. The size recorded at seal time is computed
+analytically from the member list and matches the assembled archive byte for
+byte; rebuilding is deterministic. Sessions sealed by an earlier build, which
+did store the archive, are still served from it.
+
 ### Endpoints
 
 ```
@@ -293,3 +324,58 @@ services/forensics/
   Resampling an archival copy would make it not the original.
 - **MP3, AIFF and FLAC intake need `ffmpeg`** on the API host. WAV decodes
   in-process with no external binary.
+- **Disk grows with every job and is never reclaimed automatically.** An audit
+  keeps its source container; a seal keeps four 32-bit float renders. Budget
+  roughly 90 MB per minute of programme per seal, and prune
+  `.data/protocol/audit/` and `.data/protocol/export/` on your own schedule —
+  the database rows will then report files that are gone, which the download
+  routes surface as `410`.
+- **The audit queue is in-process.** It is deliberately single-lane and does
+  not survive a restart: anything caught mid-flight is closed out as
+  interrupted on the next boot rather than silently re-run. For multi-host
+  operation, replace the queue in `audit.ts` with a shared one.
+
+## 6. Operational guards
+
+| Guard | Where | Default |
+|---|---|---|
+| Upload cap, checked before the body is buffered | `SAP_MAX_UPLOAD_BYTES` | 512 MB |
+| Worker upload cap | `MAX_UPLOAD_BYTES` (worker) | 512 MB |
+| Worker programme-length cap | `MAX_ANALYSIS_SECONDS` | 900 s |
+| Separation timeout | `DEMIXER_TIMEOUT_MS` | 20 min |
+| Concurrent seals | serialised in `api/index.ts` | one at a time |
+| Concurrent audits | single-lane queue in `audit.ts` | one at a time |
+
+Seals are serialised because each one holds four full renders of the programme
+in memory at once; two large ones in parallel is the quickest way to exhaust
+the heap.
+
+## 7. Performance
+
+Measured on this repo's CPU-only container, 48 kHz stereo:
+
+| Operation | 1 minute of programme |
+|---|---|
+| BS.1770-4 loudness incl. 4x true peak | 0.29 s |
+| Container preflight forensics (STFT) | ~2 s |
+| Full 4-valve seal, hashed, signed, written | ~10 s |
+
+Separation is not in that table because it dominates everything else and
+depends entirely on your hardware — seconds on a GPU, minutes on CPU.
+
+The true-peak meter interpolates only around samples whose neighbourhood could
+possibly beat the running peak. The bound is exact (an interpolated sample
+cannot exceed the largest tap-sum times the window maximum), so the answer is
+identical to interpolating everywhere; the suite proves that against a
+brute-force reference on tone, impulse, noise and silence.
+
+## 8. Tests
+
+```bash
+bun run test:protocol
+```
+
+46 invariants covering the loudness meter against the EBU Tech 3341 reference
+tone, exactness of the true-peak fast path, hash stability under metadata
+injection, tamper rejection, package reproducibility, and determinism of the
+scoring policy. Run it after touching anything in `protocol/`.

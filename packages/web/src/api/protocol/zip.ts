@@ -37,6 +37,28 @@ function dosDateTime(date: Date): { time: number; date: number } {
 
 export type ZipEntry = { name: string; data: Uint8Array };
 
+const LOCAL_HEADER_BYTES = 30;
+const CENTRAL_HEADER_BYTES = 46;
+const EOCD_BYTES = 22;
+
+/**
+ * Exact size of the archive `buildZip` would produce, without producing it.
+ *
+ * Lets a seal record the package size while writing only the member files to
+ * disk — the archive itself is assembled on request, so a delivery is not
+ * stored twice.
+ */
+export function zipSize(entries: { name: string; byteLength: number }[]): number {
+  const encoder = new TextEncoder();
+  let total = EOCD_BYTES;
+  for (const entry of entries) {
+    const nameBytes = encoder.encode(entry.name).length;
+    total += LOCAL_HEADER_BYTES + nameBytes + entry.byteLength;
+    total += CENTRAL_HEADER_BYTES + nameBytes;
+  }
+  return total;
+}
+
 class ByteWriter {
   private parts: Uint8Array[] = [];
   length = 0;

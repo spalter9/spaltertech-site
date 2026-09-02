@@ -198,22 +198,78 @@ function buildPolyphase(): Float64Array[] {
 
 const POLYPHASE = buildPolyphase();
 
-/** Peak of the 4x-oversampled waveform, in linear amplitude. */
+/**
+ * Largest L1 tap sum across the phases.
+ *
+ * An interpolated sample is a weighted sum of the window, so its magnitude can
+ * never exceed this times the largest magnitude in that window. That gives an
+ * exact skip test below — not a heuristic — which matters because most of a
+ * track is nowhere near its own peak.
+ */
+const POLYPHASE_L1 = Math.max(
+  ...POLYPHASE.map((taps) => taps.reduce((acc, t) => acc + Math.abs(t), 0)),
+);
+
+const HALF_TAPS = TAPS_PER_PHASE / 2;
+
+/**
+ * Peak of the 4x-oversampled waveform, in linear amplitude.
+ *
+ * Two passes: take the sample-domain peak first, then interpolate only around
+ * samples whose neighbourhood could possibly beat it. The bound is exact, so
+ * the answer is identical to interpolating everywhere — it just skips the
+ * ninety-odd percent of a typical programme that cannot contend.
+ */
 export function truePeakLinear(planar: Float64Array[]): number {
-  let peak = 0;
+  let peak = samplePeakLinear(planar);
+  if (peak === 0) return 0;
+
+  const BLOCK = 64;
+
   for (const ch of planar) {
-    for (let i = 0; i < ch.length; i += 1) {
-      const direct = Math.abs(ch[i]!);
-      if (direct > peak) peak = direct;
+    const n = ch.length;
+
+    // One O(n) prepass of block maxima turns the per-sample rejection test
+    // into two array reads instead of a twelve-sample rescan.
+    const blockCount = Math.ceil(n / BLOCK);
+    const blockMax = new Float64Array(blockCount);
+    for (let b = 0; b < blockCount; b += 1) {
+      const end = Math.min(n, (b + 1) * BLOCK);
+      let m = 0;
+      for (let k = b * BLOCK; k < end; k += 1) {
+        const a = ch[k]! < 0 ? -ch[k]! : ch[k]!;
+        if (a > m) m = a;
+      }
+      blockMax[b] = m;
+    }
+
+    for (let i = 0; i < n; i += 1) {
+      const lo = i - HALF_TAPS + 1;
+      const hi = lo + TAPS_PER_PHASE;
+
+      // The window spans at most two blocks; their maximum bounds it.
+      const firstBlock = Math.max(0, lo >> 6);
+      const lastBlock = Math.min(blockCount - 1, (hi - 1) >> 6);
+      let windowBound = blockMax[firstBlock]!;
+      for (let b = firstBlock + 1; b <= lastBlock; b += 1) {
+        if (blockMax[b]! > windowBound) windowBound = blockMax[b]!;
+      }
+      if (windowBound * POLYPHASE_L1 <= peak) continue;
+
+      const edge = lo < 0 || hi > n;
       for (let p = 1; p < OVERSAMPLE; p += 1) {
         const taps = POLYPHASE[p]!;
         let acc = 0;
-        for (let t = 0; t < TAPS_PER_PHASE; t += 1) {
-          const idx = i + t - TAPS_PER_PHASE / 2 + 1;
-          if (idx < 0 || idx >= ch.length) continue;
-          acc += ch[idx]! * taps[t]!;
+        if (edge) {
+          for (let t = 0; t < TAPS_PER_PHASE; t += 1) {
+            const idx = lo + t;
+            if (idx < 0 || idx >= n) continue;
+            acc += ch[idx]! * taps[t]!;
+          }
+        } else {
+          for (let t = 0; t < TAPS_PER_PHASE; t += 1) acc += ch[lo + t]! * taps[t]!;
         }
-        const a = Math.abs(acc);
+        const a = acc < 0 ? -acc : acc;
         if (a > peak) peak = a;
       }
     }

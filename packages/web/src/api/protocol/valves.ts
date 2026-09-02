@@ -56,6 +56,11 @@ export function truePeakLimit(audio: AudioBuffer32, ceilingDb: number): AudioBuf
   const frames = planar[0]?.length ?? 0;
   if (frames === 0) return audio;
 
+  // Nothing to do if the material already clears the ceiling. Skipping here is
+  // not just faster — it avoids applying gain reduction to programme that never
+  // needed it, which the estimate-driven envelope below would otherwise do.
+  if (truePeakLinear(planar) <= ceiling) return audio;
+
   const lookahead = Math.max(1, Math.round(0.0015 * audio.sampleRate));
   const releaseCoeff = Math.exp(-1 / (0.06 * audio.sampleRate));
 

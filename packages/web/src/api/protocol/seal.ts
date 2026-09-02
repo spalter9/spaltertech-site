@@ -29,9 +29,10 @@ import {
   renderModel,
   renderMv3,
   renderOriginal,
+  type ValveMeasurement,
   type ValveRender,
 } from "./valves";
-import { buildZip, type ZipEntry } from "./zip";
+import { buildZip, zipSize, type ZipEntry } from "./zip";
 
 /**
  * MODULE B — outbound 4-valve export matrix.
@@ -126,6 +127,58 @@ function fromAudit(audit: AuditResult): {
   };
 }
 
+/** One file inside a sealed delivery, as recorded at seal time. */
+export type PackageMember = { name: string; byteLength: number };
+
+const RECEIPT_NAME = "DELIVERY_RECEIPT.txt";
+/** Sidecar listing the archive's contents, so it can be rebuilt byte-for-byte. */
+const MEMBERS_NAME = ".package-members.json";
+
+/**
+ * Reassemble a sealed delivery on request.
+ *
+ * The archive is deterministic — same members, same order, same timestamp —
+ * so rebuilding produces the identical bytes every time, and the size recorded
+ * at seal time stays accurate.
+ */
+export async function buildSessionPackage(
+  sessionId: string,
+  /** Archive written by an earlier build that stored the zip on disk. */
+  legacyFileName?: string,
+): Promise<Uint8Array | null> {
+  const { readFile } = await import("node:fs/promises");
+  const dir = join(EXPORT_DIR, sessionId);
+
+  let index: { createdAt: string; members: PackageMember[] };
+  try {
+    index = JSON.parse(await readFile(join(dir, MEMBERS_NAME), "utf8"));
+  } catch {
+    // Sessions sealed before packages became on-demand still have their
+    // archive on disk. Serve it rather than stranding an existing delivery.
+    if (legacyFileName) {
+      try {
+        return new Uint8Array(await readFile(join(dir, legacyFileName)));
+      } catch {
+        return null;
+      }
+    }
+    return null;
+  }
+
+  const entries: ZipEntry[] = [];
+  for (const member of index.members) {
+    try {
+      entries.push({ name: member.name, data: new Uint8Array(await readFile(join(dir, member.name))) });
+    } catch {
+      // A missing member means the delivery is incomplete; say so rather than
+      // handing back a quietly short archive.
+      return null;
+    }
+  }
+
+  return buildZip(entries, new Date(index.createdAt));
+}
+
 const UNAUDITED_LIMITATION: UscoLimitationOfClaim = {
   material_excluded:
     "Not established by forensic examination. No machine-generated material is disclaimed on the basis of this seal alone.",
@@ -162,6 +215,9 @@ export async function sealExport(input: SealInput): Promise<SealResult> {
 
   // 2 — encode, measure, and hash the bit-exact payload of each tier.
   const encoded = new Map<ValveId, Uint8Array>();
+  // Loudness measurement is the expensive part of a seal; take it once per
+  // valve and carry it through to the header write.
+  const measured = new Map<ValveId, ValveMeasurement>();
   const descriptors: ValveDescriptor[] = [];
 
   for (const valve of VALVE_ORDER) {
@@ -170,6 +226,7 @@ export async function sealExport(input: SealInput): Promise<SealResult> {
     encoded.set(valve, wav);
 
     const measurement = measureValve(render.audio);
+    measured.set(valve, measurement);
     const filename = `${slug}_${FILE_SUFFIX[valve]}.wav`;
 
     descriptors.push({
@@ -246,11 +303,11 @@ export async function sealExport(input: SealInput): Promise<SealResult> {
   await mkdir(dir, { recursive: true });
 
   const sealedFileHashes = {} as Record<ValveId, string>;
-  const zipEntries: ZipEntry[] = [];
+  const members: PackageMember[] = [];
 
   for (const descriptor of descriptors) {
     const raw = encoded.get(descriptor.valve)!;
-    const measurement = measureValve(renders[descriptor.valve].audio);
+    const measurement = measured.get(descriptor.valve)!;
     const sealedBytes = sealWav({
       wav: raw,
       sealed,
@@ -264,7 +321,7 @@ export async function sealExport(input: SealInput): Promise<SealResult> {
 
     const sealedHash = sha256Hex(sealedBytes);
     sealedFileHashes[descriptor.valve] = sealedHash;
-    zipEntries.push({ name: descriptor.filename, data: sealedBytes });
+    members.push({ name: descriptor.filename, byteLength: sealedBytes.byteLength });
 
     await db.insert(schema.exportValves).values({
       sessionId,
@@ -284,26 +341,32 @@ export async function sealExport(input: SealInput): Promise<SealResult> {
     });
   }
 
-  // 6 — package: the four tiers, the signed manifest, a delivery receipt, and
-  // the examiner dossier when this seal cites an audit.
+  // 6 — package members: the four tiers, the signed manifest, a delivery
+  // receipt, and the examiner dossier when this seal cites an audit.
+  //
+  // Only the members are written. The archive itself is assembled on request
+  // by `buildSessionPackage`, so a delivery is not stored twice — for float
+  // PCM that is the difference between one and two copies of the whole render.
+  const encoder = new TextEncoder();
   const manifestJson = `${JSON.stringify(sealed, null, 2)}\n`;
-  zipEntries.push({ name: "manifest.json", data: new TextEncoder().encode(manifestJson) });
+  await writeFile(join(dir, "manifest.json"), manifestJson, "utf8");
+  members.push({ name: "manifest.json", byteLength: encoder.encode(manifestJson).length });
 
   const receipt = buildReceipt({ sealed, descriptors, sealedFileHashes, createdAt });
-  zipEntries.push({ name: "DELIVERY_RECEIPT.txt", data: new TextEncoder().encode(receipt) });
+  await writeFile(join(dir, RECEIPT_NAME), receipt, "utf8");
+  members.push({ name: RECEIPT_NAME, byteLength: encoder.encode(receipt).length });
 
   if (audit) {
-    zipEntries.push({
-      name: `USCO_Examiner_Dossier_${audit.job_id}.pdf`,
-      data: renderExaminerDossier(audit),
-    });
+    const dossier = renderExaminerDossier(audit);
+    const dossierName = `USCO_Examiner_Dossier_${audit.job_id}.pdf`;
+    await writeFile(join(dir, dossierName), dossier);
+    members.push({ name: dossierName, byteLength: dossier.byteLength });
   }
 
   const packageFileName = `${slug}_SAP_${manifestId}.zip`;
-  const packageBytes = buildZip(zipEntries, createdAt);
   const packagePath = join(dir, packageFileName);
-  await writeFile(packagePath, packageBytes);
-  await writeFile(join(dir, "manifest.json"), manifestJson, "utf8");
+  const packageByteLength = zipSize(members);
+  await writeFile(join(dir, MEMBERS_NAME), JSON.stringify({ createdAt: createdAt.toISOString(), members }, null, 2), "utf8");
 
   await db.insert(schema.exportSessions).values({
     sessionId,
@@ -316,7 +379,7 @@ export async function sealExport(input: SealInput): Promise<SealResult> {
     signatureKeyId: signature.key_id,
     packageFileName,
     packagePath,
-    packageBytes: packageBytes.byteLength,
+    packageBytes: packageByteLength,
     manifestJson,
     auditJobId: input.auditJobId,
   });
@@ -328,7 +391,7 @@ export async function sealExport(input: SealInput): Promise<SealResult> {
     valves: descriptors,
     signature,
     package_filename: packageFileName,
-    package_bytes: packageBytes.byteLength,
+    package_bytes: packageByteLength,
     sealed_file_hashes: sealedFileHashes,
     created_at: createdAt.toISOString(),
   };

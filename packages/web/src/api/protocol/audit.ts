@@ -1,7 +1,7 @@
 import { mkdir, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import { randomBytes } from "node:crypto";
-import { eq } from "drizzle-orm";
+import { eq, inArray } from "drizzle-orm";
 import { db } from "../database";
 import * as schema from "../database/schema";
 import { ingestToFloat32 } from "../audio/ingest";
@@ -79,6 +79,53 @@ class AuditQueue {
 
 const queue = new AuditQueue();
 
+/**
+ * Largest container the API will accept, in bytes.
+ *
+ * Intake buffers the upload to hash it before anything else touches it, so an
+ * unbounded body is an unbounded allocation. The worker enforces its own limit
+ * separately; this one protects the API process.
+ */
+export const MAX_UPLOAD_BYTES = (() => {
+  const raw = Number(process.env.SAP_MAX_UPLOAD_BYTES);
+  return Number.isFinite(raw) && raw > 0 ? raw : 512 * 1024 * 1024;
+})();
+
+let reconciled = false;
+
+/**
+ * Clear jobs that a restart caught mid-flight.
+ *
+ * The queue lives in this process, so anything left `queued` or `processing`
+ * after a restart will never be picked up again. Those rows are closed out as
+ * interrupted rather than re-queued: a job that took the process down would
+ * otherwise take it down again on every boot.
+ */
+export async function reconcileInterruptedJobs(): Promise<number> {
+  if (reconciled) return 0;
+  reconciled = true;
+  const stranded = await db
+    .select({ jobId: schema.auditJobs.jobId })
+    .from(schema.auditJobs)
+    .where(inArray(schema.auditJobs.status, ["queued", "processing"]));
+  if (stranded.length === 0) return 0;
+
+  await db
+    .update(schema.auditJobs)
+    .set({
+      status: "failed",
+      notice:
+        "Interrupted by a server restart before the examination finished. Nothing was reported; resubmit the container to run it again.",
+      completedAt: new Date(),
+    })
+    .where(inArray(schema.auditJobs.status, ["queued", "processing"]));
+
+  console.warn(
+    `[sovereign-audio-protocol] closed ${stranded.length} audit job(s) stranded by a restart`,
+  );
+  return stranded.length;
+}
+
 export type ScanAccepted = {
   job_id: string;
   status: "processing";
@@ -114,6 +161,14 @@ export async function startAudit(params: {
   bytes: Uint8Array;
   fileName: string;
 }): Promise<ScanAccepted> {
+  await reconcileInterruptedJobs();
+
+  if (params.bytes.byteLength > MAX_UPLOAD_BYTES) {
+    throw new Error(
+      `Container is ${(params.bytes.byteLength / 1048576).toFixed(1)} MB; the intake limit is ${(MAX_UPLOAD_BYTES / 1048576).toFixed(0)} MB.`,
+    );
+  }
+
   const jobId = `aud_${randomBytes(5).toString("hex")}`;
   const fileHash = sha256Hex(params.bytes);
 
@@ -332,6 +387,7 @@ export type AuditLookup =
   | { state: "ready"; result: AuditResult };
 
 export async function getAudit(jobId: string): Promise<AuditLookup> {
+  await reconcileInterruptedJobs();
   const [job] = await db.select().from(schema.auditJobs).where(eq(schema.auditJobs.jobId, jobId));
   if (!job) return { state: "missing" };
 

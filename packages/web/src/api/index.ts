@@ -285,26 +285,59 @@ app.post("/api/spalty/speak", async (c) => {
      POST /api/v1/export/verify           → 200 signature + payload verification
    ─────────────────────────────────────────────────────────── */
 
-/** Pull the single uploaded file out of a multipart body. */
-async function readUpload(c: Context) {
+/**
+ * Pull the single uploaded file out of a multipart body.
+ *
+ * The declared length is checked before the body is buffered, so an oversized
+ * upload is refused rather than allocated. `parseBody` holds the whole request
+ * in memory, which is exactly what the cap exists to bound.
+ */
+async function readUpload(c: Context, maxBytes: number) {
+  const declared = Number(c.req.header("content-length") ?? 0);
+  if (Number.isFinite(declared) && declared > maxBytes) {
+    return { tooLarge: true as const, declared };
+  }
+
   const form = await c.req.parseBody({ all: true });
   const raw = form["file"];
   const candidate = Array.isArray(raw) ? raw[0] : raw;
   if (!candidate || typeof candidate === "string" || !(candidate instanceof File)) {
     return null;
   }
-  return {
-    file: candidate,
-    form,
-    bytes: new Uint8Array(await candidate.arrayBuffer()),
-  };
+  const bytes = new Uint8Array(await candidate.arrayBuffer());
+  if (bytes.byteLength > maxBytes) {
+    return { tooLarge: true as const, declared: bytes.byteLength };
+  }
+
+  return { tooLarge: false as const, file: candidate, form, bytes };
+}
+
+/**
+ * Seals are memory-hungry: four full renders of the programme are held at once.
+ * Running two large ones concurrently is the quickest way to exhaust the heap,
+ * so they take turns.
+ */
+let sealLane: Promise<unknown> = Promise.resolve();
+function queueSeal<T>(task: () => Promise<T>): Promise<T> {
+  const next = sealLane.then(task, task);
+  sealLane = next.catch(() => undefined);
+  return next;
 }
 
 app.post("/api/v1/audit/scan", async (c) => {
   const { isAcceptedAudio, startAudit } = await import("./protocol/audit");
 
-  const upload = await readUpload(c);
+  const { MAX_UPLOAD_BYTES } = await import("./protocol/audit");
+  const upload = await readUpload(c, MAX_UPLOAD_BYTES);
   if (!upload) return c.json({ error: "Missing audio file field 'file'" }, 400);
+  if (upload.tooLarge) {
+    return c.json(
+      {
+        error: `Container is ${(upload.declared / 1048576).toFixed(1)} MB; the intake limit is ${(MAX_UPLOAD_BYTES / 1048576).toFixed(0)} MB.`,
+      },
+      413,
+    );
+  }
 
   const fileName = upload.file.name || "upload.wav";
   if (!isAcceptedAudio(fileName)) {
@@ -357,9 +390,18 @@ app.get("/api/v1/audit/dossier/:job_id", async (c) => {
 
 app.post("/api/v1/export/seal", async (c) => {
   const { sealExport } = await import("./protocol/seal");
+  const { MAX_UPLOAD_BYTES } = await import("./protocol/audit");
 
-  const upload = await readUpload(c);
+  const upload = await readUpload(c, MAX_UPLOAD_BYTES);
   if (!upload) return c.json({ error: "Missing audio file field 'file'" }, 400);
+  if (upload.tooLarge) {
+    return c.json(
+      {
+        error: `Session render is ${(upload.declared / 1048576).toFixed(1)} MB; the limit is ${(MAX_UPLOAD_BYTES / 1048576).toFixed(0)} MB.`,
+      },
+      413,
+    );
+  }
 
   const { form, file, bytes } = upload;
   const title = String(form["title"] ?? file.name ?? "Untitled Session").trim() || "Untitled Session";
@@ -371,17 +413,18 @@ app.post("/api/v1/export/seal", async (c) => {
   const iswc = form["iswc"] ? String(form["iswc"]).trim() || undefined : undefined;
   const auditJobId = form["auditJobId"] ? String(form["auditJobId"]).trim() || undefined : undefined;
 
-  let provenance;
+  let provenance: import("./protocol/types").ProvenanceLayer[] | undefined;
   if (form["provenance"]) {
     try {
-      provenance = JSON.parse(String(form["provenance"]));
+      provenance = JSON.parse(String(form["provenance"])) as import("./protocol/types").ProvenanceLayer[];
     } catch {
       return c.json({ error: "provenance must be valid JSON" }, 400);
     }
   }
 
   try {
-    const result = await sealExport({
+    const result = await queueSeal(() =>
+      sealExport({
       bytes,
       fileName: file.name || "session.wav",
       title,
@@ -391,7 +434,8 @@ app.post("/api/v1/export/seal", async (c) => {
       iswc,
       provenance,
       auditJobId,
-    });
+      }),
+    );
     return c.json(
       { ...result, package_path: `/api/v1/export/${result.session_id}/package` },
       201,
@@ -409,23 +453,23 @@ app.get("/api/v1/export/:session_id/package", async (c) => {
     .where(eq(schema.exportSessions.sessionId, sessionId));
   if (!row) return c.json({ error: "Unknown session_id" }, 404);
 
-  const { readFile } = await import("node:fs/promises");
-  try {
-    const bytes = await readFile(row.packagePath);
-    return new Response(bytes, {
-      status: 200,
-      headers: {
-        "Content-Type": "application/zip",
-        "Content-Disposition": `attachment; filename="${row.packageFileName}"`,
-        "Content-Length": String(bytes.byteLength),
-        "X-SAP-Manifest-Id": row.manifestId,
-        "X-SAP-Cross-Hash": row.crossHash,
-        "X-SAP-Signer": row.signatureKeyId,
-      },
-    });
-  } catch {
-    return c.json({ error: "Sealed package missing on disk" }, 410);
-  }
+  // The archive is assembled from its stored members on request rather than
+  // kept on disk as a second copy of the whole delivery.
+  const { buildSessionPackage } = await import("./protocol/seal");
+  const bytes = await buildSessionPackage(sessionId, row.packageFileName);
+  if (!bytes) return c.json({ error: "Sealed package members missing on disk" }, 410);
+
+  return new Response(Buffer.from(bytes), {
+    status: 200,
+    headers: {
+      "Content-Type": "application/zip",
+      "Content-Disposition": `attachment; filename="${row.packageFileName}"`,
+      "Content-Length": String(bytes.byteLength),
+      "X-SAP-Manifest-Id": row.manifestId,
+      "X-SAP-Cross-Hash": row.crossHash,
+      "X-SAP-Signer": row.signatureKeyId,
+    },
+  });
 });
 
 app.get("/api/v1/export/:session_id/valve/:valve", async (c) => {
@@ -457,8 +501,10 @@ app.get("/api/v1/export/:session_id/valve/:valve", async (c) => {
 
 app.post("/api/v1/export/verify", async (c) => {
   const { verifySealedFile } = await import("./protocol/verify");
-  const upload = await readUpload(c);
+  const { MAX_UPLOAD_BYTES } = await import("./protocol/audit");
+  const upload = await readUpload(c, MAX_UPLOAD_BYTES);
   if (!upload) return c.json({ error: "Missing audio file field 'file'" }, 400);
+  if (upload.tooLarge) return c.json({ error: "File exceeds the intake limit" }, 413);
   const result = verifySealedFile(upload.bytes);
   return c.json(result, result.verified ? 200 : 422);
 });
