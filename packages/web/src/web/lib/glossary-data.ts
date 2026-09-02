@@ -18,6 +18,8 @@ export interface GlossaryTerm {
   body: string[];
   related?: string[];
   aka?: string[];
+  /** A tool on this site that acts on the term, linked from its page. */
+  tool?: { href: string; label: string };
 }
 
 export const GLOSSARY: GlossaryTerm[] = [
@@ -70,9 +72,10 @@ export const GLOSSARY: GlossaryTerm[] = [
       "A split sheet is the foundational document for every collaborative song. It names every contributor, their role (writer, producer, performer, lyricist), and their ownership percentage on both the master and the composition.",
       "Traditionally it's a PDF signed in the studio. The problem: that PDF then has to be re-entered into a publisher's system, a distributor's metadata, a PRO registration, and a label's accounting — and any of those entries can disagree.",
       "On-chain split sheets fix this by making the document itself the payout logic. Contributor wallets and basis-point shares are written to a smart contract; revenue routed to the contract splits automatically.",
-      "SSP includes a split-sheet tool that validates shares sum to 100% and can attach the sheet to a stamped track.",
+      "SSP includes a split-sheet tool that validates a sheet against the registry contract’s own rules — whole basis points totalling 10,000, no zero shares, no repeated address — and hands back the exact arguments the stamp call takes.",
     ],
     related: ["master-vs-composition", "isrc", "iswc", "neighboring-rights"],
+    tool: { href: "/tools/split-sheet", label: "Build a split sheet" },
   },
   {
     slug: "mechanical-royalty",

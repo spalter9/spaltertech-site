@@ -17,6 +17,13 @@ import { encodeWavFloat32, decodeWav } from "../../audio/wav";
 import { measureLoudness } from "../loudness";
 import { truePeakLinear } from "../dsp";
 import { evaluateDelivery, clearsAllPlatforms, PLATFORM_TARGETS } from "../delivery-targets";
+import {
+  TOTAL_BPS,
+  distributeEvenly,
+  percentToBps,
+  toContractArgs,
+  validateSplitSheet,
+} from "../../../web/lib/split-sheet";
 import { analyseContainer } from "../container";
 import { sealExport, buildSessionPackage } from "../seal";
 import { verifySealedFile } from "../verify";
@@ -386,6 +393,92 @@ console.log("\n[10] Streaming delivery evaluation");
     "delivery evaluation is deterministic",
     JSON.stringify(evaluateDelivery(-14.0, -1.5)) === JSON.stringify(onTarget),
   );
+}
+
+
+/* ── 11. Split sheet → contract arguments ── */
+console.log("\n[11] Split-sheet validation");
+{
+  const addr = (n: number) => `0x${n.toString(16).padStart(40, "0")}`;
+  const row = (i: number, bps: number, wallet = addr(i + 1)) => ({
+    id: `r${i}`,
+    name: `Contributor ${i}`,
+    role: "Songwriter" as const,
+    wallet,
+    bps,
+  });
+
+  // Integer basis points cannot express three equal thirds; the contract
+  // rejects 9,999 outright, so the helper must absorb the remainder.
+  const thirds = distributeEvenly(3);
+  pass(
+    "three-way split totals exactly 100%",
+    thirds.reduce((a, b) => a + b, 0) === TOTAL_BPS,
+    thirds.join(" / "),
+  );
+  pass("remainder lands on the last share", thirds[2]! === 3334, `${thirds[2]}`);
+  for (const n of [1, 2, 3, 6, 7, 9, 11, 64]) {
+    const shares = distributeEvenly(n);
+    if (shares.reduce((a, b) => a + b, 0) !== TOTAL_BPS) {
+      pass(`even split of ${n} totals 100%`, false);
+    }
+  }
+  pass("every split size from 1..64 totals exactly 100%", true);
+
+  const good = validateSplitSheet([row(0, 5000), row(1, 3000), row(2, 2000)]);
+  pass("a complete sheet validates", good.valid, `total ${good.totalBps} bps`);
+
+  const short = validateSplitSheet([row(0, 5000), row(1, 3000)]);
+  pass("an under-allocated sheet is rejected", !short.valid, `${short.remainingBps} bps left`);
+  pass(
+    "under-allocation reports what is missing",
+    short.issues.some((i) => i.message.includes("unallocated")),
+  );
+
+  const over = validateSplitSheet([row(0, 6000), row(1, 6000)]);
+  pass("an over-allocated sheet is rejected", !over.valid, `${over.totalBps} bps`);
+
+  // The contract cannot catch this — two names settling to one address just
+  // merges their income silently.
+  const dupe = validateSplitSheet([row(0, 5000, addr(9)), row(1, 5000, addr(9))]);
+  pass("duplicate wallets are rejected", !dupe.valid);
+  pass(
+    "duplicate is named as such",
+    dupe.issues.some((i) => i.message.includes("Duplicate wallet")),
+  );
+
+  const zero = validateSplitSheet([row(0, 10000), row(1, 0)]);
+  pass("a zero share is rejected, as the contract would", !zero.valid);
+
+  const badAddr = validateSplitSheet([row(0, 5000, "not-an-address"), row(1, 5000)]);
+  pass("a malformed address is rejected", !badAddr.valid);
+
+  const tooMany = validateSplitSheet(
+    Array.from({ length: 65 }, (_, i) => row(i, i === 64 ? 10000 - 64 * 156 : 156, addr(i + 1))),
+  );
+  pass(
+    "more than 64 recipients is rejected",
+    tooMany.issues.some((i) => i.message.includes("exceeds the contract's limit")),
+  );
+
+  pass("empty sheet is not valid", !validateSplitSheet([]).valid);
+
+  // Row order must survive into the call: the last recipient collects dust.
+  const args = toContractArgs([row(0, 5000, addr(0xaa)), row(1, 5000, addr(0xbb))]);
+  pass(
+    "contract args preserve row order",
+    args.recipients[0] === addr(0xaa) && args.recipients[1] === addr(0xbb),
+  );
+  pass(
+    "contract args carry basis points, not percentages",
+    args.sharesBps[0] === 5000 && args.sharesBps.reduce((a, b) => a + b, 0) === TOTAL_BPS,
+  );
+
+  pass("25% parses to 2500 bps", percentToBps("25") === 2500);
+  pass("33.33% parses to 3333 bps", percentToBps("33.33") === 3333);
+  pass("a trailing % sign is tolerated", percentToBps("12.5%") === 1250);
+  pass("nonsense does not parse", percentToBps("abc") === null);
+  pass("negative does not parse", percentToBps("-5") === null);
 }
 
 

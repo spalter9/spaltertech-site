@@ -116,6 +116,15 @@ function TermPage({ term }: { term: GlossaryTerm }) {
         ))}
       </div>
 
+      {term.tool && (
+        <Link
+          to={term.tool.href}
+          className="mt-10 inline-flex items-center gap-2 rounded-xl border border-gold/40 bg-gold/10 px-5 py-3 font-mono text-[10px] uppercase tracking-[0.16em] text-gold transition-colors hover:bg-gold/15"
+        >
+          {term.tool.label} <ArrowUpRight className="h-3.5 w-3.5" aria-hidden />
+        </Link>
+      )}
+
       {term.related && term.related.length > 0 && (
         <div className="mt-12 border-t border-obsidian-line pt-8">
           <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-muted">

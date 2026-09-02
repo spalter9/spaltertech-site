@@ -50,6 +50,12 @@ export function Closing() {
               Audit &amp; Seal
             </Link>
             <Link
+              to="/tools/split-sheet"
+              className="font-mono text-[10px] uppercase tracking-[0.18em] text-muted transition-colors hover:text-gold"
+            >
+              Split Sheet
+            </Link>
+            <Link
               to="/legal/privacy"
               className="font-mono text-[10px] uppercase tracking-[0.18em] text-muted transition-colors hover:text-gold"
             >
