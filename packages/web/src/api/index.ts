@@ -1,3 +1,4 @@
+import type { Context } from "hono";
 import type { RouterClient } from "@orpc/server";
 import { createApp } from "./__core/app";
 import { auth } from "./auth";
@@ -11,6 +12,7 @@ import { surealizer } from "./routes/surealizer";
 import { compliance } from "./routes/compliance";
 import { content } from "./routes/content";
 import { spalty } from "./routes/spalty";
+import { sovereignProtocol } from "./routes/sovereign-protocol";
 import { withUser } from "./middleware/auth";
 
 // Three-pillar core architecture:
@@ -50,6 +52,9 @@ export const router = {
   // Spalty — the SSP Master Engine's interactive voice guide (text chat;
   // audio is a separate plain route, POST /api/spalty/speak, below).
   spalty,
+  // Sovereign Audio Protocol — Module A (inbound forensic audit) and Module B
+  // (outbound 4-valve seal). Binary paths are plain routes under /api/v1/*.
+  sovereignProtocol,
 };
 
 export type AppRouter = typeof router;
@@ -261,6 +266,201 @@ app.post("/api/spalty/speak", async (c) => {
     status: 200,
     headers: { "Content-Type": "audio/mpeg", "Content-Length": String(audio.byteLength) },
   });
+});
+
+/* ───────────────────────────────────────────────────────────
+   SOVEREIGN AUDIO PROTOCOL — binary transport
+   Everything here moves bytes, which is why it is a plain route
+   rather than an oRPC procedure.
+
+   MODULE A — inbound forensic audit
+     POST /api/v1/audit/scan              → 202 { job_id, sha256, queue_position }
+     GET  /api/v1/audit/result/:job_id    → 200 examiner report | 202 while running
+     GET  /api/v1/audit/dossier/:job_id   → 200 application/pdf
+
+   MODULE B — outbound 4-valve seal
+     POST /api/v1/export/seal             → 201 manifest + cross-hash + receipts
+     GET  /api/v1/export/:id/package      → 200 application/zip (all four tiers)
+     GET  /api/v1/export/:id/valve/:valve → 200 audio/wav (one sealed tier)
+     POST /api/v1/export/verify           → 200 signature + payload verification
+   ─────────────────────────────────────────────────────────── */
+
+/** Pull the single uploaded file out of a multipart body. */
+async function readUpload(c: Context) {
+  const form = await c.req.parseBody({ all: true });
+  const raw = form["file"];
+  const candidate = Array.isArray(raw) ? raw[0] : raw;
+  if (!candidate || typeof candidate === "string" || !(candidate instanceof File)) {
+    return null;
+  }
+  return {
+    file: candidate,
+    form,
+    bytes: new Uint8Array(await candidate.arrayBuffer()),
+  };
+}
+
+app.post("/api/v1/audit/scan", async (c) => {
+  const { isAcceptedAudio, startAudit } = await import("./protocol/audit");
+
+  const upload = await readUpload(c);
+  if (!upload) return c.json({ error: "Missing audio file field 'file'" }, 400);
+
+  const fileName = upload.file.name || "upload.wav";
+  if (!isAcceptedAudio(fileName)) {
+    return c.json({ error: "Unsupported format. Send .wav, .aif, .aiff, .flac or .mp3" }, 415);
+  }
+  if (upload.bytes.byteLength === 0) {
+    return c.json({ error: "Empty upload" }, 400);
+  }
+
+  try {
+    const accepted = await startAudit({ bytes: upload.bytes, fileName });
+    return c.json(accepted, 202);
+  } catch (err) {
+    return c.json({ error: err instanceof Error ? err.message : "Intake failed" }, 500);
+  }
+});
+
+app.get("/api/v1/audit/result/:job_id", async (c) => {
+  const { getAudit } = await import("./protocol/audit");
+  const lookup = await getAudit(c.req.param("job_id"));
+
+  if (lookup.state === "missing") return c.json({ error: "Unknown job_id" }, 404);
+  if (lookup.state === "pending") {
+    // 202 keeps a polling client in its retry loop; 200 means the report is final.
+    return c.json(lookup, lookup.status === "failed" ? 422 : 202);
+  }
+  return c.json(lookup.result, 200);
+});
+
+app.get("/api/v1/audit/dossier/:job_id", async (c) => {
+  const { getAudit } = await import("./protocol/audit");
+  const { renderExaminerDossier } = await import("./protocol/usco");
+
+  const lookup = await getAudit(c.req.param("job_id"));
+  if (lookup.state === "missing") return c.json({ error: "Unknown job_id" }, 404);
+  if (lookup.state !== "ready") {
+    return c.json({ error: "Examination is not complete" }, 409);
+  }
+
+  const pdf = Buffer.from(renderExaminerDossier(lookup.result));
+  return new Response(pdf, {
+    status: 200,
+    headers: {
+      "Content-Type": "application/pdf",
+      "Content-Disposition": `attachment; filename="USCO_Examiner_Dossier_${lookup.result.job_id}.pdf"`,
+      "Content-Length": String(pdf.byteLength),
+    },
+  });
+});
+
+app.post("/api/v1/export/seal", async (c) => {
+  const { sealExport } = await import("./protocol/seal");
+
+  const upload = await readUpload(c);
+  if (!upload) return c.json({ error: "Missing audio file field 'file'" }, 400);
+
+  const { form, file, bytes } = upload;
+  const title = String(form["title"] ?? file.name ?? "Untitled Session").trim() || "Untitled Session";
+  const creatorName = String(form["creatorName"] ?? "Spalter Creator").trim() || "Spalter Creator";
+  const rightsRaw = String(form["rightsType"] ?? "MASTER");
+  const rightsType =
+    rightsRaw === "COMPOSITION" || rightsRaw === "NEIGHBORING" ? rightsRaw : "MASTER";
+  const isrc = form["isrc"] ? String(form["isrc"]).trim() || undefined : undefined;
+  const iswc = form["iswc"] ? String(form["iswc"]).trim() || undefined : undefined;
+  const auditJobId = form["auditJobId"] ? String(form["auditJobId"]).trim() || undefined : undefined;
+
+  let provenance;
+  if (form["provenance"]) {
+    try {
+      provenance = JSON.parse(String(form["provenance"]));
+    } catch {
+      return c.json({ error: "provenance must be valid JSON" }, 400);
+    }
+  }
+
+  try {
+    const result = await sealExport({
+      bytes,
+      fileName: file.name || "session.wav",
+      title,
+      creatorName,
+      rightsType,
+      isrc,
+      iswc,
+      provenance,
+      auditJobId,
+    });
+    return c.json(
+      { ...result, package_path: `/api/v1/export/${result.session_id}/package` },
+      201,
+    );
+  } catch (err) {
+    return c.json({ error: err instanceof Error ? err.message : "Seal failed" }, 422);
+  }
+});
+
+app.get("/api/v1/export/:session_id/package", async (c) => {
+  const sessionId = c.req.param("session_id");
+  const [row] = await db
+    .select()
+    .from(schema.exportSessions)
+    .where(eq(schema.exportSessions.sessionId, sessionId));
+  if (!row) return c.json({ error: "Unknown session_id" }, 404);
+
+  const { readFile } = await import("node:fs/promises");
+  try {
+    const bytes = await readFile(row.packagePath);
+    return new Response(bytes, {
+      status: 200,
+      headers: {
+        "Content-Type": "application/zip",
+        "Content-Disposition": `attachment; filename="${row.packageFileName}"`,
+        "Content-Length": String(bytes.byteLength),
+        "X-SAP-Manifest-Id": row.manifestId,
+        "X-SAP-Cross-Hash": row.crossHash,
+        "X-SAP-Signer": row.signatureKeyId,
+      },
+    });
+  } catch {
+    return c.json({ error: "Sealed package missing on disk" }, 410);
+  }
+});
+
+app.get("/api/v1/export/:session_id/valve/:valve", async (c) => {
+  const valveName = c.req.param("valve");
+  const valves = await db
+    .select()
+    .from(schema.exportValves)
+    .where(eq(schema.exportValves.sessionId, c.req.param("session_id")));
+  const match = valves.find((v) => v.valve === valveName);
+  if (!match) return c.json({ error: "Unknown session or valve" }, 404);
+
+  const { readFile } = await import("node:fs/promises");
+  try {
+    const bytes = await readFile(match.filePath);
+    return new Response(bytes, {
+      status: 200,
+      headers: {
+        "Content-Type": "audio/wav",
+        "Content-Disposition": `attachment; filename="${match.fileName}"`,
+        "Content-Length": String(bytes.byteLength),
+        "X-SAP-Payload-Sha256": match.payloadSha256,
+        "X-SAP-Tier": match.tier,
+      },
+    });
+  } catch {
+    return c.json({ error: "Sealed file missing on disk" }, 410);
+  }
+});
+
+app.post("/api/v1/export/verify", async (c) => {
+  const { verifySealedFile } = await import("./protocol/verify");
+  const upload = await readUpload(c);
+  if (!upload) return c.json({ error: "Missing audio file field 'file'" }, 400);
+  const result = verifySealedFile(upload.bytes);
+  return c.json(result, result.verified ? 200 : 422);
 });
 
 /* ───────────────────────────────────────────────────────────
