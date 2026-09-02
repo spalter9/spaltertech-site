@@ -11,6 +11,7 @@ import { MusicModule } from "../components/engine/modules/music-module";
 import { AiLicensingModule } from "../components/engine/modules/ai-licensing-module";
 import { TaxSettlementTerminal } from "../components/engine/modules/tax-settlement-terminal";
 import { MultitaskModule } from "../components/engine/modules/multitask-module";
+import { AuthorshipModule } from "../components/engine/modules/authorship-module";
 import { SpaltyAssistant } from "../components/spalty-assistant";
 
 export default function Engine() {
@@ -62,6 +63,7 @@ export default function Engine() {
               aria-labelledby={`tab-${activeModule}`}
             >
               {activeModule === "multitask" && <MultitaskModule />}
+              {activeModule === "authorship" && <AuthorshipModule />}
               {activeModule === "gaming" && <GamingModule />}
               {activeModule === "film" && <FilmModule />}
               {activeModule === "music" && <MusicModule />}
