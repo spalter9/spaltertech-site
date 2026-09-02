@@ -38,7 +38,12 @@ export type StemAnalysis = {
 };
 
 export type ContainerReport = {
-  integrated_lufs: number;
+  /**
+   * Null for digital silence. BS.1770 gates every block away and the
+   * integrated value is -Infinity, which JSON cannot carry — so it arrives
+   * as null, and null here means "nothing measurable", not "missing".
+   */
+  integrated_lufs: number | null;
   loudness_range_lu: number;
   true_peak_dbtp: number;
   sample_peak_dbfs: number;
@@ -56,9 +61,11 @@ export type DeliveryVerdict = {
   platform: string;
   target_lufs: number;
   target_true_peak_dbtp: number;
-  normalisation_gain_db: number;
-  true_peak_after_gain_dbtp: number;
-  status: "on_target" | "quiet" | "loud" | "would_clip";
+  /** Null when the programme has no measurable loudness to normalise from. */
+  normalisation_gain_db: number | null;
+  /** Null for the same reason — it is derived from the gain. */
+  true_peak_after_gain_dbtp: number | null;
+  status: "on_target" | "quiet" | "loud" | "would_clip" | "unmeasurable";
   note: string;
 };
 
@@ -160,6 +167,29 @@ export function useAuditResult(jobId: string | null) {
   });
 }
 
+/**
+ * Read a JSON body from one of the /api/v1 byte-moving endpoints.
+ *
+ * These are posted to directly rather than through oRPC, so they also carry
+ * the failure mode oRPC hides: on a static deployment there is no API, the
+ * SPA rewrite answers every path with index.html, and the response arrives
+ * as 200 text/html. `res.ok` is true, so a naive caller falls straight into
+ * `res.json()` and surfaces "Unexpected token '<'" to someone who only
+ * wanted to audit a track. Check the content type first and say the actual
+ * thing that is wrong.
+ */
+async function readApiJson<T>(res: Response, whatFailed: string): Promise<T> {
+  const contentType = res.headers.get("content-type") ?? "";
+  if (!contentType.includes("application/json")) {
+    throw new Error(
+      `${whatFailed}: the audit service is not reachable from this deployment. ` +
+        "The protocol runs on a persistent host (bun run start); a static build serves " +
+        "these pages but cannot process audio.",
+    );
+  }
+  return (await res.json()) as T;
+}
+
 export function useScanAudio() {
   const qc = useQueryClient();
   return useMutation({
@@ -167,7 +197,7 @@ export function useScanAudio() {
       const body = new FormData();
       body.append("file", file);
       const res = await fetch("/api/v1/audit/scan", { method: "POST", body });
-      const json = (await res.json()) as ScanAccepted & { error?: string };
+      const json = await readApiJson<ScanAccepted & { error?: string }>(res, "Scan failed");
       if (!res.ok) throw new Error(json.error || `Scan rejected (${res.status})`);
       return json;
     },
@@ -200,7 +230,7 @@ export function useSealExport() {
       if (input.auditJobId) body.append("auditJobId", input.auditJobId);
 
       const res = await fetch("/api/v1/export/seal", { method: "POST", body });
-      const json = (await res.json()) as SealResult & { error?: string };
+      const json = await readApiJson<SealResult & { error?: string }>(res, "Seal failed");
       if (!res.ok) throw new Error(json.error || `Seal failed (${res.status})`);
       return json;
     },
@@ -217,8 +247,9 @@ export function useVerifyFile() {
       const body = new FormData();
       body.append("file", file);
       const res = await fetch("/api/v1/export/verify", { method: "POST", body });
-      // A failed verification is a valid answer, not a transport error.
-      return (await res.json()) as VerifyResult;
+      // A failed verification is a valid answer, not a transport error — but a
+      // missing API is a transport error, and readApiJson tells them apart.
+      return await readApiJson<VerifyResult>(res, "Verification failed");
     },
   });
 }

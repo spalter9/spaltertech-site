@@ -481,6 +481,47 @@ console.log("\n[11] Split-sheet validation");
   pass("negative does not parse", percentToBps("-5") === null);
 }
 
+// ── Silence is not a quiet master ─────────────────────────────────────────
+// Digital silence gates every BS.1770 block away, so integrated loudness is
+// -Infinity. Treated as a number it produces infinite normalisation gain, a
+// false "would clip" on every platform, and an advisory reading "Infinity
+// dBTP" — and, once JSON turned those into null, a client crash.
+{
+  const silent = evaluateDelivery(Number.NEGATIVE_INFINITY, -240);
+
+  pass(
+    "a silent programme is unmeasurable on every platform, not clipping",
+    silent.length === PLATFORM_TARGETS.length &&
+      silent.every((v) => v.status === "unmeasurable"),
+  );
+  pass(
+    "an unmeasurable verdict reports no gain rather than an infinite one",
+    silent.every(
+      (v) => v.normalisation_gain_db === null && v.true_peak_after_gain_dbtp === null,
+    ),
+  );
+  pass(
+    "no advisory ever shows the reader the word Infinity",
+    silent.every((v) => !/Infinity|NaN/.test(v.note)),
+  );
+  pass(
+    "silence does not fail the clipping check — it has nothing to clip",
+    clearsAllPlatforms(silent) === true,
+  );
+  pass(
+    "an unmeasurable verdict survives the JSON round trip as null, not undefined",
+    JSON.parse(JSON.stringify(silent))[0].normalisation_gain_db === null,
+  );
+  pass(
+    "a NaN true peak is unmeasurable too, not silently arithmetic",
+    evaluateDelivery(-14, Number.NaN).every((v) => v.status === "unmeasurable"),
+  );
+  pass(
+    "a real master is unaffected by the silence guard",
+    evaluateDelivery(-14.0, -1.5).every((v) => v.status !== "unmeasurable"),
+  );
+}
+
 
 console.log(
   process.exitCode ? "\nSUITE FAILED\n" : "\nAll invariants hold.\n",

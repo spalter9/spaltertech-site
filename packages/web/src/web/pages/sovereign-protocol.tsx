@@ -167,6 +167,7 @@ const DELIVERY_STYLE: Record<DeliveryVerdict["status"], string> = {
   quiet: "border-gold/40 bg-gold/10 text-gold",
   loud: "border-gold/40 bg-gold/10 text-gold",
   would_clip: "border-danger/40 bg-danger/10 text-danger",
+  unmeasurable: "border-obsidian-line bg-obsidian/50 text-muted",
 };
 
 const DELIVERY_LABEL: Record<DeliveryVerdict["status"], string> = {
@@ -174,6 +175,7 @@ const DELIVERY_LABEL: Record<DeliveryVerdict["status"], string> = {
   quiet: "Turned up",
   loud: "Turned down",
   would_clip: "Would clip",
+  unmeasurable: "No signal",
 };
 
 /**
@@ -181,6 +183,20 @@ const DELIVERY_LABEL: Record<DeliveryVerdict["status"], string> = {
  * fully claimable and still arrive clipped, because the platform's own
  * normalisation gain lifts the peak after the master leaves here.
  */
+/**
+ * Format a measurement the audit can legitimately have no value for.
+ *
+ * Digital silence gates every BS.1770 block away, so integrated loudness is
+ * -Infinity and arrives over the wire as null; the delivery gains derived
+ * from it are null too. That is a real answer about the audio, not a
+ * failure, so it is rendered as one rather than crashed on.
+ */
+function fmt(value: number | null, places: number, suffix = "", signed = false): string {
+  if (value === null || !Number.isFinite(value)) return "\u2014";
+  const sign = signed && value > 0 ? "+" : "";
+  return `${sign}${value.toFixed(places)}${suffix}`;
+}
+
 function DeliveryPanel({ delivery }: { delivery: DeliveryVerdict[] }) {
   if (!delivery?.length) return null;
   const clipping = delivery.filter((d) => d.status === "would_clip");
@@ -204,8 +220,8 @@ function DeliveryPanel({ delivery }: { delivery: DeliveryVerdict[] }) {
           >
             <span className="text-sm text-bone">{d.platform}</span>
             <span className="font-mono text-[10px] tabular-nums text-muted">
-              {d.normalisation_gain_db > 0 ? "+" : ""}
-              {d.normalisation_gain_db.toFixed(1)} dB → {d.true_peak_after_gain_dbtp.toFixed(2)} dBTP
+              {fmt(d.normalisation_gain_db, 1, " dB", true)} →{" "}
+              {fmt(d.true_peak_after_gain_dbtp, 2, " dBTP")}
             </span>
             <span
               className={`rounded-full border px-2.5 py-0.5 font-mono text-[9px] uppercase tracking-[0.14em] ${DELIVERY_STYLE[d.status]}`}
@@ -268,7 +284,12 @@ function AuditReport({ result }: { result: AuditResult }) {
           ["Chain of custody", result.custody_state.replaceAll("_", " ")],
           ["Programme", `${result.duration_sec.toFixed(2)} s · ${result.sample_rate} Hz · ${result.channels} ch`],
           ["Separation", result.engine.demixer],
-          ["Integrated loudness", `${result.container.integrated_lufs.toFixed(2)} LUFS`],
+          [
+            "Integrated loudness",
+            result.container.integrated_lufs === null
+              ? "no measurable loudness (silent)"
+              : `${result.container.integrated_lufs.toFixed(2)} LUFS`,
+          ],
           ["True peak", `${result.container.true_peak_dbtp.toFixed(2)} dBTP`],
           ["16–22 kHz coherence", result.container.hf_phase_correlation.toFixed(4)],
           ["Micro-timing jitter", `${result.container.micro_timing_jitter_ms.toFixed(2)} ms`],
