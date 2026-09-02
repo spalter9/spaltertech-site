@@ -16,6 +16,7 @@ import { EXPORT_DIR } from "../paths";
 import { encodeWavFloat32, decodeWav } from "../../audio/wav";
 import { measureLoudness } from "../loudness";
 import { truePeakLinear } from "../dsp";
+import { evaluateDelivery, clearsAllPlatforms, PLATFORM_TARGETS } from "../delivery-targets";
 import { analyseContainer } from "../container";
 import { sealExport, buildSessionPackage } from "../seal";
 import { verifySealedFile } from "../verify";
@@ -332,6 +333,61 @@ console.log("\n[9] True-peak skip test is exact");
     );
   }
 }
+
+/* ── 10. Streaming delivery targets ── */
+console.log("\n[10] Streaming delivery evaluation");
+{
+  // A master already sitting on Spotify's target with headroom to spare.
+  const onTarget = evaluateDelivery(-14.0, -1.5);
+  const spotify = onTarget.find((v) => v.platform === "Spotify")!;
+  pass("−14 LUFS / −1.5 dBTP is on target for Spotify", spotify.status === "on_target", spotify.status);
+
+  // The case that actually bites: quiet enough that normalisation lifts the
+  // peak past the ceiling. Measured peak looks safe; delivered peak does not.
+  const quietButPeaky = evaluateDelivery(-20.0, -0.2);
+  const clipping = quietButPeaky.find((v) => v.platform === "Spotify")!;
+  pass(
+    "quiet master with a hot peak is caught as would_clip",
+    clipping.status === "would_clip",
+    `gain ${clipping.normalisation_gain_db} dB → ${clipping.true_peak_after_gain_dbtp} dBTP`,
+  );
+  pass(
+    "would_clip reports the post-gain peak, not the measured one",
+    Math.abs(clipping.true_peak_after_gain_dbtp - 5.8) < 0.01,
+    `${clipping.true_peak_after_gain_dbtp} dBTP`,
+  );
+
+  // Louder than target: the platform turns it down, nothing clips.
+  const loud = evaluateDelivery(-8.0, -1.0).find((v) => v.platform === "Spotify")!;
+  pass("−8 LUFS reads as louder than target", loud.status === "loud", `${loud.normalisation_gain_db} dB`);
+
+  // Apple normalises to −16, so the same master lands differently there.
+  const apple = evaluateDelivery(-14.0, -1.5).find((v) => v.platform === "Apple Music")!;
+  pass(
+    "Apple's −16 target is applied independently of Spotify's −14",
+    apple.target_lufs === -16 && apple.status === "loud",
+    `${apple.status} at ${apple.normalisation_gain_db} dB`,
+  );
+
+  // Amazon's stricter −2 dBTP ceiling must actually be enforced.
+  const amazon = evaluateDelivery(-14.0, -1.5).find((v) => v.platform === "Amazon Music")!;
+  pass(
+    "Amazon's −2 dBTP ceiling rejects a −1.5 dBTP master",
+    amazon.status === "would_clip",
+    `${amazon.true_peak_after_gain_dbtp} dBTP vs ceiling ${amazon.target_true_peak_dbtp}`,
+  );
+
+  pass("every platform is evaluated", onTarget.length === PLATFORM_TARGETS.length, `${onTarget.length}`);
+  pass(
+    "clearsAllPlatforms is false when any platform would clip",
+    clearsAllPlatforms(quietButPeaky) === false,
+  );
+  pass(
+    "delivery evaluation is deterministic",
+    JSON.stringify(evaluateDelivery(-14.0, -1.5)) === JSON.stringify(onTarget),
+  );
+}
+
 
 console.log(
   process.exitCode ? "\nSUITE FAILED\n" : "\nAll invariants hold.\n",

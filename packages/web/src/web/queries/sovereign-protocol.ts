@@ -52,6 +52,16 @@ export type ContainerReport = {
   clipped_samples: number;
 };
 
+export type DeliveryVerdict = {
+  platform: string;
+  target_lufs: number;
+  target_true_peak_dbtp: number;
+  normalisation_gain_db: number;
+  true_peak_after_gain_dbtp: number;
+  status: "on_target" | "quiet" | "loud" | "would_clip";
+  note: string;
+};
+
 export type AuditResult = {
   job_id: string;
   file_hash: string;
@@ -77,6 +87,7 @@ export type AuditResult = {
     claim_blocked: boolean;
   };
   container: ContainerReport;
+  delivery: DeliveryVerdict[];
   analyzed_at: string;
   notice?: string;
   engine: { demixer: string; demixer_online: boolean; dsp: string; protocol_version: string };

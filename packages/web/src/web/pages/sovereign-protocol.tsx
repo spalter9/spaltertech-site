@@ -23,6 +23,7 @@ import {
   useVerifyFile,
   type AuditResult,
   type CopyrightStatus,
+  type DeliveryVerdict,
   type StemAnalysis,
 } from "../queries/sovereign-protocol";
 
@@ -161,6 +162,70 @@ function StemCard({ stem }: { stem: StemAnalysis }) {
   );
 }
 
+const DELIVERY_STYLE: Record<DeliveryVerdict["status"], string> = {
+  on_target: "border-verified/40 bg-verified/10 text-verified",
+  quiet: "border-gold/40 bg-gold/10 text-gold",
+  loud: "border-gold/40 bg-gold/10 text-gold",
+  would_clip: "border-danger/40 bg-danger/10 text-danger",
+};
+
+const DELIVERY_LABEL: Record<DeliveryVerdict["status"], string> = {
+  on_target: "On target",
+  quiet: "Turned up",
+  loud: "Turned down",
+  would_clip: "Would clip",
+};
+
+/**
+ * Delivery readiness is a separate question from authorship: a track can be
+ * fully claimable and still arrive clipped, because the platform's own
+ * normalisation gain lifts the peak after the master leaves here.
+ */
+function DeliveryPanel({ delivery }: { delivery: DeliveryVerdict[] }) {
+  if (!delivery?.length) return null;
+  const clipping = delivery.filter((d) => d.status === "would_clip");
+
+  return (
+    <div className="rounded-2xl border border-obsidian-line bg-obsidian/40 p-5">
+      <div className="flex flex-wrap items-baseline justify-between gap-2">
+        <p className="eyebrow">Streaming delivery</p>
+        <p className="font-mono text-[10px] uppercase tracking-[0.14em] text-muted">
+          {clipping.length === 0
+            ? "clears every platform"
+            : `${clipping.length} platform${clipping.length > 1 ? "s" : ""} would clip`}
+        </p>
+      </div>
+
+      <ul className="mt-4 space-y-2">
+        {delivery.map((d) => (
+          <li
+            key={d.platform}
+            className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1 border-b border-obsidian-line/60 pb-2 last:border-0"
+          >
+            <span className="text-sm text-bone">{d.platform}</span>
+            <span className="font-mono text-[10px] tabular-nums text-muted">
+              {d.normalisation_gain_db > 0 ? "+" : ""}
+              {d.normalisation_gain_db.toFixed(1)} dB → {d.true_peak_after_gain_dbtp.toFixed(2)} dBTP
+            </span>
+            <span
+              className={`rounded-full border px-2.5 py-0.5 font-mono text-[9px] uppercase tracking-[0.14em] ${DELIVERY_STYLE[d.status]}`}
+            >
+              {DELIVERY_LABEL[d.status]}
+            </span>
+          </li>
+        ))}
+      </ul>
+
+      {clipping.length > 0 && (
+        <p className="mt-4 flex gap-2 text-[12px] leading-relaxed text-muted">
+          <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0 text-danger" aria-hidden />
+          {clipping[0]!.note}
+        </p>
+      )}
+    </div>
+  );
+}
+
 function AuditReport({ result }: { result: AuditResult }) {
   const verdictTone =
     result.overall_verdict === "HUMAN_AUTHORED"
@@ -214,6 +279,8 @@ function AuditReport({ result }: { result: AuditResult }) {
           </div>
         ))}
       </dl>
+
+      <DeliveryPanel delivery={result.delivery} />
 
       {result.stems.length > 0 && (
         <div className="space-y-4">

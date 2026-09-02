@@ -6,6 +6,7 @@ import { db } from "../database";
 import * as schema from "../database/schema";
 import { ingestToFloat32 } from "../audio/ingest";
 import { analyseContainer } from "./container";
+import { evaluateDelivery } from "./delivery-targets";
 import { sha256Hex, verifyManifestSignature } from "./crypto";
 import { demixerHealth, runDemixAnalysis } from "./demixer";
 import { readSeal } from "./bwf";
@@ -264,6 +265,11 @@ async function processAudit(jobId: string): Promise<void> {
   const container = analyseContainer(audio);
   const health = await demixerHealth();
 
+  // Delivery readiness is independent of authorship: it depends only on the
+  // container's measured loudness, so it is reported even when separation
+  // never ran and no verdict is possible.
+  const delivery = evaluateDelivery(container.integrated_lufs, container.true_peak_dbtp);
+
   const base = {
     job_id: jobId,
     file_hash: job.fileHash,
@@ -273,6 +279,7 @@ async function processAudit(jobId: string): Promise<void> {
     sample_rate: audio.sampleRate,
     channels: audio.channels,
     container,
+    delivery,
     analyzed_at: new Date().toISOString(),
     engine: {
       demixer: health.online ? `HTDemucs v4 (${health.model}, ${health.device})` : "unavailable",

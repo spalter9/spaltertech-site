@@ -9,6 +9,7 @@ import Enterprise from "./pages/enterprise";
 import Engine from "./pages/engine";
 import SurrealStudio from "./pages/surreal-studio";
 import SovereignProtocol from "./pages/sovereign-protocol";
+import Glossary from "./pages/glossary";
 import { Provider } from "./components/provider";
 import { RootPasscodeLock } from "./components/root-passcode-lock";
 import { AgentFeedback } from "@runablehq/website-runtime";
@@ -26,6 +27,8 @@ function App() {
           <Route path="/engine" component={Engine} />
           <Route path="/surreal-studio" component={SurrealStudio} />
           <Route path="/sovereign-protocol" component={SovereignProtocol} />
+          <Route path="/glossary" component={Glossary} />
+          <Route path="/glossary/:slug" component={Glossary} />
           <Route path="/infrastructure" component={Infrastructure} />
           <Route path="/enterprise" component={Enterprise} />
           <Route path="/data-room" component={DataRoom} />

@@ -9,6 +9,8 @@
  * operator's own Demucs worker over the private network.
  */
 
+import type { DeliveryVerdict } from "./delivery-targets";
+
 /* ───────────────────────── MODULE A — AUDIT ───────────────────────── */
 
 /** The four discrete sources HTDemucs v4 separates a container into. */
@@ -124,6 +126,12 @@ export type AuditResult = {
   usco_filing_dossier: UscoFilingDossier;
   /** Whole-container measurements taken before separation. */
   container: ContainerReport;
+  /**
+   * How the container's measured loudness lands against each streaming
+   * platform's published normalisation target. Independent of the authorship
+   * finding — a master can be perfectly claimable and still clip on delivery.
+   */
+  delivery: DeliveryVerdict[];
   analyzed_at: string;
   /** Populated on `failed` / `degraded_no_demix`. */
   notice?: string;
