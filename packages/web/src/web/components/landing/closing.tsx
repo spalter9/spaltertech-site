@@ -47,7 +47,7 @@ export function Closing() {
               to="/sovereign-protocol"
               className="font-mono text-[10px] uppercase tracking-[0.18em] text-muted transition-colors hover:text-gold"
             >
-              Audit &amp; Seal
+              Examiner
             </Link>
             <Link
               to="/tools/split-sheet"
