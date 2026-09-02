@@ -62,8 +62,9 @@ export function Hero() {
             {/* The arrow sits inside the sentence so it trails the last line
                 when the band wraps to three lines on a phone. */}
             <span className="text-sm leading-relaxed text-bone">
-              Sovereign Audio Protocol — prove which parts of a record a person actually
-              performed, and file it correctly.{" "}
+              <span className="text-gold">The Examiner</span> — upload a record, get a
+              stem-by-stem finding on which parts a person actually performed, and the
+              Copyright Office wording that goes with it.{" "}
               <ArrowRight
                 size={13}
                 className="inline-block align-[-1px] text-gold transition-transform group-hover:translate-x-0.5"

@@ -27,7 +27,7 @@ const STEPS = [
     n: "02",
     side: "Coming in",
     icon: ShieldAlert,
-    title: "It pulls the record apart",
+    title: "The examiner takes it apart",
     body: "Vocals, drums, bass and instruments are separated on your own hardware, then each one is examined on its own for the physical traces of a human performance.",
   },
   {
@@ -83,7 +83,7 @@ export function Authorship() {
         {/* The problem, stated plainly. */}
         <div className="grid items-start gap-14 lg:grid-cols-[minmax(0,1.05fr)_minmax(0,1fr)] lg:gap-20">
           <div>
-            <p className="eyebrow">Authorship &amp; Provenance</p>
+            <p className="eyebrow">The Examiner · Authorship &amp; Provenance</p>
             <motion.h2
               initial={{ opacity: 0, y: 24 }}
               whileInView={{ opacity: 1, y: 0 }}
