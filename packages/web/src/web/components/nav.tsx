@@ -107,6 +107,16 @@ export function Nav() {
           >
             Surreal Studio
           </Link>
+          <Link
+            to="/sovereign-protocol"
+            aria-label="Sovereign Audio Protocol — forensic audit and 4-valve seal"
+            title="Sovereign Audio Protocol™"
+            className={`font-mono whitespace-nowrap text-[10px] uppercase tracking-[0.14em] transition-colors ${
+              loc === "/sovereign-protocol" ? "text-gold" : "text-muted hover:text-bone"
+            }`}
+          >
+            Audit &amp; Seal
+          </Link>
         </nav>
 
         <div className="flex items-center gap-3">
@@ -286,6 +296,23 @@ export function Nav() {
                   <span className="block font-display text-xl leading-tight">Surreal Studio</span>
                   <span className="block font-mono text-[10px] uppercase tracking-[0.2em] text-muted mt-1">
                     Float32 DSP · SSP Stamp™
+                  </span>
+                </span>
+                <span className="w-1.5 h-1.5 rounded-full bg-gold shrink-0" />
+              </Link>
+
+              <Link
+                to="/sovereign-protocol"
+                aria-label="Sovereign Audio Protocol — forensic audit and 4-valve seal"
+                onClick={() => setOpen(false)}
+                className={`flex items-center justify-between gap-4 py-4 border-b border-obsidian-line text-left transition-colors ${
+                  loc === "/sovereign-protocol" ? "text-gold" : "text-bone hover:text-gold"
+                }`}
+              >
+                <span>
+                  <span className="block font-display text-xl leading-tight">Audit &amp; Seal</span>
+                  <span className="block font-mono text-[10px] uppercase tracking-[0.2em] text-muted mt-1">
+                    Sovereign Audio Protocol™
                   </span>
                 </span>
                 <span className="w-1.5 h-1.5 rounded-full bg-gold shrink-0" />

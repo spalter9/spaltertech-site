@@ -10,6 +10,7 @@
     "dev": "vite",
     "start": "bun src/__server.ts",
     "typecheck": "tsc --noEmit",
+    "test:protocol": "bun --env-file=../../.env run src/api/protocol/tests/protocol.test.ts",
     "lint": "cd ../.. && oxlint packages/web --deny-warnings --no-error-on-unmatched-pattern",
     "preview": "bun run build && vite preview",
     "db:generate": "bun --env-file=../../.env drizzle-kit generate",
@@ -17,6 +18,7 @@
     "db:push": "bun --env-file=../../.env drizzle-kit push"
   },
   "dependencies": {
+    "@anthropic-ai/sdk": "^0.122.0",
     "@better-auth/expo": "1.6.19",
     "@libsql/client": "^0.17.2",
     "@orpc/client": "^1.14.7",

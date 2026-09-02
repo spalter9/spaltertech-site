@@ -33,6 +33,42 @@ export function Closing() {
       <footer className="border-t border-gold/10 py-12">
         <div className="mx-auto max-w-7xl px-6 flex flex-col items-center gap-4 text-center">
           <Crest size={28} />
+
+          {/* Reference material lives here rather than the top nav, which is
+              already full — and this is where people look for it anyway. */}
+          <nav className="flex flex-wrap items-center justify-center gap-x-6 gap-y-2">
+            <Link
+              to="/glossary"
+              className="font-mono text-[10px] uppercase tracking-[0.18em] text-muted transition-colors hover:text-gold"
+            >
+              Rights Glossary
+            </Link>
+            <Link
+              to="/sovereign-protocol"
+              className="font-mono text-[10px] uppercase tracking-[0.18em] text-muted transition-colors hover:text-gold"
+            >
+              Audit &amp; Seal
+            </Link>
+            <Link
+              to="/tools/split-sheet"
+              className="font-mono text-[10px] uppercase tracking-[0.18em] text-muted transition-colors hover:text-gold"
+            >
+              Split Sheet
+            </Link>
+            <Link
+              to="/legal/privacy"
+              className="font-mono text-[10px] uppercase tracking-[0.18em] text-muted transition-colors hover:text-gold"
+            >
+              Privacy
+            </Link>
+            <Link
+              to="/legal/terms"
+              className="font-mono text-[10px] uppercase tracking-[0.18em] text-muted transition-colors hover:text-gold"
+            >
+              Terms
+            </Link>
+          </nav>
+
           <p className="font-mono text-[10px] uppercase tracking-[0.22em] text-muted leading-relaxed">
             Protected by MasterTrust Secure Protocol Infrastructure
             <span className="hidden sm:inline"> · </span>

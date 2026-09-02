@@ -62,6 +62,12 @@ export function useAnalyze() {
   );
 }
 
+/* Homepage pillar copy — Claude-generated; component falls back to its
+   built-in static copy when `generated` is false. */
+export function usePillarCopy() {
+  return useQuery(orpc.content.pillarCopy.queryOptions());
+}
+
 /* Compliance & Settlement Infrastructure */
 export function useCompliancePosture() {
   return useQuery(orpc.compliance.posture.queryOptions());

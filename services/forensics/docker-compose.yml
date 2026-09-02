@@ -1,0 +1,38 @@
+# Sovereign Audio Protocol — forensic separation worker.
+#
+#   docker compose up -d --build
+#
+# The service binds to loopback by default: the Node API is the only thing that
+# should be able to reach it, and audio under examination should never be
+# addressable from outside the host. Change the published address deliberately,
+# and put it behind mTLS or a private network if you do.
+services:
+  forensics:
+    build: .
+    image: sovereign-audio-protocol/forensics:1.0
+    container_name: sap-forensics
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:8770:8770"
+    environment:
+      # Leave unset to auto-select cuda → mps → cpu.
+      DEMUCS_DEVICE: ${DEMUCS_DEVICE:-}
+      DEMUCS_MODEL: ${DEMUCS_MODEL:-htdemucs}
+      MAX_UPLOAD_BYTES: ${MAX_UPLOAD_BYTES:-536870912}
+      MAX_ANALYSIS_SECONDS: ${MAX_ANALYSIS_SECONDS:-900}
+      LOG_LEVEL: ${LOG_LEVEL:-INFO}
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request;urllib.request.urlopen('http://127.0.0.1:8770/health').read()"]
+      interval: 30s
+      timeout: 10s
+      # Model load on a cold CPU start is slow; do not flap the container.
+      start_period: 180s
+      retries: 3
+    # GPU passthrough. Comment this block out to run on CPU.
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
