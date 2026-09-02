@@ -10,6 +10,7 @@ import Engine from "./pages/engine";
 import SurrealStudio from "./pages/surreal-studio";
 import SovereignProtocol from "./pages/sovereign-protocol";
 import Glossary from "./pages/glossary";
+import Legal from "./pages/legal";
 import { Provider } from "./components/provider";
 import { RootPasscodeLock } from "./components/root-passcode-lock";
 import { AgentFeedback } from "@runablehq/website-runtime";
@@ -29,6 +30,7 @@ function App() {
           <Route path="/sovereign-protocol" component={SovereignProtocol} />
           <Route path="/glossary" component={Glossary} />
           <Route path="/glossary/:slug" component={Glossary} />
+          <Route path="/legal/:doc" component={Legal} />
           <Route path="/infrastructure" component={Infrastructure} />
           <Route path="/enterprise" component={Enterprise} />
           <Route path="/data-room" component={DataRoom} />

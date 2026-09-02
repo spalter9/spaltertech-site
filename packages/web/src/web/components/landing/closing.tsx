@@ -49,6 +49,18 @@ export function Closing() {
             >
               Audit &amp; Seal
             </Link>
+            <Link
+              to="/legal/privacy"
+              className="font-mono text-[10px] uppercase tracking-[0.18em] text-muted transition-colors hover:text-gold"
+            >
+              Privacy
+            </Link>
+            <Link
+              to="/legal/terms"
+              className="font-mono text-[10px] uppercase tracking-[0.18em] text-muted transition-colors hover:text-gold"
+            >
+              Terms
+            </Link>
           </nav>
 
           <p className="font-mono text-[10px] uppercase tracking-[0.22em] text-muted leading-relaxed">
