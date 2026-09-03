@@ -1,8 +1,15 @@
 /**
- * The full Spalter Entertainment Technology Executive Summary, rendered as a
+ * The Spalter Entertainment Technology Executive Summary, rendered as a
  * readable document scroll inside the Data Room's "Executive Summary" segment.
- * Text is verbatim from the Spalter Entertainment Technology executive summary
- * for The Sovereign Sign Protocol & Token (SSP).
+ *
+ * Adapted from the source executive summary for The Sovereign Sign Protocol &
+ * Token (SSP), with the strategic voice reconciled to the Game Plan: the win
+ * is adoption of an open standard the industry chooses, not a private toll
+ * booth it is forced through. The enforcement mechanisms that defend owned
+ * assets against unauthorized AI scraping are unchanged — those are legitimate
+ * defense, not coercion of adopters — and every figure, round, and mechanism
+ * is preserved. Only the "mandatory / un-bypassable / forced adoption" framing
+ * has been retuned. The standalone source document should be updated to match.
  */
 
 function H({ n, children }: { n: string; children: React.ReactNode }) {
@@ -53,12 +60,27 @@ export function ExecSummaryDoc() {
         </p>
       </div>
 
+      {/* Strategic posture — the lens for everything below, matched to the
+          Game Plan so the Data Room speaks in one voice. */}
+      <div className="my-8 rounded-xl border border-gold/25 bg-gold/[0.04] px-6 py-5">
+        <p className="eyebrow">Strategic Posture</p>
+        <p className="text-muted text-sm leading-relaxed mt-3">
+          <span className="text-bone">We win by adoption, not by conquest.</span> The strategy is to
+          author the open standard the creative industries choose — because it is neutral, it rides
+          the rails they already run on, and it works — with Spalter as the trusted operator and the
+          name on it. The enforcement described below defends owned assets against unauthorized AI
+          scraping; it is a shield for rights-holders, never a toll gate on the partners who adopt
+          the protocol. Read alongside the <span className="text-bone">Game Plan</span>, which
+          sequences the campaign move by move.
+        </p>
+      </div>
+
       {/* I */}
       <H n="I">Mission Statement &amp; Value Proposition</H>
       <P>
         Spalter Entertainment Technology, in partnership with the Surreal Audio Engine, is launching the Sovereign Sign
-        Protocol (SSP). This proprietary, institution-grade blockchain and cryptographic architecture solves the media
-        industry&rsquo;s most critical vulnerabilities: fragmented chain-of-title, digital asset leakage, and the
+        Protocol (SSP). This institution-grade blockchain and cryptographic architecture — built as an open standard the
+        industry can adopt — solves the media industry&rsquo;s most critical vulnerabilities: fragmented chain-of-title, digital asset leakage, and the
         systemic exploitation of unauthorized content.
       </P>
       <P>
@@ -108,7 +130,7 @@ export function ExecSummaryDoc() {
       </P>
 
       {/* III */}
-      <H n="III">Anti-Scraping Enforcement &amp; The Mandatory Training Tollbooth</H>
+      <H n="III">Anti-Scraping Enforcement &amp; The AI Training Tollbooth</H>
       <P>
         As international headlines dominate with multi-billion-dollar litigation over tech conglomerates unlawfully
         scraping catalogs without consent or compensation, the Sovereign Sign Protocol introduces the industry&rsquo;s
@@ -180,8 +202,8 @@ export function ExecSummaryDoc() {
       {/* VI */}
       <H n="VI">The Revenue Model &amp; Specific Price Points</H>
       <P>
-        The protocol establishes a high-margin, automated financial utility via an un-bypassable monetization matrix
-        enforced on-chain. Revenue generation covers both Front-End Creation and Deep-Catalog Retroactive Ingestion:
+        The protocol establishes a high-margin, automated financial utility via a transparent monetization matrix
+        settled on-chain. Revenue generation covers both Front-End Creation and Deep-Catalog Retroactive Ingestion:
       </P>
 
       <Sub>1. DSP Ingestion Gateway (Spotify, Apple Music, Amazon Music)</Sub>
@@ -253,7 +275,7 @@ export function ExecSummaryDoc() {
           and hundreds of millions of music micro-streams are processed every hour.
         </Bullet>
         <Bullet label="Projected Revenue Realization:">
-          By capturing an undisputed, protocol-level gatekeeping position&mdash;charging a consistent $0.10 to $0.20
+          By establishing the protocol as the standard the industry adopts&mdash;charging a consistent $0.10 to $0.20
           ingestion toll across platform uploads alongside an automated 1% to 2% ecosystem split on immediate on-chain
           streaming settlements&mdash;Spalter Entertainment Technology projects ultra-high-margin software infrastructure
           scaling:
@@ -273,17 +295,17 @@ export function ExecSummaryDoc() {
       </ul>
 
       {/* VIII */}
-      <H n="VIII">Streaming Platform Compliance (DSP Mandate)</H>
-      <P>Compliance from streaming networks is driven by an undeniable consumer and technical mandate:</P>
+      <H n="VIII">Streaming Platform Adoption (DSP Integration)</H>
+      <P>Adoption by streaming networks is driven by an undeniable consumer and technical pull:</P>
       <ul className="mt-3 space-y-2">
         <Bullet label="The Audio Premium:">
           Powered by the Surreal Engine, files encoded with the Sovereign Sign Protocol deliver a demonstrably superior,
           high-fidelity sound quality that standard, compressed audio files cannot match.
         </Bullet>
         <Bullet label="The Market Driver:">
-          As premium catalogs and elite creators mandate that their highest-fidelity masters be delivered exclusively via
-          SSP, DSPs must adopt our protocol to maintain their premium tier subscriptions and satisfy a consumer base
-          demanding the absolute best sound quality.
+          As premium catalogs and elite creators choose to deliver their highest-fidelity masters via SSP, DSPs adopt the
+          protocol to maintain their premium tier subscriptions and satisfy a consumer base demanding the absolute best
+          sound quality.
         </Bullet>
         <Bullet label="Automated Clearance Pipelines:">
           The protocol converts Spotify and Apple Music from passive platforms into active nodes on our ledger.
@@ -298,8 +320,8 @@ export function ExecSummaryDoc() {
         While the protocol&rsquo;s immediate commercial launchpad is the high-margin global audio ecosystem, the
         underlying architecture of the Sovereign Sign Protocol (SSP) is built to seamlessly scale across the entire
         macro-digital media spectrum. Music is simply our proof of concept; the framework is fundamentally engineered to
-        serve as the mandatory validation layer for global video platforms, social networks, and subscription
-        video-on-demand (SVOD) channels, establishing an un-bypassable business model with tech titans like YouTube,
+        serve as the trusted validation layer for global video platforms, social networks, and subscription
+        video-on-demand (SVOD) channels, establishing a durable business model with tech titans like YouTube,
         Netflix, Amazon Prime, and Disney+.
       </P>
 
@@ -311,10 +333,10 @@ export function ExecSummaryDoc() {
           heavily driven by a massive, ongoing surge in AI-assisted video production tools.
         </Bullet>
         <Bullet label="The Volume Tollbooth Model:">
-          By establishing SSP as a mandatory gatekeeper protocol integrated directly into automated upload and
+          By establishing SSP as the adopted standard integrated directly into automated upload and
           processing ingestion pipelines, the protocol charges a specialized transaction fee per upload or per gigabyte
-          processed. This applies an un-bypassable infrastructure fee onto the massive daily video pipeline, turning the
-          sheer volume of global user-generated content into an infinite, recurring financial utility.
+          processed. This applies a standard infrastructure fee onto the massive daily video pipeline, turning the
+          sheer volume of global user-generated content into a durable, recurring financial utility.
         </Bullet>
         <Bullet label="Automated Rights Enforcement:">
           Video networks face staggering liability over user-generated audio track infringements and synthetic voice
@@ -364,8 +386,8 @@ export function ExecSummaryDoc() {
           pipelines to onboard legacy media catalogs and major tech networks.
         </Bullet>
         <Bullet label="Round 3 (Expansion / Series B):">
-          Dominating global enterprise licensing infrastructure, expanding network nodes, and cementing the protocol as
-          the mandatory, un-bypassable industry layer for secure asset verification and automated monetization.
+          Leading global enterprise licensing infrastructure, expanding network nodes, and cementing the protocol as
+          the trusted, industry-standard layer for secure asset verification and automated monetization.
         </Bullet>
       </ul>
 
