@@ -12,6 +12,7 @@ import { ProForma } from "../components/pro-forma";
 import { VideoPlayer } from "../components/video-player";
 import { WhitePaperDoc } from "../components/whitepaper";
 import { ExecSummaryDoc } from "../components/exec-summary";
+import { CampaignPlan } from "../components/campaign";
 import { authClient } from "../lib/auth";
 import {
   useMe, useSegments, useEscrow, useSettleAsset, useLedger, useSspStats, useTripwire,
@@ -25,6 +26,7 @@ const KIND_ICON: Record<string, typeof FileText> = {
 
 const SECTIONS = [
   { id: "briefing", label: "Briefing" },
+  { id: "campaign", label: "Game Plan" },
   { id: "data-room", label: "Data Room" },
   { id: "vault", label: "MasterTrust Vault" },
   { id: "ledger", label: "SSP Ledger" },
@@ -84,6 +86,14 @@ export default function DataRoom() {
 
         <div className="mx-auto max-w-[1200px] px-6 py-16 space-y-24">
           <BriefingModule />
+          <section id="campaign" className="scroll-mt-32">
+            <ModuleHead
+              tag="The Campaign · Go-to-Market"
+              title="Game Plan"
+              desc="How we win industry adoption — the doctrine, the sequenced moves, the first move, and the counter we hold for every counter."
+            />
+            <CampaignPlan />
+          </section>
           <DataRoomModule />
           <VaultModule />
           <LedgerModule />
