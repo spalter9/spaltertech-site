@@ -3,6 +3,7 @@ import { Hero } from "../components/landing/hero";
 import { Manifesto } from "../components/landing/manifesto";
 import { Pillars } from "../components/landing/pillars";
 import { Authorship } from "../components/landing/authorship";
+import { Standards } from "../components/landing/standards";
 import { Closing } from "../components/landing/closing";
 
 export default function Index() {
@@ -13,6 +14,7 @@ export default function Index() {
       <Manifesto />
       <Authorship />
       <Pillars />
+      <Standards />
       <Closing />
     </div>
   );

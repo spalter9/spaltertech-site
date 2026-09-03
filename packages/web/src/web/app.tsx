@@ -12,6 +12,7 @@ import SovereignProtocol from "./pages/sovereign-protocol";
 import Glossary from "./pages/glossary";
 import Legal from "./pages/legal";
 import SplitSheet from "./pages/split-sheet";
+import NotFound from "./pages/not-found";
 import { Provider } from "./components/provider";
 import { RootPasscodeLock } from "./components/root-passcode-lock";
 import { AgentFeedback } from "@runablehq/website-runtime";
@@ -36,6 +37,8 @@ function App() {
           <Route path="/infrastructure" component={Infrastructure} />
           <Route path="/enterprise" component={Enterprise} />
           <Route path="/data-room" component={DataRoom} />
+          {/* Catch-all — any unmatched URL lands here instead of a blank shell */}
+          <Route component={NotFound} />
         </Switch>
       </RootPasscodeLock>
       {/* Do not remove — off by default, activated by parent iframe via postMessage */}

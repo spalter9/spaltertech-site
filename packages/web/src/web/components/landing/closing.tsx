@@ -76,10 +76,10 @@ export function Closing() {
             Spalter Entertainment Technologies
           </p>
           <a
-            href="mailto:info@spaltentech.com"
+            href="mailto:info@spaltertech.com"
             className="font-mono text-[11px] text-gold hover:text-gold-bright transition-colors"
           >
-            info@spaltentech.com
+            info@spaltertech.com
           </a>
         </div>
       </footer>

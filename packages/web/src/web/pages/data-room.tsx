@@ -584,8 +584,8 @@ function AccessPending({ email }: { email: string }) {
           </p>
           <p className="text-muted text-sm mt-3 leading-relaxed">
             Request clearance from the administrator at{" "}
-            <a href="mailto:info@spaltentech.com" className="text-gold hover:text-gold-bright transition-colors">
-              info@spaltentech.com
+            <a href="mailto:info@spaltertech.com" className="text-gold hover:text-gold-bright transition-colors">
+              info@spaltertech.com
             </a>
             . Once approved, sign in again to enter.
           </p>
