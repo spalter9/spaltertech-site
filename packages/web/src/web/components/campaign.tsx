@@ -209,6 +209,95 @@ function FirstMove() {
   );
 }
 
+type Round = {
+  round: string;
+  size: string;
+  phase: string;
+  buys: string;
+  proof: string;
+};
+
+const ROUNDS: Round[] = [
+  {
+    round: "Seed",
+    size: "$3.5M",
+    phase: "Phase I · The Beachhead",
+    buys: "Harden the Examiner, land the first anchor adopter and first catalogs, publish the methodology for third-party audit, and lock foundational IP.",
+    proof: "One adopter live and public, first catalogs examined and filed.",
+  },
+  {
+    round: "Series A",
+    size: "Growth",
+    phase: "Phase II · The Standard",
+    buys: "Open the protocol, align it to C2PA and DDEX, stand up neutral governance, ship SDKs, and win a second-vertical adopter.",
+    proof: "Spalter operating an open standard others build on.",
+  },
+  {
+    round: "Series B",
+    size: "Expansion",
+    phase: "Phases III–IV · Breakout & the Rail",
+    buys: "Extend into film and games, then bring the settlement rail — ledger, escrow, off-ramp — to scale on the installed base.",
+    proof: "Cross-industry adoption and recurring infrastructure revenue.",
+  },
+];
+
+function CapitalLadder() {
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      whileInView={{ opacity: 1, y: 0 }}
+      viewport={{ once: true, margin: "-80px" }}
+      transition={{ duration: 0.6 }}
+      className="rounded-2xl border border-obsidian-line bg-obsidian-raised/40 p-8 md:p-10"
+    >
+      <div className="flex items-center gap-3">
+        <Coins size={18} className="text-gold" />
+        <p className="eyebrow">Capital &amp; the Campaign</p>
+      </div>
+      <h3 className="mt-3 max-w-3xl font-display text-2xl leading-[1.12] md:text-3xl">
+        Every dollar takes a square. The raise <span className="gold-text">is</span> the war plan.
+      </h3>
+      <p className="mt-4 max-w-2xl text-sm leading-relaxed text-muted">
+        The rounds are not a hope for runway — each one funds a named phase and produces the proof
+        that unlocks the next. Capital is fuel for a campaign already mapped, not a bet on one yet
+        to be drawn.
+      </p>
+
+      <div className="mt-8 space-y-4">
+        {ROUNDS.map((r, i) => (
+          <div
+            key={r.round}
+            className="grid gap-6 rounded-xl border border-obsidian-line bg-obsidian p-6 md:grid-cols-[minmax(0,0.9fr)_minmax(0,1.5fr)_minmax(0,1.2fr)] md:items-center"
+          >
+            <div className="flex items-center gap-4">
+              <span className="font-mono text-sm text-gold">{String(i + 1).padStart(2, "0")}</span>
+              <div>
+                <p className="font-display text-2xl leading-none text-bone">{r.round}</p>
+                <p className="mt-1 font-mono text-[11px] uppercase tracking-[0.16em] text-gold/90">{r.size}</p>
+                <p className="mt-2 font-mono text-[10px] uppercase tracking-[0.14em] text-muted">{r.phase}</p>
+              </div>
+            </div>
+            <div>
+              <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-muted">What it buys</p>
+              <p className="mt-1.5 text-sm leading-relaxed text-bone/85">{r.buys}</p>
+            </div>
+            <div className="md:border-l md:border-obsidian-line md:pl-6">
+              <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-verified">Proof it produces</p>
+              <p className="mt-1.5 text-sm leading-relaxed text-muted">{r.proof}</p>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      <p className="mt-6 text-sm leading-relaxed text-muted">
+        Investors are wired into the on-chain distribution waterfall detailed in the Executive
+        Summary — capital is returned programmatically as protocol revenue is realized, not on a
+        quarterly statement.
+      </p>
+    </motion.div>
+  );
+}
+
 export function CampaignPlan() {
   return (
     <div className="mt-8 space-y-6">
@@ -277,6 +366,7 @@ export function CampaignPlan() {
       </div>
 
       <FirstMove />
+      <CapitalLadder />
 
       {/* The endgame. */}
       <motion.div
