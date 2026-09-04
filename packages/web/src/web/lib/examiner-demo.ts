@@ -16,7 +16,7 @@ export const EXAMPLE_FINDING: AuditResult = {
   file_name: "Golden Hour — reversion master (example).wav",
   status: "complete",
   custody_state: "SEALED_VERIFIED",
-  human_authorship_index: 0.66,
+  human_authorship_index: 0.77,
   overall_verdict: "HYBRID_AI_ASSISTED",
   claim_eligibility: "HYBRID_LIMITATION_REQUIRED",
   duration_sec: 213.4,
@@ -100,9 +100,9 @@ export const EXAMPLE_FINDING: AuditResult = {
     {
       stem: "bass_and_harmony",
       verdict: "HYBRID_HUMAN_DIRECTED",
-      confidence: 0.72,
+      confidence: 0.76,
       copyright_status: "PARTIAL_CLAIM",
-      human_score: 0.61,
+      human_score: 0.68,
       energy_share: 0.37,
       features: [
         {
