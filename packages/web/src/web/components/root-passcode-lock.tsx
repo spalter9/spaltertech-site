@@ -19,7 +19,7 @@ import { Crest } from "./brand";
  *
  * All stage state is in-memory only: refresh always returns to Stage 1.
  */
-const VALID_CODES = new Set(["8888", "SPALTER", "SSP2026"]);
+const VALID_CODES = new Set(["1967", "8888", "SPALTER", "SSP2026"]);
 
 type Stage = "lock" | "portals";
 export type PortalChoice = "engine" | "website";
