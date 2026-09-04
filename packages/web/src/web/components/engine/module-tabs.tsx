@@ -1,5 +1,5 @@
 import type { LucideIcon } from "lucide-react";
-import { Bot, Clapperboard, Gamepad2, Landmark, Layers, Music2, UserCheck } from "lucide-react";
+import { Bot, Clapperboard, Gamepad2, Landmark, Layers, Music2, Presentation, UserCheck } from "lucide-react";
 import type { EngineModuleId } from "../../lib/engine-data";
 
 interface TabDef {
@@ -10,6 +10,7 @@ interface TabDef {
 }
 
 const TABS: TabDef[] = [
+  { id: "investor", label: "Investor Briefing", short: "Investors", icon: Presentation },
   { id: "multitask", label: "Multitask · All Rails", short: "Multitask", icon: Layers },
   {
     id: "authorship",

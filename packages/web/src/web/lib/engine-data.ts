@@ -1,4 +1,5 @@
 export type EngineModuleId =
+  | "investor"
   | "multitask"
   | "authorship"
   | "gaming"

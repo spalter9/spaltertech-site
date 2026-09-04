@@ -12,10 +12,11 @@ import { AiLicensingModule } from "../components/engine/modules/ai-licensing-mod
 import { TaxSettlementTerminal } from "../components/engine/modules/tax-settlement-terminal";
 import { MultitaskModule } from "../components/engine/modules/multitask-module";
 import { AuthorshipModule } from "../components/engine/modules/authorship-module";
+import { InvestorModule } from "../components/engine/modules/investor-module";
 import { SpaltyAssistant } from "../components/spalty-assistant";
 
 export default function Engine() {
-  const [activeModule, setActiveModule] = useState<EngineModuleId>("multitask");
+  const [activeModule, setActiveModule] = useState<EngineModuleId>("investor");
 
   return (
     <div className="min-h-screen bg-obsidian text-bone">
@@ -62,6 +63,7 @@ export default function Engine() {
               id={`panel-${activeModule}`}
               aria-labelledby={`tab-${activeModule}`}
             >
+              {activeModule === "investor" && <InvestorModule />}
               {activeModule === "multitask" && <MultitaskModule />}
               {activeModule === "authorship" && <AuthorshipModule />}
               {activeModule === "gaming" && <GamingModule />}
