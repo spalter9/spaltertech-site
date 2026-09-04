@@ -197,9 +197,11 @@ export default function Investors() {
               <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-gold">The first move</p>
             </div>
             <p className="mt-4 leading-relaxed text-bone/85">
-              Open on an independent music distributor or rights administrator that files at volume,
-              plus one marquee independent catalog as the named anchor adopter. Fastest yes, sharpest
-              pain, real filings — and the proof the majors will need to see before they move.
+              Open on <span className="text-gold">DistroKid</span> — the largest independent
+              distributor, filing at the volume where the disclosure problem bites — with{" "}
+              <span className="text-bone">Bradley Spalter's own catalog</span> as the founding proof
+              case, examined and sealed end to end from day one. Fastest yes, sharpest pain, and proof
+              we control before the first outside conversation.
             </p>
             <p className="mt-4 border-l-2 border-gold/60 pl-4 text-sm text-bone">
               The majors are not the first move. They are the reward for winning it.

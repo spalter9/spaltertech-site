@@ -42,9 +42,9 @@ const PHASES: Phase[] = [
     icon: Crosshair,
     move: "Make the Examiner the default step before a music copyright registration — the tool you run a record through before you file.",
     target:
-      "Not the majors. The fast movers who feel the pain now: independent music distributors and rights administrators who file at volume, plus one respected independent catalog as the marquee first adopter.",
+      "Not the majors. DistroKid — the largest independent distributor, moving new releases at the volume where the disclosure problem bites hardest — as the first distribution partner we approach, with Bradley Spalter's own catalog as the founding proof case.",
     objective:
-      "One anchor adopter live and named, and a book of catalogs running through the Examiner. Real filings, real logos, real proof.",
+      "Bradley Spalter's catalog examined, filed and sealed end to end, DistroKid engaged on a pilot, and the methodology published for audit. Real filings, real proof.",
     counter: "“It isn’t validated. Prove the forensics hold up.”",
     answer:
       "We publish the measurement methodology and open it to third-party audit. Open beats a black box — the skeptic becomes the validator.",
@@ -182,22 +182,25 @@ function FirstMove() {
         <div className="bg-obsidian p-6">
           <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-muted">Who we approach</p>
           <p className="mt-2 text-sm leading-relaxed text-bone/90">
-            An independent music distributor or rights administrator that files registrations at
-            volume, plus one marquee independent catalog owner as the named anchor adopter.
+            <span className="text-gold">DistroKid</span> — the largest independent distributor,
+            filing at the volume where the disclosure problem bites hardest — as the first partner we
+            approach, with <span className="text-bone">Bradley Spalter's own catalog</span> as the
+            founding proof case.
           </p>
         </div>
         <div className="bg-obsidian p-6">
           <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-muted">Why them first</p>
           <p className="mt-2 text-sm leading-relaxed text-bone/90">
-            Fastest decision, sharpest pain, filings at volume — and the proof and the logo the
-            majors will later need to see before they will move at all.
+            DistroKid moves indie volume no major touches, and its filers feel the pain now. And a
+            founder's catalog we can commit on day one means the proof exists before the first outside
+            conversation — a demonstration, not a promise.
           </p>
         </div>
         <div className="bg-obsidian p-6">
           <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-muted">The objective</p>
           <p className="mt-2 text-sm leading-relaxed text-bone/90">
-            One anchor adopter live and public, first catalogs examined and filed, and the
-            methodology published for audit. Proof on the board.
+            Bradley Spalter's catalog examined, filed and sealed, DistroKid engaged on a pilot, and
+            the methodology published for audit. Proof on the board.
           </p>
         </div>
       </div>
