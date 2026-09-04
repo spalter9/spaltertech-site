@@ -14,6 +14,7 @@ import {
 } from "lucide-react";
 import { Nav } from "../components/nav";
 import { EXAMPLE_FINDING } from "../lib/examiner-demo";
+import { AccuracyStory } from "../components/accuracy";
 import {
   useAuditList,
   useAuditResult,
@@ -892,6 +893,15 @@ export default function SovereignProtocol() {
               <OutboundTab auditJobId={carriedJob} />
             )}
           </div>
+
+          {/* The honest accuracy answer, right where people ask it. */}
+          <section className="mt-20 border-t border-obsidian-line pt-12">
+            <p className="eyebrow">Accuracy · the honest answer</p>
+            <h2 className="mt-3 font-display text-3xl leading-[1.08] md:text-4xl">
+              How accurate is it?
+            </h2>
+            <AccuracyStory />
+          </section>
         </div>
       </div>
     </div>

@@ -14,6 +14,7 @@ import { WhitePaperDoc } from "../components/whitepaper";
 import { ExecSummaryDoc } from "../components/exec-summary";
 import { CampaignPlan } from "../components/campaign";
 import { Defensibility } from "../components/defensibility";
+import { AccuracyStory } from "../components/accuracy";
 import { authClient } from "../lib/auth";
 import {
   useMe, useSegments, useEscrow, useSettleAsset, useLedger, useSspStats, useTripwire,
@@ -29,6 +30,7 @@ const SECTIONS = [
   { id: "briefing", label: "Briefing" },
   { id: "campaign", label: "Game Plan" },
   { id: "defensibility", label: "The Case" },
+  { id: "accuracy", label: "Accuracy" },
   { id: "data-room", label: "Data Room" },
   { id: "vault", label: "MasterTrust Vault" },
   { id: "ledger", label: "SSP Ledger" },
@@ -108,6 +110,14 @@ export default function DataRoom() {
               desc="The two questions every investor asks — the moat that holds the position, and the real risks named with the answer to each."
             />
             <Defensibility />
+          </section>
+          <section id="accuracy" className="scroll-mt-32">
+            <ModuleHead
+              tag="Accuracy · The Honest Answer"
+              title="How Accurate Is It?"
+              desc="The question every serious reviewer asks — answered with certainty where it exists and honest, layered confidence everywhere else."
+            />
+            <AccuracyStory />
           </section>
           <DataRoomModule />
           <VaultModule />
