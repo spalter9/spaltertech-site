@@ -13,6 +13,7 @@ import {
   Upload,
 } from "lucide-react";
 import { Nav } from "../components/nav";
+import { EXAMPLE_FINDING } from "../lib/examiner-demo";
 import {
   useAuditList,
   useAuditResult,
@@ -359,11 +360,13 @@ function AuditReport({ result }: { result: AuditResult }) {
 function InboundTab({ onCarryToSeal }: { onCarryToSeal: (jobId: string) => void }) {
   const [file, setFile] = useState<File | null>(null);
   const [jobId, setJobId] = useState<string | null>(null);
+  const [demo, setDemo] = useState(false);
   const scan = useScanAudio();
   const result = useAuditResult(jobId);
   const history = useAuditList();
 
   const ready = result.data?.ready ? result.data.result : null;
+  const showDemo = demo && !jobId;
 
   return (
     <div className="grid gap-8 lg:grid-cols-[0.95fr_1.05fr]">
@@ -440,13 +443,45 @@ function InboundTab({ onCarryToSeal }: { onCarryToSeal: (jobId: string) => void 
       </div>
 
       <div>
-        {!jobId && (
+        {!jobId && !showDemo && (
           <div className="card-surface rounded-2xl p-8 text-center">
             <FileSearch className="mx-auto h-8 w-8 text-gold/50" aria-hidden />
             <p className="mt-4 text-sm text-muted">
               Upload a container to fix its hash, separate it into four sources, and measure each
               one independently.
             </p>
+            <div className="mt-6 border-t border-obsidian-line pt-6">
+              <p className="text-sm text-bone">Don&rsquo;t have a file handy?</p>
+              <button
+                type="button"
+                onClick={() => setDemo(true)}
+                className="mt-3 inline-flex items-center justify-center gap-2 rounded-xl border border-gold/40 bg-gold/10 px-5 py-3 font-mono text-[11px] uppercase tracking-[0.16em] text-gold transition hover:bg-gold/15"
+              >
+                <FileSearch className="h-4 w-4" /> See an example finding
+              </button>
+              <p className="mt-3 text-[12px] text-muted">
+                A fully-worked report — verdict, per-stem findings, and the filing language — with
+                nothing to upload.
+              </p>
+            </div>
+          </div>
+        )}
+
+        {showDemo && (
+          <div className="space-y-5">
+            <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-gold/25 bg-gold/[0.05] px-4 py-3">
+              <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-gold">
+                Example finding · illustration only
+              </p>
+              <button
+                type="button"
+                onClick={() => setDemo(false)}
+                className="font-mono text-[10px] uppercase tracking-[0.14em] text-muted transition hover:text-bone"
+              >
+                Clear example
+              </button>
+            </div>
+            <AuditReport result={EXAMPLE_FINDING} />
           </div>
         )}
 
