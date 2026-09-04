@@ -19,7 +19,7 @@ import { Crest } from "./brand";
  *
  * All stage state is in-memory only: refresh always returns to Stage 1.
  */
-const VALID_CODES = new Set(["8888", "SPALTER", "SSP2026"]);
+const VALID_CODES = new Set(["1967"]);
 
 type Stage = "lock" | "portals";
 export type PortalChoice = "engine" | "website";
@@ -94,7 +94,7 @@ export function RootPasscodeLock({ children }: { children: ReactNode }) {
   const submit = (e: FormEvent) => {
     e.preventDefault();
     const normalized = code.trim().toUpperCase();
-    const ok = VALID_CODES.has(normalized) || code.trim() === "8888";
+    const ok = VALID_CODES.has(normalized);
 
     if (!ok) {
       setError(true);

@@ -75,3 +75,7 @@ packages/mobile/scripts/*
 
 # Surreal Engine Float32 masters (local render output)
 packages/web/.data/
+
+# python worker
+__pycache__/
+*.py[cod]

@@ -223,7 +223,7 @@ async function seed() {
   // Data Room allowlist — approved emails only (stored lowercased)
   const ADMINS: Array<typeof schema.allowlist.$inferInsert> = [
     { email: "brandspalter@gmail.com", note: "Bradley Spalter — Founder", role: "admin" },
-    { email: "info@spaltentech.com", note: "Spalter Entertainment — Admin", role: "admin" },
+    { email: "info@spaltertech.com", note: "Spalter Entertainment — Admin", role: "admin" },
   ];
   for (const a of ADMINS) {
     await db

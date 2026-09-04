@@ -15,7 +15,7 @@ import { Crest } from "./brand";
 /*  - <AccessGateSection>...</>  inline, locks only its children        */
 /* ------------------------------------------------------------------ */
 
-const AUTHORIZED_CODE = "8888";
+const AUTHORIZED_CODE = "1967";
 const STORAGE_KEY = "mastertrust_authenticated";
 const CODE_LENGTH = 4;
 

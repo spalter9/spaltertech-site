@@ -5,6 +5,6 @@
   "buildCommand": "bun run build:web",
   "outputDirectory": "packages/web/dist",
   "rewrites": [
-    { "source": "/(.*)", "destination": "/index.html" }
+    { "source": "/((?!api/).*)", "destination": "/index.html" }
   ]
 }

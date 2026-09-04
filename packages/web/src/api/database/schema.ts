@@ -180,3 +180,76 @@ export const unclaimedEscrow = sqliteTable("unclaimed_escrow", {
   releaseState: text("release_state").notNull().default("locked"), // locked | claimable | released | disputed
   createdAt: integer("created_at", { mode: "timestamp" }).notNull().$defaultFn(() => new Date()),
 });
+
+/* ─────────────────────────────────────────────────────────────
+   SOVEREIGN AUDIO PROTOCOL
+   Two self-hosted subsystems, no third-party SaaS in either path:
+     Module A — inbound forensic audit (demix → per-stem DSP →
+       examiner verdict → USCO limitation-of-claim dossier).
+     Module B — outbound 4-valve export matrix (render 4 tiers →
+       cross-hash → sign → inject BWF/iXML manifest → seal ZIP).
+   ───────────────────────────────────────────────────────────── */
+
+/** Module A — one inbound container under forensic examination. */
+export const auditJobs = sqliteTable("audit_jobs", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  jobId: text("job_id").notNull().unique(), // aud_…
+  fileName: text("file_name").notNull(),
+  fileHash: text("file_hash").notNull(), // SHA-256 fixed at intake, before analysis
+  filePath: text("file_path").notNull(),
+  byteLength: integer("byte_length").notNull(),
+  // queued | processing | complete | failed | degraded_no_demix
+  status: text("status").notNull().default("queued"),
+  // SEALED_VERIFIED | SEALED_TAMPERED | LEGACY_UNVERIFIED
+  custodyState: text("custody_state").notNull().default("LEGACY_UNVERIFIED"),
+  humanAuthorshipIndex: real("human_authorship_index"),
+  overallVerdict: text("overall_verdict"),
+  claimEligibility: text("claim_eligibility"),
+  durationSec: real("duration_sec"),
+  sampleRate: integer("sample_rate"),
+  channels: integer("channels"),
+  resultJson: text("result_json"), // full AuditResult once complete
+  notice: text("notice"), // failure reason / degradation notice
+  createdAt: integer("created_at", { mode: "timestamp" }).notNull().$defaultFn(() => new Date()),
+  completedAt: integer("completed_at", { mode: "timestamp" }),
+});
+
+/** Module B — one sealed 4-valve export event. */
+export const exportSessions = sqliteTable("export_sessions", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  sessionId: text("session_id").notNull().unique(), // exp_…
+  manifestId: text("manifest_id").notNull().unique(), // man_…
+  title: text("title").notNull(),
+  creatorName: text("creator_name").notNull(),
+  rightsType: text("rights_type").notNull().default("MASTER"),
+  isrc: text("isrc"),
+  crossHash: text("cross_hash").notNull(), // binds all four tiers
+  signatureKeyId: text("signature_key_id").notNull(), // Ed25519 signer identity
+  packageFileName: text("package_file_name").notNull(),
+  packagePath: text("package_path").notNull(),
+  packageBytes: integer("package_bytes").notNull(),
+  manifestJson: text("manifest_json").notNull(), // signed manifest as delivered
+  auditJobId: text("audit_job_id"), // Module A job this seal cites, if any
+  status: text("status").notNull().default("sealed"),
+  createdAt: integer("created_at", { mode: "timestamp" }).notNull().$defaultFn(() => new Date()),
+});
+
+/** Module B — one tier within a sealed export. */
+export const exportValves = sqliteTable("export_valves", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  sessionId: text("session_id").notNull(),
+  valve: text("valve").notNull(), // original | master | mv3 | model
+  tier: text("tier").notNull(),
+  fileName: text("file_name").notNull(),
+  filePath: text("file_path").notNull(),
+  payloadSha256: text("payload_sha256").notNull(), // hash of the PCM payload only
+  sealedSha256: text("sealed_sha256").notNull(), // hash of the delivered file
+  byteLength: integer("byte_length").notNull(),
+  sampleRate: integer("sample_rate").notNull(),
+  channels: integer("channels").notNull().default(2),
+  durationSec: real("duration_sec").notNull(),
+  integratedLufs: real("integrated_lufs").notNull(),
+  truePeakDbtp: real("true_peak_dbtp").notNull(),
+  treatment: text("treatment").notNull(),
+  createdAt: integer("created_at", { mode: "timestamp" }).notNull().$defaultFn(() => new Date()),
+});

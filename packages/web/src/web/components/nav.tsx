@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { Link, useLocation } from "wouter";
 import { motion, AnimatePresence } from "motion/react";
-import { ArrowLeftRight, Lock, LogOut, Menu, X } from "lucide-react";
+import { ArrowLeftRight, Lock, LogOut, Menu, ScanLine, X } from "lucide-react";
 import { Monogram } from "./brand";
 import { useMe } from "../queries/pillars";
 import { authClient } from "../lib/auth";
@@ -38,7 +38,7 @@ export function Nav() {
           <Monogram compact />
         </Link>
 
-        <nav className="hidden lg:flex items-center gap-5 mr-8">
+        <nav className="hidden lg:flex min-w-0 flex-1 items-center gap-5 mr-8 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
           {LINKS.map((l) => (
             <button
               key={l.href}
@@ -109,7 +109,22 @@ export function Nav() {
           </Link>
         </nav>
 
-        <div className="flex items-center gap-3">
+        <div className="flex shrink-0 items-center gap-3">
+          {/* The examiner sits in the action cluster rather than the nav row:
+              nine nowrap items overflow below ~1400px and this was the last
+              of them, so the one page people are sent to was clipped away. */}
+          <Link
+            to="/sovereign-protocol"
+            aria-label="Examiner — forensic authorship audit and four-valve seal"
+            title="Sovereign Audio Protocol™ — Examiner"
+            className={`hidden md:inline-flex items-center gap-1.5 whitespace-nowrap rounded-xl border px-3.5 py-2 font-mono text-[10px] font-semibold uppercase tracking-[0.16em] transition-colors ${
+              loc === "/sovereign-protocol"
+                ? "border-gold/60 bg-gold/15 text-gold"
+                : "border-gold/35 bg-gold/[0.07] text-gold hover:bg-gold/15"
+            }`}
+          >
+            <ScanLine size={12} /> Examiner
+          </Link>
           {gateway && (
             <button
               type="button"
@@ -286,6 +301,23 @@ export function Nav() {
                   <span className="block font-display text-xl leading-tight">Surreal Studio</span>
                   <span className="block font-mono text-[10px] uppercase tracking-[0.2em] text-muted mt-1">
                     Float32 DSP · SSP Stamp™
+                  </span>
+                </span>
+                <span className="w-1.5 h-1.5 rounded-full bg-gold shrink-0" />
+              </Link>
+
+              <Link
+                to="/sovereign-protocol"
+                aria-label="Sovereign Audio Protocol — forensic audit and 4-valve seal"
+                onClick={() => setOpen(false)}
+                className={`flex items-center justify-between gap-4 py-4 border-b border-obsidian-line text-left transition-colors ${
+                  loc === "/sovereign-protocol" ? "text-gold" : "text-bone hover:text-gold"
+                }`}
+              >
+                <span>
+                  <span className="block font-display text-xl leading-tight">Examiner</span>
+                  <span className="block font-mono text-[10px] uppercase tracking-[0.2em] text-muted mt-1">
+                    Sovereign Audio Protocol™
                   </span>
                 </span>
                 <span className="w-1.5 h-1.5 rounded-full bg-gold shrink-0" />

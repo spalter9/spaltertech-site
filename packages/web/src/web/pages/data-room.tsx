@@ -12,6 +12,9 @@ import { ProForma } from "../components/pro-forma";
 import { VideoPlayer } from "../components/video-player";
 import { WhitePaperDoc } from "../components/whitepaper";
 import { ExecSummaryDoc } from "../components/exec-summary";
+import { CampaignPlan } from "../components/campaign";
+import { Defensibility } from "../components/defensibility";
+import { AccuracyStory } from "../components/accuracy";
 import { authClient } from "../lib/auth";
 import {
   useMe, useSegments, useEscrow, useSettleAsset, useLedger, useSspStats, useTripwire,
@@ -25,6 +28,9 @@ const KIND_ICON: Record<string, typeof FileText> = {
 
 const SECTIONS = [
   { id: "briefing", label: "Briefing" },
+  { id: "campaign", label: "Game Plan" },
+  { id: "defensibility", label: "The Case" },
+  { id: "accuracy", label: "Accuracy" },
   { id: "data-room", label: "Data Room" },
   { id: "vault", label: "MasterTrust Vault" },
   { id: "ledger", label: "SSP Ledger" },
@@ -65,9 +71,14 @@ export default function DataRoom() {
                 <p className="text-muted text-sm mt-1">{me.data && me.data.id !== "guest" ? `Signed in as ${me.data.email}` : "Guest · Open Access"}</p>
               </div>
             </div>
-            <Link to="/" className="flex items-center gap-2 font-mono text-[11px] uppercase tracking-[0.18em] text-muted hover:text-bone transition-colors">
-              <ArrowLeft size={14} /> Public site
-            </Link>
+            <div className="flex items-center gap-5">
+              <Link to="/investors" className="font-mono text-[11px] uppercase tracking-[0.18em] text-gold hover:text-gold-bright transition-colors">
+                Investor Brief
+              </Link>
+              <Link to="/" className="flex items-center gap-2 font-mono text-[11px] uppercase tracking-[0.18em] text-muted hover:text-bone transition-colors">
+                <ArrowLeft size={14} /> Public site
+              </Link>
+            </div>
           </div>
         </div>
 
@@ -84,6 +95,30 @@ export default function DataRoom() {
 
         <div className="mx-auto max-w-[1200px] px-6 py-16 space-y-24">
           <BriefingModule />
+          <section id="campaign" className="scroll-mt-32">
+            <ModuleHead
+              tag="The Campaign · Go-to-Market"
+              title="Game Plan"
+              desc="How we win industry adoption — the doctrine, the sequenced moves, the first move, and the counter we hold for every counter."
+            />
+            <CampaignPlan />
+          </section>
+          <section id="defensibility" className="scroll-mt-32">
+            <ModuleHead
+              tag="Defensibility · The Investor Case"
+              title="Why We Win, and What Could Stop Us"
+              desc="The two questions every investor asks — the moat that holds the position, and the real risks named with the answer to each."
+            />
+            <Defensibility />
+          </section>
+          <section id="accuracy" className="scroll-mt-32">
+            <ModuleHead
+              tag="Accuracy · The Honest Answer"
+              title="How Accurate Is It?"
+              desc="The question every serious reviewer asks — answered with certainty where it exists and honest, layered confidence everywhere else."
+            />
+            <AccuracyStory />
+          </section>
           <DataRoomModule />
           <VaultModule />
           <LedgerModule />
@@ -584,8 +619,8 @@ function AccessPending({ email }: { email: string }) {
           </p>
           <p className="text-muted text-sm mt-3 leading-relaxed">
             Request clearance from the administrator at{" "}
-            <a href="mailto:info@spaltentech.com" className="text-gold hover:text-gold-bright transition-colors">
-              info@spaltentech.com
+            <a href="mailto:info@spaltertech.com" className="text-gold hover:text-gold-bright transition-colors">
+              info@spaltertech.com
             </a>
             . Once approved, sign in again to enter.
           </p>
