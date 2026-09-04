@@ -67,9 +67,14 @@ export default function DataRoom() {
                 <p className="text-muted text-sm mt-1">{me.data && me.data.id !== "guest" ? `Signed in as ${me.data.email}` : "Guest · Open Access"}</p>
               </div>
             </div>
-            <Link to="/" className="flex items-center gap-2 font-mono text-[11px] uppercase tracking-[0.18em] text-muted hover:text-bone transition-colors">
-              <ArrowLeft size={14} /> Public site
-            </Link>
+            <div className="flex items-center gap-5">
+              <Link to="/investors" className="font-mono text-[11px] uppercase tracking-[0.18em] text-gold hover:text-gold-bright transition-colors">
+                Investor Brief
+              </Link>
+              <Link to="/" className="flex items-center gap-2 font-mono text-[11px] uppercase tracking-[0.18em] text-muted hover:text-bone transition-colors">
+                <ArrowLeft size={14} /> Public site
+              </Link>
+            </div>
           </div>
         </div>
 

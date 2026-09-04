@@ -38,6 +38,12 @@ export function Closing() {
               already full — and this is where people look for it anyway. */}
           <nav className="flex flex-wrap items-center justify-center gap-x-6 gap-y-2">
             <Link
+              to="/investors"
+              className="font-mono text-[10px] uppercase tracking-[0.18em] text-muted transition-colors hover:text-gold"
+            >
+              Investor Brief
+            </Link>
+            <Link
               to="/glossary"
               className="font-mono text-[10px] uppercase tracking-[0.18em] text-muted transition-colors hover:text-gold"
             >

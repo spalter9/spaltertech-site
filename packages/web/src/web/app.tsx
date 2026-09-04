@@ -12,6 +12,7 @@ import SovereignProtocol from "./pages/sovereign-protocol";
 import Glossary from "./pages/glossary";
 import Legal from "./pages/legal";
 import SplitSheet from "./pages/split-sheet";
+import Investors from "./pages/investors";
 import NotFound from "./pages/not-found";
 import { Provider } from "./components/provider";
 import { RootPasscodeLock } from "./components/root-passcode-lock";
@@ -34,6 +35,7 @@ function App() {
           <Route path="/glossary/:slug" component={Glossary} />
           <Route path="/legal/:doc" component={Legal} />
           <Route path="/tools/split-sheet" component={SplitSheet} />
+          <Route path="/investors" component={Investors} />
           <Route path="/infrastructure" component={Infrastructure} />
           <Route path="/enterprise" component={Enterprise} />
           <Route path="/data-room" component={DataRoom} />
