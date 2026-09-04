@@ -203,6 +203,11 @@ export default function Investors() {
               case, examined and sealed end to end from day one. Fastest yes, sharpest pain, and proof
               we control before the first outside conversation.
             </p>
+            <p className="mt-4 text-sm leading-relaxed text-muted">
+              <span className="text-gold">The offer:</span> a launch-partner window — DistroKid first
+              and alone with it for a defined period, then it opens to the industry as the standard.
+              First-mover advantage, not a permanent lock.
+            </p>
             <p className="mt-4 border-l-2 border-gold/60 pl-4 text-sm text-bone">
               The majors are not the first move. They are the reward for winning it.
             </p>

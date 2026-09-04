@@ -205,6 +205,18 @@ function FirstMove() {
         </div>
       </div>
 
+      <div className="mt-6 rounded-xl border border-gold/25 bg-gold/[0.05] p-5">
+        <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-gold">
+          The offer to DistroKid · a launch-partner window
+        </p>
+        <p className="mt-2 text-sm leading-relaxed text-bone/85">
+          First and alone with the Examiner and sealed-authorship filing for a defined window — their
+          edge over every other distributor while it lasts. When the window closes, it opens to the
+          industry as the standard. First-mover advantage, not a permanent lock — the exclusivity that
+          wins the anchor without mortgaging the open standard the whole thesis rests on.
+        </p>
+      </div>
+
       <p className="mt-6 border-l-2 border-gold/60 pl-4 text-sm leading-relaxed text-bone">
         The majors are not the first move. They are the reward for winning it.
       </p>
