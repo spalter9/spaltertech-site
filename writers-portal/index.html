@@ -1,0 +1,538 @@
+<title>Spalter Rights Registry</title>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600;9..144,700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet" />
+<style>
+  :root{
+    --paper:#f6f2e9; --paper-2:#efe9db; --ink:#211c16; --ink-dim:#5b5346;
+    --rule:#d9d0bd; --accent:#7a3324; --accent-2:#9c5a3c; --gold:#a8863a;
+    --live:#2f6b3f; --build:#9c6a12; --sim:#2f5f8a; --danger:#a23b2e;
+    --card:#fffdf8; --shadow:0 1px 2px rgba(33,28,22,.06), 0 8px 24px rgba(33,28,22,.06);
+    color-scheme: light;
+  }
+  *{box-sizing:border-box;}
+  body{margin:0;background:var(--paper);color:var(--ink);font-family:'IBM Plex Sans',system-ui,sans-serif;font-size:15px;line-height:1.5;}
+  h1,h2,h3{font-family:'Fraunces',Georgia,serif;font-weight:600;letter-spacing:-.01em;margin:0 0 .3em;}
+  a{color:var(--accent);}
+  .mono{font-family:'IBM Plex Mono',monospace;}
+  .wrap{max-width:920px;margin:0 auto;padding:28px 20px 80px;}
+  .brand{display:flex;align-items:baseline;gap:10px;margin-bottom:6px;}
+  .brand .seal{width:34px;height:34px;border-radius:50%;background:radial-gradient(circle at 32% 28%, var(--gold), var(--accent) 70%);flex:none;box-shadow:inset 0 0 0 2px rgba(255,255,255,.25);}
+  .brand h1{font-size:22px;}
+  .sub{color:var(--ink-dim);font-size:14px;margin-bottom:18px;}
+  .banner{background:var(--paper-2);border:1px solid var(--rule);border-radius:10px;padding:12px 14px;font-size:13px;color:var(--ink-dim);margin-bottom:22px;display:flex;gap:10px;flex-wrap:wrap;align-items:center;}
+  .chip{display:inline-flex;align-items:center;gap:5px;font-size:11px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;padding:2px 8px;border-radius:999px;}
+  .chip.live{background:rgba(47,107,63,.12);color:var(--live);}
+  .chip.build{background:rgba(156,106,18,.14);color:var(--build);}
+  .chip.sim{background:rgba(47,95,138,.13);color:var(--sim);}
+  .chip.danger{background:rgba(162,59,46,.13);color:var(--danger);}
+
+  .card{background:var(--card);border:1px solid var(--rule);border-radius:14px;padding:20px;box-shadow:var(--shadow);margin-bottom:18px;}
+  .row{display:flex;gap:10px;flex-wrap:wrap;}
+  label{display:block;font-size:12px;font-weight:600;color:var(--ink-dim);text-transform:uppercase;letter-spacing:.05em;margin:12px 0 5px;}
+  label:first-child{margin-top:0;}
+  input,textarea,select{width:100%;padding:9px 11px;border:1px solid var(--rule);border-radius:8px;background:#fff;font:inherit;color:var(--ink);}
+  textarea{resize:vertical;min-height:70px;}
+  input:focus,textarea:focus,select:focus{outline:2px solid var(--accent-2);outline-offset:1px;}
+  button{font:inherit;font-weight:600;border:none;border-radius:8px;padding:10px 16px;cursor:pointer;background:var(--accent);color:#fff8ee;}
+  button:hover{background:var(--accent-2);}
+  button.ghost{background:transparent;color:var(--accent);border:1px solid var(--rule);}
+  button.small{padding:5px 10px;font-size:13px;}
+  button:disabled{opacity:.5;cursor:default;}
+  .err{color:var(--danger);font-size:13px;margin-top:8px;}
+  .ok{color:var(--live);font-size:13px;margin-top:8px;}
+
+  .tabs{display:flex;gap:4px;margin-bottom:18px;border-bottom:1px solid var(--rule);flex-wrap:wrap;}
+  .tab{padding:9px 14px;font-size:13px;font-weight:600;color:var(--ink-dim);border-bottom:2px solid transparent;cursor:pointer;}
+  .tab.active{color:var(--accent);border-color:var(--accent);}
+
+  table{width:100%;border-collapse:collapse;font-size:14px;}
+  th,td{text-align:left;padding:8px 6px;border-bottom:1px solid var(--rule);vertical-align:top;}
+  th{font-size:11px;text-transform:uppercase;letter-spacing:.04em;color:var(--ink-dim);}
+  .status{font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.03em;padding:2px 7px;border-radius:999px;white-space:nowrap;}
+  .status.submitted,.status.proposed{background:rgba(47,95,138,.13);color:var(--sim);}
+  .status.in_review,.status.confirmed{background:rgba(156,106,18,.14);color:var(--build);}
+  .status.approved,.status.registered{background:rgba(47,107,63,.12);color:var(--live);}
+  .status.rejected{background:rgba(162,59,46,.13);color:var(--danger);}
+
+  .thread{display:flex;flex-direction:column;gap:8px;max-height:360px;overflow-y:auto;padding:4px;margin-bottom:12px;}
+  .msg{max-width:78%;padding:8px 11px;border-radius:10px;font-size:14px;}
+  .msg.writer{align-self:flex-end;background:var(--accent);color:#fff8ee;}
+  .msg.staff{align-self:flex-start;background:var(--paper-2);border:1px solid var(--rule);}
+  .msg time{display:block;font-size:10px;opacity:.7;margin-top:3px;}
+
+  .topbar{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;}
+  .who{font-size:13px;color:var(--ink-dim);}
+  .center{max-width:400px;margin:80px auto;}
+  .hidden{display:none !important;}
+  .muted{color:var(--ink-dim);font-size:13px;}
+</style>
+
+<div class="wrap">
+  <div class="topbar">
+    <div class="brand"><div class="seal"></div><h1>Spalter Rights Registry</h1></div>
+    <div class="who" id="whoBar"></div>
+  </div>
+  <div class="sub">Where writers and rightsholders register music and settle splits with Spalter Entertainment Technologies.</div>
+
+  <div class="banner">
+    <span class="chip live">Live</span> registration &amp; split submissions, staff review, messaging
+    &nbsp;·&nbsp;
+    <span class="chip build">In build</span> automatic sync into Mogul (approved items are entered by our team by hand today)
+  </div>
+
+  <div id="app"></div>
+</div>
+
+<script>
+(function(){
+  var state = { me: null, view: 'login' };
+
+  function el(tag, attrs, children){
+    var e = document.createElement(tag);
+    attrs = attrs || {};
+    for (var k in attrs){
+      if (k === 'class') e.className = attrs[k];
+      else if (k === 'html') e.innerHTML = attrs[k];
+      else if (k.slice(0,2) === 'on') e.addEventListener(k.slice(2), attrs[k]);
+      else e.setAttribute(k, attrs[k]);
+    }
+    (children || []).forEach(function(c){ if (c) e.appendChild(typeof c === 'string' ? document.createTextNode(c) : c); });
+    return e;
+  }
+
+  function api(path, opts){
+    opts = opts || {};
+    return fetch('/api' + path, Object.assign({
+      method: opts.method || 'GET',
+      headers: { 'content-type': 'application/json' },
+      credentials: 'same-origin',
+      body: opts.body ? JSON.stringify(opts.body) : undefined,
+    }, opts.raw || {})).then(function(r){
+      return r.json().then(function(data){
+        if (!r.ok) throw new Error(data.error || 'Request failed.');
+        return data;
+      });
+    });
+  }
+
+  function statusLabel(s){ return String(s || '').replace(/_/g, ' '); }
+
+  function render(){
+    var root = document.getElementById('app');
+    root.innerHTML = '';
+    var whoBar = document.getElementById('whoBar');
+    whoBar.innerHTML = '';
+    if (state.me){
+      whoBar.appendChild(el('span', {}, [state.me.name + ' · ' + (state.me.role === 'staff' ? 'Staff' : 'Writer') + '  ']));
+      whoBar.appendChild(el('button', { class: 'ghost small', onclick: doLogout }, ['Sign out']));
+    }
+
+    if (!state.me){
+      root.appendChild(renderLogin());
+      return;
+    }
+    if (state.me.mustChangePassword){
+      root.appendChild(renderChangePassword());
+      return;
+    }
+    if (state.me.role === 'staff') root.appendChild(renderStaff());
+    else root.appendChild(renderWriter());
+  }
+
+  // ---------- Login ----------
+  function renderLogin(){
+    var wrap = el('div', { class: 'center' });
+    var card = el('div', { class: 'card' });
+    card.appendChild(el('h2', {}, ['Sign in']));
+    card.appendChild(el('div', { class: 'muted' }, ['Accounts are set up by Spalter staff. If you don’t have a login yet, reach out to the team that invited you.']));
+    var email = el('input', { type: 'email', placeholder: 'you@example.com', autocomplete: 'username' });
+    var pass = el('input', { type: 'password', placeholder: 'Password', autocomplete: 'current-password' });
+    var errBox = el('div', { class: 'err hidden' });
+    card.appendChild(el('label', {}, ['Email']));
+    card.appendChild(email);
+    card.appendChild(el('label', {}, ['Password']));
+    card.appendChild(pass);
+    card.appendChild(errBox);
+    var btn = el('button', { style: 'margin-top:14px', onclick: function(){
+      errBox.className = 'err hidden';
+      btn.disabled = true;
+      api('/auth/login', { method: 'POST', body: { email: email.value.trim(), password: pass.value } })
+        .then(function(me){ state.me = me; render(); })
+        .catch(function(e){ errBox.textContent = e.message; errBox.className = 'err'; })
+        .finally(function(){ btn.disabled = false; });
+    }}, ['Sign in']);
+    card.appendChild(btn);
+    wrap.appendChild(card);
+    return wrap;
+  }
+
+  function renderChangePassword(){
+    var wrap = el('div', { class: 'center' });
+    var card = el('div', { class: 'card' });
+    card.appendChild(el('h2', {}, ['Set a new password']));
+    card.appendChild(el('div', { class: 'muted' }, ['You’re signed in with a temporary password. Choose a new one to continue.']));
+    var p1 = el('input', { type: 'password', placeholder: 'New password (8+ characters)' });
+    var errBox = el('div', { class: 'err hidden' });
+    card.appendChild(el('label', {}, ['New password']));
+    card.appendChild(p1);
+    card.appendChild(errBox);
+    var btn = el('button', { style: 'margin-top:14px', onclick: function(){
+      errBox.className = 'err hidden';
+      btn.disabled = true;
+      api('/auth/change-password', { method: 'POST', body: { newPassword: p1.value } })
+        .then(function(){ state.me.mustChangePassword = false; render(); })
+        .catch(function(e){ errBox.textContent = e.message; errBox.className = 'err'; })
+        .finally(function(){ btn.disabled = false; });
+    }}, ['Save password']);
+    card.appendChild(btn);
+    wrap.appendChild(card);
+    return wrap;
+  }
+
+  function doLogout(){
+    api('/auth/logout', { method: 'POST' }).finally(function(){ state.me = null; state.view = 'login'; render(); });
+  }
+
+  // ---------- Writer dashboard ----------
+  function renderWriter(){
+    var wrap = el('div', {});
+    var tabs = ['register', 'splits', 'status', 'messages'];
+    var labels = { register: 'Register a track', splits: 'Splits', status: 'Status', messages: 'Messages' };
+    if (!state.writerTab) state.writerTab = 'status';
+
+    var tabBar = el('div', { class: 'tabs' });
+    tabs.forEach(function(t){
+      tabBar.appendChild(el('div', {
+        class: 'tab' + (state.writerTab === t ? ' active' : ''),
+        onclick: function(){ state.writerTab = t; render(); },
+      }, [labels[t]]));
+    });
+    wrap.appendChild(tabBar);
+
+    var body = el('div', {});
+    wrap.appendChild(body);
+
+    if (state.writerTab === 'register') body.appendChild(renderRegisterTrack());
+    if (state.writerTab === 'splits') body.appendChild(renderSplitsTab());
+    if (state.writerTab === 'status') body.appendChild(renderStatusTab());
+    if (state.writerTab === 'messages') body.appendChild(renderMessagesTab(false, null));
+    return wrap;
+  }
+
+  function renderRegisterTrack(){
+    var card = el('div', { class: 'card' });
+    card.appendChild(el('h2', {}, ['Register a track']));
+    card.appendChild(el('div', { class: 'muted' }, ['Tell us about a song you wrote or co-wrote. Our team reviews every submission before it’s registered.']));
+    var title = el('input', { placeholder: 'Song title' });
+    var isrc = el('input', { placeholder: 'ISRC (if you have one)' });
+    var notes = el('textarea', { placeholder: 'Anything we should know — co-writers, release date, prior registrations, etc.' });
+    var msg = el('div', { class: 'hidden' });
+    card.appendChild(el('label', {}, ['Title']));
+    card.appendChild(title);
+    card.appendChild(el('label', {}, ['ISRC']));
+    card.appendChild(isrc);
+    card.appendChild(el('label', {}, ['Notes']));
+    card.appendChild(notes);
+    card.appendChild(msg);
+    var btn = el('button', { style: 'margin-top:14px', onclick: function(){
+      msg.className = 'hidden';
+      btn.disabled = true;
+      api('/tracks/register', { method: 'POST', body: { title: title.value, isrc: isrc.value, notes: notes.value } })
+        .then(function(){
+          title.value = ''; isrc.value = ''; notes.value = '';
+          msg.textContent = 'Submitted — you can watch its status in the Status tab.';
+          msg.className = 'ok';
+        })
+        .catch(function(e){ msg.textContent = e.message; msg.className = 'err'; })
+        .finally(function(){ btn.disabled = false; });
+    }}, ['Submit track']);
+    card.appendChild(btn);
+    return card;
+  }
+
+  function renderSplitsTab(){
+    var wrap = el('div', {});
+    var formCard = el('div', { class: 'card' });
+    formCard.appendChild(el('h2', {}, ['Submit or confirm a split']));
+    formCard.appendChild(el('div', { class: 'muted' }, ['Propose your percentage on a track you’ve registered. Your team confirms it before it’s final.']));
+    var trackSel = el('select', {});
+    trackSel.appendChild(el('option', { value: '' }, ['Loading your tracks…']));
+    var role = el('select', {}, [el('option', { value: 'writer' }, ['Writer share']), el('option', { value: 'publisher' }, ['Publisher share'])]);
+    var pct = el('input', { type: 'number', min: '0', max: '100', step: '0.01', placeholder: 'e.g. 50' });
+    var msg = el('div', { class: 'hidden' });
+    formCard.appendChild(el('label', {}, ['Track']));
+    formCard.appendChild(trackSel);
+    formCard.appendChild(el('label', {}, ['Role']));
+    formCard.appendChild(role);
+    formCard.appendChild(el('label', {}, ['Percentage']));
+    formCard.appendChild(pct);
+    formCard.appendChild(msg);
+    var btn = el('button', { style: 'margin-top:14px', onclick: function(){
+      msg.className = 'hidden';
+      if (!trackSel.value) { msg.textContent = 'Register a track first.'; msg.className = 'err'; return; }
+      btn.disabled = true;
+      api('/splits/submit', { method: 'POST', body: { trackId: trackSel.value, percentage: parseFloat(pct.value), role: role.value } })
+        .then(function(){ pct.value = ''; msg.textContent = 'Submitted for confirmation.'; msg.className = 'ok'; loadSplitsList(); })
+        .catch(function(e){ msg.textContent = e.message; msg.className = 'err'; })
+        .finally(function(){ btn.disabled = false; });
+    }}, ['Submit split']);
+    formCard.appendChild(btn);
+    wrap.appendChild(formCard);
+
+    api('/tracks/list').then(function(d){
+      trackSel.innerHTML = '';
+      if (!d.tracks.length){ trackSel.appendChild(el('option', { value: '' }, ['No tracks yet — register one first'])); return; }
+      d.tracks.forEach(function(t){ trackSel.appendChild(el('option', { value: t.id }, [t.title])); });
+    });
+
+    var listCard = el('div', { class: 'card' });
+    listCard.appendChild(el('h2', {}, ['Your splits']));
+    var listBody = el('div', {});
+    listCard.appendChild(listBody);
+    wrap.appendChild(listCard);
+
+    function loadSplitsList(){
+      listBody.innerHTML = 'Loading…';
+      api('/splits/list').then(function(d){
+        listBody.innerHTML = '';
+        if (!d.splits.length){ listBody.appendChild(el('div', { class: 'muted' }, ['No splits submitted yet.'])); return; }
+        var table = el('table', {});
+        table.appendChild(el('tr', {}, [el('th', {}, ['Track']), el('th', {}, ['Role']), el('th', {}, ['%']), el('th', {}, ['Status'])]));
+        d.splits.forEach(function(s){
+          table.appendChild(el('tr', {}, [
+            el('td', {}, [s.track_title]),
+            el('td', {}, [s.role]),
+            el('td', { class: 'mono' }, [String(s.percentage)]),
+            el('td', {}, [el('span', { class: 'status ' + s.status }, [statusLabel(s.status)])]),
+          ]));
+        });
+        listBody.appendChild(table);
+      });
+    }
+    loadSplitsList();
+
+    return wrap;
+  }
+
+  function renderStatusTab(){
+    var card = el('div', { class: 'card' });
+    card.appendChild(el('h2', {}, ['Your tracks']));
+    var body = el('div', {}, [el('div', { class: 'muted' }, ['Loading…'])]);
+    card.appendChild(body);
+    api('/tracks/list').then(function(d){
+      body.innerHTML = '';
+      if (!d.tracks.length){ body.appendChild(el('div', { class: 'muted' }, ['No tracks registered yet — use the Register a track tab.'])); return; }
+      var table = el('table', {});
+      table.appendChild(el('tr', {}, [el('th', {}, ['Title']), el('th', {}, ['ISRC']), el('th', {}, ['Status']), el('th', {}, ['Staff note'])]));
+      d.tracks.forEach(function(t){
+        table.appendChild(el('tr', {}, [
+          el('td', {}, [t.title]),
+          el('td', { class: 'mono' }, [t.isrc || '—']),
+          el('td', {}, [el('span', { class: 'status ' + t.status }, [statusLabel(t.status)])]),
+          el('td', { class: 'muted' }, [t.staff_note || '—']),
+        ]));
+      });
+      body.appendChild(table);
+    });
+    return card;
+  }
+
+  function renderMessagesTab(isStaff, writerId){
+    var card = el('div', { class: 'card' });
+    card.appendChild(el('h2', {}, ['Messages']));
+    var thread = el('div', { class: 'thread' });
+    card.appendChild(thread);
+    var input = el('textarea', { placeholder: 'Write a message…' });
+    var msg = el('div', { class: 'hidden' });
+    card.appendChild(input);
+    card.appendChild(msg);
+    var btn = el('button', { style: 'margin-top:10px', onclick: function(){
+      if (!input.value.trim()) return;
+      btn.disabled = true;
+      var body = { body: input.value.trim() };
+      if (isStaff) body.writerId = writerId;
+      api('/messages/send', { method: 'POST', body: body })
+        .then(function(){ input.value = ''; load(); })
+        .catch(function(e){ msg.textContent = e.message; msg.className = 'err'; })
+        .finally(function(){ btn.disabled = false; });
+    }}, ['Send']);
+    card.appendChild(btn);
+
+    function load(){
+      var path = isStaff ? '/staff/messages?writerId=' + encodeURIComponent(writerId) : '/messages/list';
+      api(path).then(function(d){
+        thread.innerHTML = '';
+        d.messages.forEach(function(m){
+          var bubble = el('div', { class: 'msg ' + m.sender }, [m.body, el('time', {}, [new Date(m.created_at + 'Z').toLocaleString()])]);
+          thread.appendChild(bubble);
+        });
+        thread.scrollTop = thread.scrollHeight;
+      });
+    }
+    load();
+    return card;
+  }
+
+  // ---------- Staff console ----------
+  function renderStaff(){
+    var wrap = el('div', {});
+    var tabs = ['review', 'writers'];
+    var labels = { review: 'Review queue', writers: 'Writers' };
+    if (!state.staffTab) state.staffTab = 'review';
+
+    var tabBar = el('div', { class: 'tabs' });
+    tabs.forEach(function(t){
+      tabBar.appendChild(el('div', { class: 'tab' + (state.staffTab === t ? ' active' : ''), onclick: function(){ state.staffTab = t; render(); } }, [labels[t]]));
+    });
+    wrap.appendChild(tabBar);
+
+    if (state.staffTab === 'review') wrap.appendChild(renderStaffReview());
+    if (state.staffTab === 'writers') wrap.appendChild(renderStaffWriters());
+    return wrap;
+  }
+
+  function renderStaffReview(){
+    var wrap = el('div', {});
+    var tCard = el('div', { class: 'card' });
+    tCard.appendChild(el('h2', {}, ['Track submissions']));
+    var tBody = el('div', {}, [el('div', { class: 'muted' }, ['Loading…'])]);
+    tCard.appendChild(tBody);
+    wrap.appendChild(tCard);
+
+    var sCard = el('div', { class: 'card' });
+    sCard.appendChild(el('h2', {}, ['Split submissions']));
+    var sBody = el('div', {}, [el('div', { class: 'muted' }, ['Loading…'])]);
+    sCard.appendChild(sBody);
+    wrap.appendChild(sCard);
+
+    function load(){
+      api('/staff/review').then(function(d){
+        tBody.innerHTML = '';
+        if (!d.tracks.length) tBody.appendChild(el('div', { class: 'muted' }, ['No submissions yet.']));
+        else {
+          var table = el('table', {});
+          table.appendChild(el('tr', {}, [el('th', {}, ['Writer']), el('th', {}, ['Title']), el('th', {}, ['ISRC']), el('th', {}, ['Status']), el('th', {}, ['Action'])]));
+          d.tracks.forEach(function(t){
+            var sel = el('select', {}, ['submitted', 'in_review', 'approved', 'registered', 'rejected'].map(function(s){
+              return el('option', { value: s, selected: s === t.status ? 'selected' : null }, [statusLabel(s)]);
+            }));
+            var go = el('button', { class: 'small', onclick: function(){
+              go.disabled = true;
+              api('/staff/approve', { method: 'POST', body: { kind: 'track', id: t.id, status: sel.value } }).then(load).finally(function(){ go.disabled = false; });
+            }}, ['Update']);
+            table.appendChild(el('tr', {}, [
+              el('td', {}, [t.writer_name, el('div', { class: 'muted' }, [t.writer_email])]),
+              el('td', {}, [t.title, t.notes ? el('div', { class: 'muted' }, [t.notes]) : null]),
+              el('td', { class: 'mono' }, [t.isrc || '—']),
+              el('td', {}, [sel]),
+              el('td', {}, [go]),
+            ]));
+          });
+          tBody.appendChild(table);
+        }
+
+        sBody.innerHTML = '';
+        if (!d.splits.length) sBody.appendChild(el('div', { class: 'muted' }, ['No splits submitted yet.']));
+        else {
+          var st = el('table', {});
+          st.appendChild(el('tr', {}, [el('th', {}, ['Writer']), el('th', {}, ['Track']), el('th', {}, ['Role']), el('th', {}, ['%']), el('th', {}, ['Status']), el('th', {}, ['Action'])]));
+          d.splits.forEach(function(s){
+            var sel = el('select', {}, ['proposed', 'confirmed', 'approved', 'rejected'].map(function(o){
+              return el('option', { value: o, selected: o === s.status ? 'selected' : null }, [statusLabel(o)]);
+            }));
+            var go = el('button', { class: 'small', onclick: function(){
+              go.disabled = true;
+              api('/staff/approve', { method: 'POST', body: { kind: 'split', id: s.id, status: sel.value } }).then(load).finally(function(){ go.disabled = false; });
+            }}, ['Update']);
+            st.appendChild(el('tr', {}, [
+              el('td', {}, [s.writer_name, el('div', { class: 'muted' }, [s.writer_email])]),
+              el('td', {}, [s.track_title]),
+              el('td', {}, [s.role]),
+              el('td', { class: 'mono' }, [String(s.percentage)]),
+              el('td', {}, [sel]),
+              el('td', {}, [go]),
+            ]));
+          });
+          sBody.appendChild(st);
+        }
+      });
+    }
+    load();
+    return wrap;
+  }
+
+  function renderStaffWriters(){
+    var wrap = el('div', {});
+    var formCard = el('div', { class: 'card' });
+    formCard.appendChild(el('h2', {}, ['Invite a writer']));
+    formCard.appendChild(el('div', { class: 'muted' }, ['Creates an account with a one-time temporary password. Share it with the writer yourself — there’s no self-signup.']));
+    var name = el('input', { placeholder: 'Full name' });
+    var email = el('input', { type: 'email', placeholder: 'Email' });
+    var ipi = el('input', { placeholder: 'IPI (optional)' });
+    var pro = el('input', { placeholder: 'PRO, e.g. ASCAP (optional)' });
+    var msg = el('div', { class: 'hidden' });
+    formCard.appendChild(el('label', {}, ['Name']));
+    formCard.appendChild(name);
+    formCard.appendChild(el('label', {}, ['Email']));
+    formCard.appendChild(email);
+    formCard.appendChild(el('label', {}, ['IPI']));
+    formCard.appendChild(ipi);
+    formCard.appendChild(el('label', {}, ['PRO']));
+    formCard.appendChild(pro);
+    formCard.appendChild(msg);
+    var btn = el('button', { style: 'margin-top:14px', onclick: function(){
+      msg.className = 'hidden';
+      btn.disabled = true;
+      api('/staff/writers', { method: 'POST', body: { name: name.value, email: email.value, ipi: ipi.value, pro: pro.value } })
+        .then(function(d){
+          msg.innerHTML = '';
+          msg.appendChild(document.createTextNode('Account created. Temporary password (shown once): '));
+          msg.appendChild(el('span', { class: 'mono' }, [d.tempPassword]));
+          msg.className = 'ok';
+          name.value = ''; email.value = ''; ipi.value = ''; pro.value = '';
+          loadWriters();
+        })
+        .catch(function(e){ msg.textContent = e.message; msg.className = 'err'; })
+        .finally(function(){ btn.disabled = false; });
+    }}, ['Create account']);
+    formCard.appendChild(btn);
+    wrap.appendChild(formCard);
+
+    var listCard = el('div', { class: 'card' });
+    listCard.appendChild(el('h2', {}, ['Writers on the account']));
+    var listBody = el('div', {}, [el('div', { class: 'muted' }, ['Loading…'])]);
+    listCard.appendChild(listBody);
+    wrap.appendChild(listCard);
+
+    function loadWriters(){
+      api('/staff/writers').then(function(d){
+        listBody.innerHTML = '';
+        if (!d.writers.length){ listBody.appendChild(el('div', { class: 'muted' }, ['No writers yet.'])); return; }
+        d.writers.forEach(function(w){
+          var row = el('div', { style: 'display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--rule)' }, [
+            el('div', {}, [el('strong', {}, [w.name]), el('div', { class: 'muted' }, [w.email])]),
+            el('button', { class: 'ghost small', onclick: function(){ state.staffTab = 'review'; state.staffThreadWriter = w; render(); } }, ['Message']),
+          ]);
+          listBody.appendChild(row);
+        });
+      });
+    }
+    loadWriters();
+
+    if (state.staffThreadWriter){
+      var w = state.staffThreadWriter;
+      var msgCard = el('div', { class: 'card' });
+      msgCard.appendChild(el('h2', {}, ['Message ' + w.name]));
+      msgCard.appendChild(renderMessagesTab(true, w.id));
+      wrap.appendChild(msgCard);
+    }
+
+    return wrap;
+  }
+
+  api('/auth/me').then(function(me){ state.me = me; render(); }).catch(function(){ render(); });
+})();
+</script>
