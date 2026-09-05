@@ -2503,7 +2503,7 @@
                         <span class="fn">WIDE FIELD PRINT</span>
                     </button>
                 </div>
-                <button id="mp3Bounce">◉ 3-MP3 BOUNCE · MV3 + MASTER + MODEL</button>
+                <button id="mp3Bounce">◉ 3-MP3 BOUNCE · ORIGINAL + SSP MASTER + MONO</button>
                 <button id="srvPrint" style="width:100%;margin-top:10px;border:1px solid var(--green);border-radius:8px;padding:13px;font-family:var(--disp);font-size:11px;letter-spacing:.22em;color:var(--green);background:#101114">▲ SERVER PRINT · SURREAL + LINEAR-PHASE CHAIN</button>
                 <div id="ledger">
                     <span class="sk">FORENSIC LEDGER · SHA-256 PER RENDER</span>
@@ -4565,12 +4565,47 @@
             rw.connect(out)
         }
         post.connect(out);
-        out.connect(oc.destination);
+        if (v === 'mono') {
+            const monoSplit = oc.createChannelSplitter(2);
+            const monoSum = oc.createGain();
+            monoSum.gain.value = .5;
+            const monoMerge = oc.createChannelMerger(2);
+            out.connect(monoSplit);
+            monoSplit.connect(monoSum, 0);
+            monoSplit.connect(monoSum, 1);
+            monoSum.connect(monoMerge, 0, 0);
+            monoSum.connect(monoMerge, 0, 1);
+            monoMerge.connect(oc.destination);
+        } else {
+            out.connect(oc.destination);
+        }
         s.start();
         return await oc.startRendering();
     }
     const pendingSaves = [];
     async function deliver(blob, name) {
+        if (window.showSaveFilePicker) {
+            try {
+                const dot = name.lastIndexOf('.');
+                const ext = dot >= 0 ? name.slice(dot) : '';
+                const handle = await window.showSaveFilePicker({
+                    suggestedName: name,
+                    types: ext ? [{
+                        description: 'Audio file',
+                        accept: {
+                            [blob.type || 'application/octet-stream']: [ext]
+                        }
+                    }] : undefined
+                });
+                const writable = await handle.createWritable();
+                await writable.write(blob);
+                await writable.close();
+                return true
+            } catch (e) {
+                if (e.name === 'AbortError')
+                    return true
+            }
+        }
         const file = new File([blob], name, {
             type: blob.type
         });
@@ -4709,7 +4744,20 @@
         try {
             const canMp3 = !window.__noMp3 && typeof lamejs !== 'undefined';
             toast(canMp3 ? '3-MP3 BOUNCE · 320K · RENDERING' : 'MP3 ENCODER OFFLINE · BOUNCING FLOAT32 WAV SET');
-            for (const v of ['mv3', 'master', 'model']) {
+            const bounceSet = [{
+                v: 'original',
+                label: 'ORIGINAL'
+            }, {
+                v: 'master',
+                label: 'SSP_MASTER'
+            }, {
+                v: 'mono',
+                label: 'MONO'
+            }];
+            for (const {
+                v,
+                label
+            } of bounceSet) {
                 let rb = await renderVariant(v);
                 let blob,
                     ext;
@@ -4724,11 +4772,11 @@
                 }
                 rb = null;
                 const hash = await sha256(await blob.arrayBuffer());
-                ledgerSave(new Date().toLocaleTimeString() + ' · ' + v.toUpperCase() + ' · BOUNCE' + ext.toUpperCase(), hash, blob, (window.__srcName || 'sspengine') + '_' + v.toUpperCase() + ext);
+                ledgerSave(new Date().toLocaleTimeString() + ' · ' + label + ' · BOUNCE' + ext.toUpperCase(), hash, blob, (window.__srcName || 'sspengine') + '_' + label + ext);
                 blob = null;
                 await new Promise(r => setTimeout(r, 600));
             }
-            toast('3-BOUNCE COMPLETE · MV3 + MASTER + MODEL');
+            toast('3-BOUNCE COMPLETE · ORIGINAL + SSP MASTER + MONO — TAP SAVE ON EACH IN THE LEDGER');
         } catch (e) {
             toast('BOUNCE FAILED — TRACK MAY BE TOO LONG FOR THIS DEVICE')
         }
