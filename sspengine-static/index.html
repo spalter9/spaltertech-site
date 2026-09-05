@@ -2316,6 +2316,7 @@
             <div id="vizBox">
                 <canvas id="viz">
                 </canvas>
+                <canvas id="viz3d" style="display:none;position:absolute;inset:0;width:100%;height:340px;cursor:grab"></canvas>
                 <div id="vizHud">
                     <span id="hudViz">SPECTRAL FIELD</span>
                     <span id="hudMode">STANDBY</span>
@@ -2330,6 +2331,7 @@
                     <button data-viz="helix">DNA HELIX</button>
                     <button data-viz="plasma">PLASMA CORE</button>
                     <button data-viz="kaleido">KALEIDO</button>
+                    <button data-viz="three">3D CORE</button>
                 </div>
             </div>
 
@@ -2460,6 +2462,96 @@
                         <button class="tgl" id="tglMatch">LOUDNESS-MATCHED A/B</button>
                     </div>
                     <div class="sk" style="text-align:center">LIT = MASTERED CHAIN · DARK = ORIGINAL SOURCE</div>
+                </div>
+            </div>
+
+            <!-- SURREAL STAGES (all default OFF — the chain above is untouched until enabled) -->
+            <div class="panel">
+                <h2>SURREAL STAGES · DENOISE / DE-ESS / HAAS</h2>
+                <div class="sk">EVERY STAGE BELOW IS A TRUE BYPASS WHEN OFF — YOUR MASTER CHAIN IS BIT-IDENTICAL UNTIL YOU SWITCH ONE ON</div>
+                <div class="grid2" style="margin-top:12px">
+                    <div>
+                        <div class="tglRow">
+                            <button class="tgl" id="tglDn">DENOISE · DE-HISS</button>
+                            <button class="tgl" id="btnLearn">LEARN NOISE FLOOR</button>
+                        </div>
+                        <div class="ctl" style="margin-top:10px">
+                            <div class="row">
+                                <span>HISS REDUCTION · 5–12 kHz</span>
+                                <b id="vDnHiss">6 dB</b>
+                            </div>
+                            <input type="range" id="sDnHiss" min="0" max="12" value="6" step="0.5">
+                        </div>
+                        <div class="ctl">
+                            <div class="row">
+                                <span>SPECTRAL GATE DEPTH</span>
+                                <b id="vDnGate">8 dB</b>
+                            </div>
+                            <input type="range" id="sDnGate" min="0" max="18" value="8" step="0.5">
+                        </div>
+                        <div class="ctl">
+                            <div class="row">
+                                <span>NOISE FLOOR</span>
+                                <b id="vDnFloor">-70 dB</b>
+                            </div>
+                            <input type="range" id="sDnFloor" min="-96" max="-24" value="-70">
+                        </div>
+                        <div class="tglRow" style="margin-top:6px">
+                            <button class="tgl" id="tglDe">DE-ESSER</button>
+                        </div>
+                        <div class="ctl" style="margin-top:10px">
+                            <div class="row">
+                                <span>SIBILANCE CENTER</span>
+                                <b id="vDeFreq">6.0 kHz</b>
+                            </div>
+                            <input type="range" id="sDeFreq" min="3000" max="9000" value="6000" step="100">
+                        </div>
+                        <div class="ctl">
+                            <div class="row">
+                                <span>DE-ESS THRESHOLD</span>
+                                <b id="vDeThr">-24 dB</b>
+                            </div>
+                            <input type="range" id="sDeThr" min="-40" max="0" value="-24">
+                        </div>
+                        <div class="ctl">
+                            <div class="row">
+                                <span>DE-ESS RATIO</span>
+                                <b id="vDeRatio">4.0 : 1</b>
+                            </div>
+                            <input type="range" id="sDeRatio" min="1" max="10" value="4" step="0.5">
+                        </div>
+                    </div>
+                    <div>
+                        <div class="sk">HAAS CROSS-FEED · EARLY REFLECTIONS (ADDITIVE — 0% = NOTHING ADDED)</div>
+                        <div class="ctl" style="margin-top:10px">
+                            <div class="row">
+                                <span>HAAS DELAY</span>
+                                <b id="vHaasMs">18 ms</b>
+                            </div>
+                            <input type="range" id="sHaasMs" min="5" max="35" value="18">
+                        </div>
+                        <div class="ctl">
+                            <div class="row">
+                                <span>CROSS-FEED AMOUNT</span>
+                                <b id="vHaasMix">0%</b>
+                            </div>
+                            <input type="range" id="sHaasMix" min="0" max="60" value="0">
+                        </div>
+                        <div class="ctl">
+                            <div class="row">
+                                <span>EARLY REFLECTIONS MIX</span>
+                                <b id="vErMix">0%</b>
+                            </div>
+                            <input type="range" id="sErMix" min="0" max="50" value="0">
+                        </div>
+                        <div class="sk" style="margin-top:8px">TELEMETRY · OUTPUT</div>
+                        <canvas id="rta" style="display:block;width:100%;height:96px;margin-top:8px;border:1px solid var(--line);border-radius:8px;background:#06070c"></canvas>
+                        <div style="display:flex;justify-content:space-between;gap:10px;margin-top:8px;font-size:10px;letter-spacing:.14em">
+                            <span style="color:var(--dim)">PEAK <b id="tPeak" style="color:var(--amber)">-inf</b> dBFS <span style="font-size:8px">(4× INTERP. EST.)</span></span>
+                            <span style="color:var(--dim)">RMS <b id="tRms" style="color:var(--blue)">-inf</b> dBFS</span>
+                            <span style="color:var(--dim)">CLIP <b id="tClip" style="color:var(--green)">0</b></span>
+                        </div>
+                    </div>
                 </div>
             </div>
 
@@ -3378,7 +3470,19 @@
         orbit: false,
         boom: true,
         padX: 0,
-        padZ: 0
+        padZ: 0,
+        /* Surreal stages — all OFF / zero by default so the chain is untouched */
+        dnOn: false,
+        dnHiss: 6,
+        dnGate: 8,
+        dnFloor: -70,
+        deOn: false,
+        deFreq: 6000,
+        deThr: -24,
+        deRatio: 4,
+        haasMs: 18,
+        haasMix: 0,
+        erMix: 0
     };
     let N = {}; // live nodes
 
@@ -3403,6 +3507,160 @@
             c[i] = (1 - m) * x + m * (Math.tanh(k * x) / tk);
         }
         return c;
+    }
+
+    /* ---- Surreal stages: true-bypass blocks. When OFF the only thing in the
+       signal path is a unity GainNode, so the output is bit-identical. ---- */
+    function bypassBlock(a) {
+        const inp = a.createGain(),
+            out = a.createGain(),
+            byp = a.createGain(),
+            wet = a.createGain();
+        byp.gain.value = 1;
+        wet.gain.value = 0;
+        inp.connect(byp);
+        byp.connect(out);
+        wet.connect(out);
+        return {
+            inp,
+            out,
+            byp,
+            wet
+        };
+    }
+    /* Denoise / de-hiss: broadband spectral gate + 3-band split with
+       hiss compressors on the presence (5-12k) and air (>12k) bands. */
+    function makeDenoise(a) {
+        const b = bypassBlock(a),
+            q = .707;
+        b.gate = a.createGain();
+        b.gate.gain.value = 1;
+        b.lp = a.createBiquadFilter();
+        b.lp.type = 'lowpass';
+        b.lp.frequency.value = 5000;
+        b.lp.Q.value = q;
+        b.presHp = a.createBiquadFilter();
+        b.presHp.type = 'highpass';
+        b.presHp.frequency.value = 5000;
+        b.presHp.Q.value = q;
+        b.presLp = a.createBiquadFilter();
+        b.presLp.type = 'lowpass';
+        b.presLp.frequency.value = 12000;
+        b.presLp.Q.value = q;
+        b.airHp = a.createBiquadFilter();
+        b.airHp.type = 'highpass';
+        b.airHp.frequency.value = 12000;
+        b.airHp.Q.value = q;
+        b.cPres = a.createDynamicsCompressor();
+        b.cPres.threshold.value = 0;
+        b.cPres.knee.value = 6;
+        b.cPres.ratio.value = 1;
+        b.cPres.attack.value = .001;
+        b.cPres.release.value = .05;
+        b.cAir = a.createDynamicsCompressor();
+        b.cAir.threshold.value = 0;
+        b.cAir.knee.value = 4;
+        b.cAir.ratio.value = 1;
+        b.cAir.attack.value = .001;
+        b.cAir.release.value = .04;
+        b.inp.connect(b.gate);
+        b.gate.connect(b.lp);
+        b.lp.connect(b.wet);
+        b.gate.connect(b.presHp);
+        b.presHp.connect(b.presLp);
+        b.presLp.connect(b.cPres);
+        b.cPres.connect(b.wet);
+        b.gate.connect(b.airHp);
+        b.airHp.connect(b.cAir);
+        b.cAir.connect(b.wet);
+        return b;
+    }
+    /* De-esser: LR4 split-band — everything below the sibilance corner passes
+       untouched, the band above it goes through a fast compressor, then summed. */
+    function makeDeEss(a) {
+        const b = bypassBlock(a),
+            q = .707;
+        b.lp1 = a.createBiquadFilter();
+        b.lp1.type = 'lowpass';
+        b.lp1.Q.value = q;
+        b.lp2 = a.createBiquadFilter();
+        b.lp2.type = 'lowpass';
+        b.lp2.Q.value = q;
+        b.hp1 = a.createBiquadFilter();
+        b.hp1.type = 'highpass';
+        b.hp1.Q.value = q;
+        b.hp2 = a.createBiquadFilter();
+        b.hp2.type = 'highpass';
+        b.hp2.Q.value = q;
+        b.c = a.createDynamicsCompressor();
+        b.c.attack.value = .001;
+        b.c.release.value = .06;
+        b.c.knee.value = 3;
+        b.inp.connect(b.lp1);
+        b.lp1.connect(b.lp2);
+        b.lp2.connect(b.wet);
+        b.inp.connect(b.hp1);
+        b.hp1.connect(b.hp2);
+        b.hp2.connect(b.c);
+        b.c.connect(b.wet);
+        return b;
+    }
+    /* Haas cross-feed + early reflections: purely additive on top of the dry
+       signal (bypass stays at unity), so 0% mix adds exactly nothing. */
+    function makeHaas(a) {
+        const b = bypassBlock(a);
+        b.split = a.createChannelSplitter(2);
+        b.dL = a.createDelay(.1);
+        b.dR = a.createDelay(.1);
+        b.merge = a.createChannelMerger(2);
+        b.inp.connect(b.split);
+        b.split.connect(b.dL, 0);
+        b.split.connect(b.dR, 1);
+        b.dL.connect(b.merge, 0, 1);
+        b.dR.connect(b.merge, 0, 0);
+        b.merge.connect(b.wet);
+        b.er = a.createGain();
+        b.er.gain.value = 0;
+        b.erMerge = a.createChannelMerger(2);
+        [[.011, .6, 0], [.023, .42, 1], [.037, .28, 0], [.051, .18, 1]].forEach(([t, g, side]) => {
+            const d = a.createDelay(.2);
+            d.delayTime.value = t;
+            const gn = a.createGain();
+            gn.gain.value = g;
+            b.inp.connect(d);
+            d.connect(gn);
+            gn.connect(b.erMerge, 0, side);
+        });
+        b.erMerge.connect(b.er);
+        b.er.connect(b.out);
+        return b;
+    }
+    /* Push P into a set of stage nodes (live graph or offline render). */
+    function setStageParams(n, a, tc) {
+        const t = a.currentTime,
+            ramp = (p, v) => tc ? p.setTargetAtTime(v, t, tc) : (p.value = v);
+        const h = P.dnOn ? P.dnHiss : 0;
+        ramp(n.dn.cPres.threshold, -h * 2.5);
+        ramp(n.dn.cPres.ratio, 1 + h * .7);
+        ramp(n.dn.cAir.threshold, -h * 2.7 + .6);
+        ramp(n.dn.cAir.ratio, 1 + h * .9);
+        ramp(n.dn.byp.gain, P.dnOn ? 0 : 1);
+        ramp(n.dn.wet.gain, P.dnOn ? 1 : 0);
+        if (!P.dnOn)
+            ramp(n.dn.gate.gain, 1);
+        [n.de.lp1, n.de.lp2, n.de.hp1, n.de.hp2].forEach(f => ramp(f.frequency, P.deFreq));
+        ramp(n.de.c.threshold, P.deThr);
+        ramp(n.de.c.ratio, P.deRatio);
+        ramp(n.de.byp.gain, P.deOn ? 0 : 1);
+        ramp(n.de.wet.gain, P.deOn ? 1 : 0);
+        ramp(n.haas.dL.delayTime, P.haasMs / 1000);
+        ramp(n.haas.dR.delayTime, P.haasMs / 1000);
+        ramp(n.haas.wet.gain, P.haasMix);
+        ramp(n.haas.er.gain, P.erMix);
+    }
+    function applyStages() {
+        if (AC && N.dn)
+            setStageParams(N, AC, .03);
     }
 
     function buildGraph() {
@@ -3453,13 +3711,18 @@
         N.an = a.createAnalyser();
         N.an.fftSize = 1024;
         N.an.smoothingTimeConstant = .82;
-        // wet chain
-        N.inWet.connect(N.shaper);
+        // wet chain (denoise stage sits first; true bypass when off)
+        N.dn = makeDenoise(a);
+        N.de = makeDeEss(a);
+        N.haas = makeHaas(a);
+        N.inWet.connect(N.dn.inp);
+        N.dn.out.connect(N.shaper);
         N.shaper.connect(N.preTrim);
         N.preTrim.connect(N.low);
         N.low.connect(N.mid);
         N.mid.connect(N.high);
-        N.high.connect(N.comp);
+        N.high.connect(N.de.inp);
+        N.de.out.connect(N.comp);
         /* M/S width matrix: mid untouched (mono-safe), side scaled by width */
         N.wsplit = a.createChannelSplitter(2);
         N.mSum = a.createGain();
@@ -3485,7 +3748,8 @@
         N.sW.connect(N.wMerge, 0, 0);
         N.sWInv.connect(N.wMerge, 0, 1);
         N.wideOut = a.createGain();
-        N.wMerge.connect(N.wideOut);
+        N.wMerge.connect(N.haas.inp);
+        N.haas.out.connect(N.wideOut);
         N.comp.connect(N.wsplit);
         N.panOut = a.createGain();
         N.roomConv = a.createConvolver();
@@ -3512,8 +3776,17 @@
         N.wet.connect(N.an);
         N.dry.connect(N.an);
         N.an.connect(a.destination);
+        // read-only taps: output peak/RMS telemetry, and the pre-chain input for the spectral gate
+        N.anPk = a.createAnalyser();
+        N.anPk.fftSize = 2048;
+        N.an.connect(N.anPk);
+        N.anGate = a.createAnalyser();
+        N.anGate.fftSize = 2048;
+        N.anGate.smoothingTimeConstant = .5;
+        N.inWet.connect(N.anGate);
         applyBoom();
         applySpatial();
+        applyStages();
     }
     let matchF = 1;
     function applyBoom() {
@@ -4039,6 +4312,264 @@
         toast('PRESET · ' + b.textContent.trim());
     }));
 
+    /* ================= SURREAL STAGE CONTROLS (default OFF) ================= */
+    $('tglDn').addEventListener('click', () => {
+        P.dnOn = !P.dnOn;
+        $('tglDn').classList.toggle('on', P.dnOn);
+        ctx();
+        applyStages();
+        toast(P.dnOn ? 'DENOISE · DE-HISS ENGAGED' : 'DENOISE · BYPASSED (CHAIN UNTOUCHED)')
+    });
+    bindSlider('sDnHiss', 'vDnHiss', v => v + ' dB', v => {
+        P.dnHiss = v;
+        applyStages()
+    });
+    bindSlider('sDnGate', 'vDnGate', v => v + ' dB', v => {
+        P.dnGate = v
+    });
+    bindSlider('sDnFloor', 'vDnFloor', v => v + ' dB', v => {
+        P.dnFloor = v
+    });
+    $('tglDe').addEventListener('click', () => {
+        P.deOn = !P.deOn;
+        $('tglDe').classList.toggle('on', P.deOn);
+        ctx();
+        applyStages();
+        toast(P.deOn ? 'DE-ESSER ENGAGED · ' + (P.deFreq / 1000).toFixed(1) + ' kHz' : 'DE-ESSER · BYPASSED (CHAIN UNTOUCHED)')
+    });
+    bindSlider('sDeFreq', 'vDeFreq', v => (v / 1000).toFixed(1) + ' kHz', v => {
+        P.deFreq = v;
+        applyStages()
+    });
+    bindSlider('sDeThr', 'vDeThr', v => v + ' dB', v => {
+        P.deThr = v;
+        applyStages()
+    });
+    bindSlider('sDeRatio', 'vDeRatio', v => v.toFixed(1) + ' : 1', v => {
+        P.deRatio = v;
+        applyStages()
+    });
+    bindSlider('sHaasMs', 'vHaasMs', v => v + ' ms', v => {
+        P.haasMs = v;
+        applyStages()
+    });
+    bindSlider('sHaasMix', 'vHaasMix', v => v + '%', v => {
+        P.haasMix = v / 100;
+        if (v > 0)
+            ctx();
+        applyStages()
+    });
+    bindSlider('sErMix', 'vErMix', v => v + '%', v => {
+        P.erMix = v / 100;
+        if (v > 0)
+            ctx();
+        applyStages()
+    });
+    /* spectral gate: driven from the pre-chain analyser every animation frame */
+    let gateBuf = null;
+    function gateTick() {
+        if (!AC || !N.anGate || !P.dnOn)
+            return;
+        if (!gateBuf)
+            gateBuf = new Float32Array(N.anGate.frequencyBinCount);
+        N.anGate.getFloatFrequencyData(gateBuf);
+        const binHz = AC.sampleRate / 2 / gateBuf.length;
+        const s = Math.max(1, Math.floor(4000 / binHz)),
+            e = Math.min(gateBuf.length - 1, Math.ceil(16000 / binHz));
+        let sum = 0,
+            cnt = 0;
+        for (let i = s; i <= e; i++) {
+            const v = gateBuf[i];
+            if (isFinite(v)) {
+                sum += v;
+                cnt++
+            }
+        }
+        if (!cnt)
+            return;
+        const inFloor = (sum / cnt) < P.dnFloor + 3;
+        N.dn.gate.gain.setTargetAtTime(inFloor ? Math.pow(10, -P.dnGate / 20) : 1, AC.currentTime, .02);
+    }
+    /* LEARN: scan the whole loaded track offline for its quietest half-second
+       (4-16 kHz energy, Blackman-windowed FFT scaled like AnalyserNode) */
+    async function learnNoise() {
+        if (!buffer) {
+            toast('LOAD AUDIO FIRST');
+            return
+        }
+        toast('SCANNING FOR THE QUIETEST PASSAGE…');
+        $('btnLearn').style.opacity = .5;
+        await new Promise(r => setTimeout(r, 30));
+        try {
+            const sr = buffer.sampleRate,
+                n = 2048,
+                half = n / 2,
+                chs = buffer.numberOfChannels;
+            const hop = Math.max(256, Math.floor(sr * .5 / 8));
+            const binHz = sr / n,
+                lo = Math.max(1, Math.floor(4000 / binHz)),
+                hi = Math.min(half - 1, Math.ceil(16000 / binHz));
+            const win = new Float32Array(n);
+            for (let i = 0; i < n; i++)
+                win[i] = .42 - .5 * Math.cos(2 * Math.PI * i / (n - 1)) + .08 * Math.cos(4 * Math.PI * i / (n - 1));
+            const re = new Float32Array(n),
+                im = new Float32Array(n);
+            const data = Array.from({
+                length: chs
+            }, (_, c) => buffer.getChannelData(c));
+            const framesPerWin = Math.max(1, Math.round(sr * .5 / hop));
+            const ring = [];
+            let ringSum = 0,
+                best = Infinity,
+                bestAt = 0;
+            const total = Math.floor((buffer.length - n) / hop);
+            for (let f = 0; f < total; f++) {
+                const off = f * hop;
+                for (let i = 0; i < n; i++) {
+                    let sm = 0;
+                    for (let c = 0; c < chs; c++)
+                        sm += data[c][off + i];
+                    re[i] = (sm / chs) * win[i]
+                }
+                im.fill(0);
+                fft(re, im);
+                let acc = 0;
+                for (let k = lo; k <= hi; k++)
+                    acc += 20 * Math.log10(Math.hypot(re[k], im[k]) / n + 1e-12);
+                const db = acc / (hi - lo + 1);
+                ring.push(db);
+                ringSum += db;
+                if (ring.length > framesPerWin)
+                    ringSum -= ring.shift();
+                if (ring.length === framesPerWin) {
+                    const avg = ringSum / framesPerWin;
+                    if (avg < best) {
+                        best = avg;
+                        bestAt = (off - (framesPerWin - 1) * hop) / sr
+                    }
+                }
+                if (f % 200 === 0)
+                    await new Promise(r => setTimeout(r, 0))
+            }
+            if (!isFinite(best)) {
+                toast('COULD NOT MEASURE A NOISE FLOOR');
+                return
+            }
+            P.dnFloor = Math.max(-96, Math.min(-24, Math.round(best)));
+            $('sDnFloor').value = P.dnFloor;
+            $('vDnFloor').textContent = P.dnFloor + ' dB';
+            toast('NOISE FLOOR LEARNED · ' + P.dnFloor + ' dB · QUIETEST AT ' + fmtT(Math.max(0, bestAt)));
+        } catch (e) {
+            toast('NOISE SCAN FAILED')
+        }
+        finally {
+            $('btnLearn').style.opacity = 1
+        }
+    }
+    $('btnLearn').addEventListener('click', learnNoise);
+    /* output telemetry: 4x-oversampled (windowed-sinc) true-peak estimate, RMS, clip count, RTA bars */
+    const TP_PH = 4,
+        TP_HALF = 6;
+    const tpK = (() => {
+        const k = [];
+        for (let ph = 1; ph < TP_PH; ph++) {
+            const frac = ph / TP_PH,
+                arr = [];
+            let sum = 0;
+            for (let j = -TP_HALF + 1; j <= TP_HALF; j++) {
+                const x = j - frac;
+                const s = x === 0 ? 1 : Math.sin(Math.PI * x) / (Math.PI * x);
+                const w = .5 + .5 * Math.cos(Math.PI * x / TP_HALF);
+                arr.push(s * w);
+                sum += s * w
+            }
+            k.push(arr.map(v => v / sum))
+        }
+        return k
+    })();
+    let tmBuf = null,
+        pkHold = -Infinity,
+        pkHoldAt = 0,
+        clipCount = 0,
+        rtaTick = 0;
+    const rtaCv = $('rta'),
+        rtaG = rtaCv.getContext('2d');
+    function telemetryTick(bins) {
+        if (!AC || !N.anPk)
+            return;
+        if (!tmBuf)
+            tmBuf = new Float32Array(N.anPk.fftSize);
+        N.anPk.getFloatTimeDomainData(tmBuf);
+        const L = tmBuf.length;
+        let pk = 0,
+            sq = 0;
+        for (let i = 0; i < L; i++) {
+            const v = tmBuf[i],
+                av = Math.abs(v);
+            sq += v * v;
+            if (av > pk)
+                pk = av;
+            if (av >= .999)
+                clipCount++;
+        }
+        for (let i = TP_HALF; i < L - TP_HALF; i++) {
+            for (let ph = 0; ph < tpK.length; ph++) {
+                const k = tpK[ph];
+                let y = 0;
+                for (let j = 0; j < k.length; j++)
+                    y += k[j] * tmBuf[i + j - TP_HALF + 1];
+                const ay = Math.abs(y);
+                if (ay > pk)
+                    pk = ay
+            }
+        }
+        const rms = Math.sqrt(sq / L);
+        const now = performance.now();
+        if (pk >= pkHold || now - pkHoldAt > 1500) {
+            pkHold = pk;
+            pkHoldAt = now
+        }
+        if (++rtaTick % 3 === 0) {
+            const db = x => x > 1e-6 ? (20 * Math.log10(x)).toFixed(1) : '-inf';
+            $('tPeak').textContent = db(pkHold);
+            $('tPeak').style.color = pkHold > .99 ? 'var(--red)' : pkHold > .89 ? 'var(--amber)' : 'var(--green)';
+            $('tRms').textContent = db(rms);
+            $('tClip').textContent = clipCount;
+            $('tClip').style.color = clipCount ? 'var(--red)' : 'var(--green)';
+        }
+        if (bins) {
+            const w = rtaCv.clientWidth,
+                h = 96,
+                dpr = Math.min(1.25, window.devicePixelRatio || 1);
+            if (rtaCv.width !== Math.floor(w * dpr)) {
+                rtaCv.width = Math.floor(w * dpr);
+                rtaCv.height = h * dpr
+            }
+            rtaG.setTransform(dpr, 0, 0, dpr, 0, 0);
+            rtaG.fillStyle = '#06070c';
+            rtaG.fillRect(0, 0, w, h);
+            const bars = 48,
+                bw = w / bars;
+            for (let i = 0; i < bars; i++) {
+                const lo = Math.floor(Math.pow(bins.length, i / bars)),
+                    hi2 = Math.max(lo + 1, Math.floor(Math.pow(bins.length, (i + 1) / bars)));
+                let m = 0;
+                for (let k = lo; k < hi2 && k < bins.length; k++)
+                    if (bins[k] > m)
+                        m = bins[k];
+                const v = m / 255,
+                    bh = v * (h - 6);
+                rtaG.fillStyle = v > .9 ? 'rgba(255,77,77,.9)' : v > .72 ? 'rgba(255,182,56,.85)' : 'rgba(56,220,255,' + (.35 + v * .6) + ')';
+                rtaG.fillRect(i * bw + 1, h - bh - 3, bw - 2, bh)
+            }
+            rtaG.fillStyle = 'rgba(255,255,255,.12)';
+            for (const f of [100, 1000, 10000]) {
+                const x = Math.log(f / 20) / Math.log(AC.sampleRate / 2 / 20) * w;
+                rtaG.fillRect(x, 0, 1, h)
+            }
+        }
+    }
+
     /* ================= VISUALIZER ================= */
     const viz = $('viz'),
         vg = viz.getContext('2d');
@@ -4078,8 +4609,141 @@
         bloom: 'NEBULA BLOOM',
         helix: 'DNA HELIX',
         plasma: 'PLASMA CORE',
-        kaleido: 'KALEIDOSCOPE'
+        kaleido: 'KALEIDOSCOPE',
+        three: '3D CORE · DRAG TO ROTATE'
     };
+    /* 3D CORE: audio-reactive WebGL torus knot (three.js, loaded only when picked) */
+    let t3 = null,
+        threeLoading = false;
+    function ensureThree() {
+        if (window.THREE) {
+            if (!t3)
+                init3d();
+            return true
+        }
+        if (!threeLoading) {
+            threeLoading = true;
+            const s = document.createElement('script');
+            s.src = 'https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js';
+            s.onload = () => {
+                threeLoading = false;
+                init3d()
+            };
+            s.onerror = () => {
+                threeLoading = false;
+                toast('3D ENGINE FAILED TO LOAD — CHECK CONNECTION')
+            };
+            document.head.appendChild(s)
+        }
+        return false
+    }
+    function init3d() {
+        const cv = $('viz3d');
+        const renderer = new THREE.WebGLRenderer({
+            canvas: cv,
+            antialias: true,
+            alpha: true
+        });
+        renderer.setPixelRatio(Math.min(1.5, window.devicePixelRatio || 1));
+        const scene = new THREE.Scene();
+        const camera = new THREE.PerspectiveCamera(55, 1, .1, 100);
+        camera.position.z = 4.2;
+        const geo = new THREE.TorusKnotGeometry(1, .32, 220, 28);
+        const mesh = new THREE.Mesh(geo, new THREE.MeshStandardMaterial({
+            color: 0x38dcff,
+            emissive: 0xff5a1f,
+            emissiveIntensity: .25,
+            metalness: .6,
+            roughness: .3
+        }));
+        const wire = new THREE.Mesh(geo, new THREE.MeshBasicMaterial({
+            color: 0xffb638,
+            wireframe: true,
+            transparent: true,
+            opacity: .18
+        }));
+        scene.add(mesh, wire, new THREE.AmbientLight(0x404060, 1.2));
+        const l1 = new THREE.PointLight(0x38dcff, 1.6, 30);
+        l1.position.set(4, 3, 4);
+        const l2 = new THREE.PointLight(0xff5a1f, 1.4, 30);
+        l2.position.set(-4, -2, 3);
+        scene.add(l1, l2);
+        t3 = {
+            renderer,
+            scene,
+            camera,
+            mesh,
+            wire,
+            rotX: .4,
+            rotY: 0,
+            dragging: false,
+            lx: 0,
+            ly: 0
+        };
+        const start = (x, y) => {
+            t3.dragging = true;
+            t3.lx = x;
+            t3.ly = y;
+            cv.style.cursor = 'grabbing'
+        };
+        const move = (x, y) => {
+            if (!t3.dragging)
+                return;
+            t3.rotY += (x - t3.lx) * .01;
+            t3.rotX += (y - t3.ly) * .01;
+            t3.lx = x;
+            t3.ly = y
+        };
+        const end = () => {
+            t3.dragging = false;
+            cv.style.cursor = 'grab'
+        };
+        cv.addEventListener('mousedown', e => start(e.clientX, e.clientY));
+        window.addEventListener('mousemove', e => move(e.clientX, e.clientY));
+        window.addEventListener('mouseup', end);
+        cv.addEventListener('touchstart', e => start(e.touches[0].clientX, e.touches[0].clientY), {
+            passive: true
+        });
+        cv.addEventListener('touchmove', e => move(e.touches[0].clientX, e.touches[0].clientY), {
+            passive: true
+        });
+        cv.addEventListener('touchend', end);
+    }
+    function draw3d(bins, energy, bass) {
+        if (!ensureThree() || !t3)
+            return;
+        const cv = $('viz3d'),
+            w = cv.clientWidth,
+            h = 340;
+        if (cv.width !== Math.floor(w * t3.renderer.getPixelRatio())) {
+            t3.renderer.setSize(w, h, false);
+            t3.camera.aspect = w / h;
+            t3.camera.updateProjectionMatrix()
+        }
+        let mid = 0,
+            hi = 0;
+        if (bins) {
+            for (let i = 10; i < 60; i++)
+                mid += bins[i];
+            mid /= 50 * 255;
+            for (let i = 60; i < 200; i++)
+                hi += bins[i];
+            hi /= 140 * 255
+        }
+        if (!t3.dragging) {
+            t3.rotY += .004 + energy * .02;
+            t3.rotX += .0015
+        }
+        const s = 1 + bass * .45;
+        t3.mesh.rotation.set(t3.rotX, t3.rotY, 0);
+        t3.wire.rotation.copy(t3.mesh.rotation);
+        t3.mesh.scale.setScalar(s);
+        t3.wire.scale.setScalar(s * 1.02);
+        t3.mesh.material.emissiveIntensity = .15 + energy * 1.6;
+        t3.mesh.material.color.setHSL(.52 - mid * .12, .9, .5 + hi * .25);
+        t3.wire.material.opacity = .1 + hi * .5;
+        t3.renderer.render(t3.scene, t3.camera)
+    }
     const bloomP = Array.from({
         length: 130
     }, (_, i) => ({
@@ -4092,6 +4756,9 @@
         vizMode = b.dataset.viz;
         $('hudViz').textContent = VIZNAMES[vizMode];
         document.querySelectorAll('.vizModes button').forEach(x => x.classList.toggle('on', x === b));
+        $('viz3d').style.display = vizMode === 'three' ? 'block' : 'none';
+        if (vizMode === 'three')
+            ensureThree();
     }));
     function draw() {
         requestAnimationFrame(draw);
@@ -4131,7 +4798,12 @@
                 applySpatial();
             }
             vt += 1;
-            if (vizMode === 'spectral') {
+            gateTick();
+            telemetryTick(bins);
+            if (vizMode === 'three') {
+                draw3d(bins, energy, bass)
+            }
+            else if (vizMode === 'spectral') {
                 if (bins) {
                     const n = 96,
                         bw2 = w / n;
@@ -4472,10 +5144,27 @@
             }
         } catch (err) {}
     }
+    /* client-side crash log: last 20 errors kept in localStorage ('ssp_crashlog') for diagnosis */
+    function crashLog(kind, msg) {
+        try {
+            const k = 'ssp_crashlog',
+                arr = JSON.parse(localStorage.getItem(k) || '[]');
+            arr.push({
+                t: new Date().toISOString(),
+                kind,
+                msg: String(msg).slice(0, 300)
+            });
+            while (arr.length > 20)
+                arr.shift();
+            localStorage.setItem(k, JSON.stringify(arr))
+        } catch (e) {}
+    }
     window.addEventListener('error', ev => {
+        crashLog('error', ev.message || ev);
         toast('RECOVERED FROM AN ERROR — KEEP WORKING');
         return true
     });
+    window.addEventListener('unhandledrejection', ev => crashLog('promise', (ev.reason && ev.reason.message) || ev.reason));
     draw();
 
     /* ================= EXPORT MATRIX ================= */
@@ -4522,6 +5211,13 @@
         const oc = new OfflineAudioContext(Math.max(2, ch), buffer.length, sr);
         const s = oc.createBufferSource();
         s.buffer = buffer;
+        /* mirror the Surreal stages in the offline print (true bypass when off) */
+        const off = {
+            dn: makeDenoise(oc),
+            de: makeDeEss(oc),
+            haas: makeHaas(oc)
+        };
+        setStageParams(off, oc, 0);
         const drive = v === 'mv3' ? Math.min(1, P.drive * 1.3 + .1) : P.drive;
         const sh = oc.createWaveShaper();
         sh.curve = valveCurve(drive);
@@ -4549,12 +5245,14 @@
         cp.knee.value = 8;
         const out = oc.createGain();
         out.gain.value = Math.pow(10, P.out / 20);
-        s.connect(sh);
+        s.connect(off.dn.inp);
+        off.dn.out.connect(sh);
         sh.connect(pt);
         pt.connect(lo);
         lo.connect(mi);
         mi.connect(hi);
-        hi.connect(cp);
+        hi.connect(off.de.inp);
+        off.de.out.connect(cp);
         const wTot = (P.width || 1) * (v === 'model' ? 1.28 : 1);
         let post = cp;
         if (Math.abs(wTot - 1) > 0.001) {
@@ -4586,6 +5284,8 @@
             cp.connect(sp);
             post = wo;
         }
+        post.connect(off.haas.inp);
+        post = off.haas.out;
         if (P.room && P.room !== 'off') {
             const conv = oc.createConvolver();
             conv.buffer = makeIR(oc, P.room);
