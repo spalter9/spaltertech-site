@@ -187,6 +187,30 @@
         flex: 1;
         height: 1px;
         background: var(--line)
+    }
+
+    /* collapsible secondary panels — keep the main chain uncluttered */
+    .panel.fold h2 {
+        cursor: pointer;
+        user-select: none
+    }
+
+    .panel.fold h2 .foldHint {
+        font-size: 9px;
+        letter-spacing: .2em;
+        color: var(--dim);
+        -webkit-text-fill-color: var(--dim);
+        filter: none;
+        order: 2;
+        margin-left: 8px
+    }
+
+    .panel.fold.closed > *:not(h2) {
+        display: none
+    }
+
+    .panel.fold.closed {
+        padding-bottom: 12px
     }/* ---------- LOCK SCREEN ---------- */
     #lock {
         position: fixed;
@@ -2466,8 +2490,8 @@
             </div>
 
             <!-- SURREAL STAGES (all default OFF — the chain above is untouched until enabled) -->
-            <div class="panel">
-                <h2>SURREAL STAGES · DENOISE / DE-ESS / HAAS</h2>
+            <div class="panel fold closed">
+                <h2>SURREAL STAGES · DENOISE / DE-ESS / HAAS <span class="foldHint">▸ TAP TO OPEN</span></h2>
                 <div class="sk">EVERY STAGE BELOW IS A TRUE BYPASS WHEN OFF — YOUR MASTER CHAIN IS BIT-IDENTICAL UNTIL YOU SWITCH ONE ON</div>
                 <div class="grid2" style="margin-top:12px">
                     <div>
@@ -2556,8 +2580,8 @@
             </div>
 
             <!-- SURREAL STAGES II (transient / sub / codec restore / maximizer — all default OFF) -->
-            <div class="panel">
-                <h2>SURREAL STAGES II · SHAPE / RESTORE / MAXIMIZE</h2>
+            <div class="panel fold closed">
+                <h2>SURREAL STAGES II · SHAPE / RESTORE / MAXIMIZE <span class="foldHint">▸ TAP TO OPEN</span></h2>
                 <div class="sk">SECONDARY STAGES — ZERO = BYPASSED. THE VALVE PIPELINE ABOVE REMAINS THE MASTER CHAIN.</div>
                 <div class="grid2" style="margin-top:12px">
                     <div>
@@ -4557,6 +4581,13 @@
     }));
 
     /* ================= SURREAL STAGE CONTROLS (default OFF) ================= */
+    document.querySelectorAll('.panel.fold h2').forEach(h => h.addEventListener('click', () => {
+        const p = h.parentElement,
+            closed = p.classList.toggle('closed');
+        const hint = h.querySelector('.foldHint');
+        if (hint)
+            hint.textContent = closed ? '▸ TAP TO OPEN' : '▾ TAP TO CLOSE';
+    }));
     $('tglDn').addEventListener('click', () => {
         P.dnOn = !P.dnOn;
         $('tglDn').classList.toggle('on', P.dnOn);
