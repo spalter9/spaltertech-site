@@ -2695,7 +2695,7 @@
             <!-- EXAMINER -->
             <div class="panel">
                 <h2>THE EXAMINER · PROVENANCE AUDIT</h2>
-                <div class="sk">MEASURES THE LOADED TRACK IN YOUR BROWSER — NO AUDIO LEAVES YOUR DEVICE</div>
+                <div class="sk">BAND MODE MEASURES THE LOADED TRACK IN YOUR BROWSER — NO AUDIO LEAVES YOUR DEVICE</div>
                 <div class="tglRow" id="examBandRow" style="margin-top:10px">
                     <button class="tgl on" data-band="low">LOW · BASS-FORWARD</button>
                     <button class="tgl" data-band="mid">MID · VOCAL-FORWARD</button>
@@ -2721,6 +2721,12 @@
                     <dl id="examFeatures" style="margin-top:10px;background:#0b0c0e;border:1px solid var(--line);border-radius:8px;overflow:hidden"></dl>
                     <div class="note">Real signal measurements — pitch drift, timing deviation, spectral flatness, and stereo phase correlation — computed by splitting the mix into three frequency bands with standard filters, not by separating instruments. Nothing here is a black-box AI score, and the same file always produces the same numbers. Not legal advice; the U.S. Copyright Office decides every application on its own.</div>
                 </div>
+                <div style="height:1px;background:var(--line);margin:16px 0 12px"></div>
+                <div class="sk">STEM MODE · REAL SOURCE SEPARATION — SENDS THE LOADED FILE TO LALAL.AI, THEN MEASURES EACH STEM HERE</div>
+                <button id="btnStems" style="width:100%;margin-top:10px;border:1px solid var(--mag);border-radius:8px;padding:13px;font-family:var(--disp);font-size:11px;letter-spacing:.22em;color:var(--mag);background:#101114">◈ SEPARATE STEMS &amp; EXAMINE EACH · VOCALS / DRUMS / BASS / RESIDUAL</button>
+                <div id="stemStatus" class="sk" style="margin-top:8px;display:none;color:var(--bone)"></div>
+                <div id="stemResults" style="display:none;margin-top:12px;gap:10px"></div>
+                <div class="note">Stem mode uses LALAL.ai's separation model (a paid service, billed per minute of audio) to split the track into vocals, drums and bass; the residual is the mix minus those three. Each part is then examined with the same five measurements as band mode. Separation quality is the model's, not ours — bleed between stems is normal and shows up in the numbers.</div>
             </div>
 
             <!-- SSP ECONOMY -->
@@ -4121,6 +4127,7 @@
         $('fHash').textContent = 'SRC SHA-256 ' + hash.slice(0, 20) + '…';
         window.__srcHash = hash;
         window.__srcName = f.name.replace(/\.(mp3|wav)$/i, '');
+        window.__srcFile = f;
         $('hudMode').textContent = P.boom ? 'MASTER CHAIN' : 'ORIGINAL';
         toast('LOADED · TRANSPORT ARMED');
     }
@@ -6062,7 +6069,33 @@
             node.connect(oc.destination);
             s.start();
             const filtered = await oc.startRendering();
-
+            const {
+                featureDefs,
+                index,
+                verdict,
+                status,
+                tone
+            } = await analyzeBuffer(filtered);
+            renderExamResult(examBand.toUpperCase(), verdict, status, tone, index, featureDefs);
+            const reportTxt = 'SSPENGINE EXAMINER · ' + examBand.toUpperCase() + ' BAND\n' + verdict + ' (' + status + ') · index ' + (index == null ? 'n/a' : index) + '/100\n' + featureDefs.map(f => f.label + ': ' + f.read).join('\n') + '\n\nMeasured on a sampled window of the loaded track, entirely in this browser. Not legal advice; the U.S. Copyright Office decides every application on its own.';
+            const reportBytes = new TextEncoder().encode(reportTxt);
+            const hash = await sha256(reportBytes);
+            ledgerSave(new Date().toLocaleTimeString() + ' · EXAMINER · ' + examBand.toUpperCase() + ' · ' + verdict, hash, new Blob([reportBytes], {
+                type: 'text/plain'
+            }), (window.__srcName || 'sspengine') + '_EXAMINER_' + examBand.toUpperCase() + '.txt');
+            toast('EXAMINER COMPLETE · ' + examBand.toUpperCase() + ' — TAP SAVE IN THE LEDGER');
+        } catch (e) {
+            toast('EXAMINER FAILED — TRY A SHORTER TRACK OR RELOAD')
+        }
+        finally {
+            examBusy = false;
+            $('btnExamine').style.opacity = 1
+        }
+    }
+    $('btnExamine').addEventListener('click', runExaminer);
+    /* shared analysis core (band mode and stem mode): 20 s sampled window → five real measurements → weighted index */
+    async function analyzeBuffer(filtered) {
+        const sr = filtered.sampleRate;
             const ANALYZE_SEC = 20;
             const startSec = filtered.duration > ANALYZE_SEC ? filtered.duration * .3 : 0;
             const startSample = Math.floor(startSec * sr);
@@ -6205,25 +6238,176 @@
                 status = 'Must exclude';
                 tone = 'danger'
             }
+            return {
+                featureDefs,
+                index,
+                verdict,
+                status,
+                tone
+            };
+    }
 
-            renderExamResult(examBand.toUpperCase(), verdict, status, tone, index, featureDefs);
-
-            const reportTxt = 'SSPENGINE EXAMINER · ' + examBand.toUpperCase() + ' BAND\n' + verdict + ' (' + status + ') · index ' + (index == null ? 'n/a' : index) + '/100\n' + featureDefs.map(f => f.label + ': ' + f.read).join('\n') + '\n\nMeasured on a sampled window of the loaded track, entirely in this browser. Not legal advice; the U.S. Copyright Office decides every application on its own.';
-            const reportBytes = new TextEncoder().encode(reportTxt);
-            const hash = await sha256(reportBytes);
-            ledgerSave(new Date().toLocaleTimeString() + ' · EXAMINER · ' + examBand.toUpperCase() + ' · ' + verdict, hash, new Blob([reportBytes], {
+    /* ---- Stem examiner: real source separation via LALAL.ai (through /api/stems/*), then the same analysis per stem ---- */
+    const STEM_DEFS = [{
+        key: 'vocals',
+        label: 'VOCALS'
+    }, {
+        key: 'drum',
+        label: 'DRUMS'
+    }, {
+        key: 'bass',
+        label: 'BASS'
+    }];
+    let stemBusy = false;
+    function stemStatus(msg) {
+        const el = $('stemStatus');
+        el.style.display = 'block';
+        el.textContent = msg
+    }
+    async function apiJson(url, opts) {
+        const r = await fetch(url, opts);
+        let j = null;
+        try {
+            j = await r.json()
+        } catch (e) {}
+        if (!r.ok || !j)
+            throw new Error((j && (j.error || j.message)) || ('HTTP ' + r.status));
+        return j
+    }
+    function stemCard(label, R) {
+        const c = document.createElement('div');
+        c.style.cssText = 'background:rgba(6,7,12,.8);border:1px solid var(--line);border-radius:10px;padding:12px';
+        const col = toneColor(R.tone);
+        c.innerHTML = '<div style="display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap"><div><div style="font-family:var(--disp);font-size:12px;letter-spacing:.2em;color:var(--bone)">' + label + '</div><div style="font-size:11px;color:' + col + ';margin-top:2px">' + R.verdict + '</div></div><span style="border-radius:20px;padding:4px 10px;font-size:9px;letter-spacing:.16em;border:1px solid ' + col + ';color:' + col + '">' + R.status + '</span></div>' +
+            '<div style="display:flex;align-items:center;gap:10px;margin-top:8px"><div style="height:5px;flex:1;overflow:hidden;border-radius:5px;background:var(--line)"><div style="height:100%;width:' + (R.index == null ? 0 : R.index) + '%;background:' + col + '"></div></div><span style="font-size:10px;color:var(--dim)">' + (R.index == null ? '—' : R.index) + ' / 100</span></div>' +
+            '<div style="margin-top:8px;font-size:9px;line-height:1.7;color:var(--dim)">' + R.featureDefs.map(f => '<span style="color:var(--bone)">' + f.label + '</span> · ' + f.read).join('<br>') + '</div>';
+        return c
+    }
+    async function runStemExaminer() {
+        if (!buffer || !window.__srcFile) {
+            toast('LOAD AUDIO FIRST');
+            return
+        }
+        if (stemBusy) {
+            toast('STEM EXAMINER BUSY');
+            return
+        }
+        if (buffer.duration > 600) {
+            toast('TRACK OVER 10 MIN — TRIM IT FIRST');
+            return
+        }
+        stemBusy = true;
+        $('btnStems').style.opacity = .5;
+        const results = $('stemResults');
+        results.style.display = 'none';
+        results.innerHTML = '';
+        try {
+            const f = window.__srcFile,
+                bytes = await f.arrayBuffer();
+            const ids = {};
+            for (const s of STEM_DEFS) {
+                stemStatus('UPLOADING TO LALAL.AI · ' + s.label);
+                const j = await apiJson('/api/stems/upload', {
+                    method: 'POST',
+                    headers: {
+                        'x-filename': f.name,
+                        'content-type': 'application/octet-stream'
+                    },
+                    body: bytes
+                });
+                ids[s.key] = j.id
+            }
+            stemStatus('REQUESTING SEPARATION · VOCALS + DRUMS + BASS');
+            await apiJson('/api/stems/split', {
+                method: 'POST',
+                headers: {
+                    'content-type': 'application/json'
+                },
+                body: JSON.stringify({
+                    jobs: STEM_DEFS.map(s => ({
+                        id: ids[s.key],
+                        stem: s.key
+                    }))
+                })
+            });
+            const urls = {},
+                t0 = Date.now();
+            while (Object.keys(urls).length < STEM_DEFS.length) {
+                if (Date.now() - t0 > 15 * 60 * 1000)
+                    throw new Error('separation timed out');
+                await new Promise(r => setTimeout(r, 4000));
+                const j = await apiJson('/api/stems/check?id=' + encodeURIComponent(Object.values(ids).join(',')));
+                const res = j.result || {},
+                    prog = [];
+                for (const s of STEM_DEFS) {
+                    const r = res[ids[s.key]];
+                    if (!r)
+                        continue;
+                    const st = r.task && r.task.state;
+                    if (st === 'error' || st === 'cancelled')
+                        throw new Error(s.label + ' separation failed' + (r.task.error ? ': ' + r.task.error : ''));
+                    if (st === 'success' && r.split && r.split.stem_track)
+                        urls[s.key] = r.split.stem_track;
+                    else
+                        prog.push(s.label + ' ' + (r.task && r.task.progress != null ? r.task.progress + '%' : 'QUEUED'))
+                }
+                if (prog.length)
+                    stemStatus('SEPARATING · ' + prog.join(' · '))
+            }
+            const stems = {};
+            for (const s of STEM_DEFS) {
+                stemStatus('DOWNLOADING · ' + s.label);
+                const r = await fetch('/api/stems/fetch?url=' + encodeURIComponent(urls[s.key]));
+                if (!r.ok)
+                    throw new Error('could not download ' + s.label);
+                stems[s.key] = await ctx().decodeAudioData(await r.arrayBuffer())
+            }
+            let residual = null;
+            const aligned = STEM_DEFS.every(s => stems[s.key].sampleRate === buffer.sampleRate && Math.abs(stems[s.key].length - buffer.length) < buffer.sampleRate * .05);
+            if (aligned) {
+                const ch = buffer.numberOfChannels,
+                    n = buffer.length;
+                residual = ctx().createBuffer(ch, n, buffer.sampleRate);
+                for (let c = 0; c < ch; c++) {
+                    const out = residual.getChannelData(c);
+                    out.set(buffer.getChannelData(c));
+                    for (const s of STEM_DEFS) {
+                        const b = stems[s.key],
+                            d = b.getChannelData(Math.min(c, b.numberOfChannels - 1)),
+                            m = Math.min(n, d.length);
+                        for (let i = 0; i < m; i++)
+                            out[i] -= d[i]
+                    }
+                }
+            }
+            stemStatus('EXAMINING EACH STEM…');
+            const report = [],
+                list = STEM_DEFS.map(s => [s.label, stems[s.key]]);
+            if (residual)
+                list.push(['RESIDUAL · MIX MINUS STEMS', residual]);
+            for (const [label, b] of list) {
+                const R = await analyzeBuffer(b);
+                results.appendChild(stemCard(label, R));
+                report.push(label + ': ' + R.verdict + ' (' + R.status + ') · index ' + (R.index == null ? 'n/a' : R.index) + '/100\n' + R.featureDefs.map(f => '  ' + f.label + ': ' + f.read).join('\n'))
+            }
+            results.style.display = 'grid';
+            stemStatus('STEM EXAMINATION COMPLETE · SEPARATED BY LALAL.AI · MEASURED IN THIS BROWSER');
+            const txt = 'SSPENGINE STEM EXAMINER\nSource: ' + f.name + '\nSeparation: LALAL.ai (vocals / drums / bass); residual = mix minus stems\n\n' + report.join('\n\n') + '\n\nNot legal advice; the U.S. Copyright Office decides every application on its own.';
+            const rb = new TextEncoder().encode(txt);
+            ledgerSave(new Date().toLocaleTimeString() + ' · STEM EXAMINER · ' + list.length + ' PARTS', await sha256(rb), new Blob([rb], {
                 type: 'text/plain'
-            }), (window.__srcName || 'sspengine') + '_EXAMINER_' + examBand.toUpperCase() + '.txt');
-            toast('EXAMINER COMPLETE · ' + examBand.toUpperCase() + ' — TAP SAVE IN THE LEDGER');
+            }), (window.__srcName || 'sspengine') + '_STEM_EXAMINER.txt');
+            toast('STEM EXAMINER COMPLETE — TAP SAVE IN THE LEDGER')
         } catch (e) {
-            toast('EXAMINER FAILED — TRY A SHORTER TRACK OR RELOAD')
+            stemStatus('STEM EXAMINER FAILED · ' + (e && e.message ? e.message : 'unknown error'));
+            toast('STEM EXAMINER FAILED — SEE STATUS LINE')
         }
         finally {
-            examBusy = false;
-            $('btnExamine').style.opacity = 1
+            stemBusy = false;
+            $('btnStems').style.opacity = 1
         }
     }
-    $('btnExamine').addEventListener('click', runExaminer);
+    $('btnStems').addEventListener('click', runStemExaminer);
 
     /* ================= SSP ECONOMY ================= */
     let registered = null,
