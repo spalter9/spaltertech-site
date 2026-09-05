@@ -6924,7 +6924,9 @@
         return d
     }
     let premiumVoice = true,
-        curAudio = null;
+        curAudio = null,
+        voiceRetryAt = 0,
+        voiceWarned = false;
     function chipSpeak(t) {
         try {
             speechSynthesis.cancel();
@@ -6943,7 +6945,7 @@
             curAudio.pause();
             curAudio = null
         }
-        if (premiumVoice) {
+        if (premiumVoice && Date.now() >= voiceRetryAt) {
             try {
                 const r = await fetch('/api/spalty-voice', {
                     method: 'POST',
@@ -6958,10 +6960,27 @@
                     const b = await r.blob();
                     curAudio = new Audio(URL.createObjectURL(b));
                     curAudio.play().catch(() => chipSpeak(t));
+                    voiceWarned = false;
                     return
                 }
-            } catch (e) {}
-            premiumVoice = false; // server voice unavailable here — fall back quietly this session
+                /* say why, once, then keep trying the real voice after a short cooldown instead of giving up for the session */
+                let why = 'HTTP ' + r.status;
+                try {
+                    const j = await r.json();
+                    why += ' · ' + ((j.detail && (j.detail.message || j.detail.status)) || j.error || j.message || '')
+                } catch (e) {}
+                if (!voiceWarned) {
+                    toast('SPALTY VOICE SERVER FAILED (' + why + ') — USING BACKUP VOICE, WILL RETRY');
+                    voiceWarned = true
+                }
+                crashLog('voice', why);
+            } catch (e) {
+                if (!voiceWarned) {
+                    toast('SPALTY VOICE SERVER UNREACHABLE — USING BACKUP VOICE, WILL RETRY');
+                    voiceWarned = true
+                }
+            }
+            voiceRetryAt = Date.now() + 60000;
         }
         chipSpeak(t);
     }
