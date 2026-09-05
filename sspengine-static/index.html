@@ -2555,6 +2555,72 @@
                 </div>
             </div>
 
+            <!-- SURREAL STAGES II (transient / sub / codec restore / maximizer — all default OFF) -->
+            <div class="panel">
+                <h2>SURREAL STAGES II · SHAPE / RESTORE / MAXIMIZE</h2>
+                <div class="sk">SECONDARY STAGES — ZERO = BYPASSED. THE VALVE PIPELINE ABOVE REMAINS THE MASTER CHAIN.</div>
+                <div class="grid2" style="margin-top:12px">
+                    <div>
+                        <div class="ctl">
+                            <div class="row">
+                                <span>TRANSIENT · ATTACK</span>
+                                <b id="vTrAtk">0%</b>
+                            </div>
+                            <input type="range" id="sTrAtk" min="-100" max="100" value="0">
+                        </div>
+                        <div class="ctl">
+                            <div class="row">
+                                <span>TRANSIENT · SUSTAIN</span>
+                                <b id="vTrSus">0%</b>
+                            </div>
+                            <input type="range" id="sTrSus" min="-100" max="100" value="0">
+                        </div>
+                        <div class="ctl">
+                            <div class="row">
+                                <span>SUB BUMP · 50 Hz</span>
+                                <b id="vSub">0.0 dB</b>
+                            </div>
+                            <input type="range" id="sSub" min="0" max="8" value="0" step="0.5">
+                        </div>
+                        <div class="ctl">
+                            <div class="row">
+                                <span>CODEC RESTORE · HF EXCITER</span>
+                                <b id="vCodec">0%</b>
+                            </div>
+                            <input type="range" id="sCodec" min="0" max="100" value="0">
+                        </div>
+                    </div>
+                    <div>
+                        <div class="tglRow">
+                            <button class="tgl" id="tglMx">LOUDNESS MAXIMIZER · TRUE-PEAK LIMITER</button>
+                        </div>
+                        <div class="ctl" style="margin-top:10px">
+                            <div class="row">
+                                <span>MAXIMIZER DRIVE</span>
+                                <b id="vMxDrive">+4.0 dB</b>
+                            </div>
+                            <input type="range" id="sMxDrive" min="0" max="12" value="4" step="0.5">
+                        </div>
+                        <div class="ctl">
+                            <div class="row">
+                                <span>CEILING · dBTP</span>
+                                <b id="vMxCeil">-0.3 dBTP</b>
+                            </div>
+                            <input type="range" id="sMxCeil" min="-3" max="0" value="-0.3" step="0.1">
+                        </div>
+                        <div class="ctl">
+                            <div class="row">
+                                <span>RELEASE</span>
+                                <b id="vMxRel">120 ms</b>
+                            </div>
+                            <input type="range" id="sMxRel" min="50" max="500" value="120" step="10">
+                        </div>
+                        <div style="font-size:10px;letter-spacing:.14em;color:var(--dim)">GAIN REDUCTION <b id="tGr" style="color:var(--green)">0.0</b> dB <span style="font-size:8px">· 4 ms LOOKAHEAD · 4× OVERSAMPLED DETECTOR</span></div>
+                        <div class="note">Transient shaper and maximizer run as AudioWorklet DSP (differential-envelope shaper; lookahead limiter with a 4×-oversampled true-peak detector). Sub bump is a 50 Hz bell; codec restore is an additive high-band exciter. Nothing here touches the signal until its control leaves zero.</div>
+                    </div>
+                </div>
+            </div>
+
             <!-- PRESETS -->
             <div class="panel">
                 <h2>ARTIST PRESETS</h2>
@@ -3482,7 +3548,15 @@
         deRatio: 4,
         haasMs: 18,
         haasMix: 0,
-        erMix: 0
+        erMix: 0,
+        trAtk: 0,
+        trSus: 0,
+        subDb: 0,
+        codec: 0,
+        mxOn: false,
+        mxDrive: 4,
+        mxCeil: -0.3,
+        mxRel: 120
     };
     let N = {}; // live nodes
 
@@ -3490,6 +3564,7 @@
         if (!AC) {
             AC = new (window.AudioContext || window.webkitAudioContext)();
             buildGraph();
+            loadWorklets();
         }
         if (AC.state === 'suspended')
             AC.resume();
@@ -3642,7 +3717,7 @@
         const h = P.dnOn ? P.dnHiss : 0;
         ramp(n.dn.cPres.threshold, -h * 2.5);
         ramp(n.dn.cPres.ratio, 1 + h * .7);
-        ramp(n.dn.cAir.threshold, -h * 2.7 + .6);
+        ramp(n.dn.cAir.threshold, Math.min(0, -h * 2.7 + .6));
         ramp(n.dn.cAir.ratio, 1 + h * .9);
         ramp(n.dn.byp.gain, P.dnOn ? 0 : 1);
         ramp(n.dn.wet.gain, P.dnOn ? 1 : 0);
@@ -3657,10 +3732,171 @@
         ramp(n.haas.dR.delayTime, P.haasMs / 1000);
         ramp(n.haas.wet.gain, P.haasMix);
         ramp(n.haas.er.gain, P.erMix);
+        /* stages II */
+        const trOn = (P.trAtk !== 0 || P.trSus !== 0) && !!n.tr.node;
+        ramp(n.tr.byp.gain, trOn ? 0 : 1);
+        ramp(n.tr.wet.gain, trOn ? 1 : 0);
+        if (n.tr.node) {
+            ramp(n.tr.node.parameters.get('attack'), P.trAtk);
+            ramp(n.tr.node.parameters.get('sustain'), P.trSus)
+        }
+        const subOn = P.subDb > 0;
+        ramp(n.sub.f.gain, P.subDb);
+        ramp(n.sub.byp.gain, subOn ? 0 : 1);
+        ramp(n.sub.wet.gain, subOn ? 1 : 0);
+        ramp(n.codec.wet.gain, P.codec * .35);
+        const mxOn = P.mxOn && !!n.mx.node;
+        ramp(n.mx.byp.gain, mxOn ? 0 : 1);
+        ramp(n.mx.wet.gain, mxOn ? 1 : 0);
+        if (n.mx.node) {
+            ramp(n.mx.node.parameters.get('gain'), Math.pow(10, P.mxDrive / 20));
+            ramp(n.mx.node.parameters.get('ceiling'), Math.pow(10, P.mxCeil / 20));
+            ramp(n.mx.node.parameters.get('release'), P.mxRel / 1000)
+        }
     }
     function applyStages() {
         if (AC && N.dn)
             setStageParams(N, AC, .03);
+    }
+    /* ---- Stages II ---- */
+    const SSP_WORKLET_SRC = [
+        "class SspTransient extends AudioWorkletProcessor {",
+        "  static get parameterDescriptors() { return [",
+        "    { name: 'attack', defaultValue: 0, minValue: -1, maxValue: 1, automationRate: 'k-rate' },",
+        "    { name: 'sustain', defaultValue: 0, minValue: -1, maxValue: 1, automationRate: 'k-rate' } ] }",
+        "  constructor() { super(); this.ef = [0, 0]; this.es = [0, 0]; this.g = [1, 1] }",
+        "  process(inputs, outputs, params) {",
+        "    const inp = inputs[0], out = outputs[0]; if (!inp || !inp.length) return true;",
+        "    const att = params.attack[0], sus = params.sustain[0];",
+        "    const cFa = Math.exp(-1 / (sampleRate * 0.0005)), cFr = Math.exp(-1 / (sampleRate * 0.02));",
+        "    const cSa = Math.exp(-1 / (sampleRate * 0.02)), cSr = Math.exp(-1 / (sampleRate * 0.02));",
+        "    const cG = Math.exp(-1 / (sampleRate * 0.001));",
+        "    for (let c = 0; c < inp.length; c++) {",
+        "      const x = inp[c], y = out[c]; if (!y) continue;",
+        "      let ef = this.ef[c] || 0, es = this.es[c] || 0, g = this.g[c] || 1;",
+        "      for (let i = 0; i < x.length; i++) {",
+        "        const a = Math.abs(x[i]);",
+        "        ef = a > ef ? ef * cFa + a * (1 - cFa) : ef * cFr + a * (1 - cFr);",
+        "        es = a > es ? es * cSa + a * (1 - cSa) : es * cSr + a * (1 - cSr);",
+        "        const d = (ef - es) / (es + 1e-4);",
+        "        const tr = Math.min(1, Math.max(0, d)), su = Math.min(1, Math.max(0, -d));",
+        "        let gt = (1 + att * tr * 1.6) * (1 + sus * su * 1.2); if (gt < 0.05) gt = 0.05;",
+        "        g = g * cG + gt * (1 - cG); y[i] = x[i] * g }",
+        "      this.ef[c] = ef; this.es[c] = es; this.g[c] = g }",
+        "    for (let c = inp.length; c < out.length; c++) out[c].set(out[0]);",
+        "    return true } }",
+        "class SspLimiter extends AudioWorkletProcessor {",
+        "  static get parameterDescriptors() { return [",
+        "    { name: 'gain', defaultValue: 1, minValue: 0, maxValue: 16, automationRate: 'k-rate' },",
+        "    { name: 'ceiling', defaultValue: 0.966, minValue: 0.05, maxValue: 1, automationRate: 'k-rate' },",
+        "    { name: 'release', defaultValue: 0.12, minValue: 0.01, maxValue: 2, automationRate: 'k-rate' } ] }",
+        "  constructor() { super();",
+        "    this.L = Math.max(16, Math.round(sampleRate * 0.004));",
+        "    this.buf = [new Float32Array(this.L), new Float32Array(this.L)];",
+        "    this.req = new Float32Array(this.L).fill(1); this.w = 0; this.g = 1; this.grMin = 1; this.n = 0;",
+        "    this.hist = [new Float32Array(16), new Float32Array(16)]; this.hw = 0;",
+        "    this.k = [];",
+        "    for (let ph = 1; ph < 4; ph++) { const f = ph / 4, arr = []; let s = 0;",
+        "      for (let j = -5; j <= 6; j++) { const x = j - f; const v = (x === 0 ? 1 : Math.sin(Math.PI * x) / (Math.PI * x)) * (0.5 + 0.5 * Math.cos(Math.PI * x / 6)); arr.push(v); s += v }",
+        "      this.k.push(arr.map(v => v / s)) } }",
+        "  truePeak(c) { const h = this.hist[c], b = this.hw; let pk = 0;",
+        "    for (let ph = 0; ph < 3; ph++) { const k = this.k[ph]; let y = 0;",
+        "      for (let j = 0; j < 12; j++) y += k[j] * h[(b - 12 + j + 32) & 15];",
+        "      const ay = Math.abs(y); if (ay > pk) pk = ay } return pk }",
+        "  process(inputs, outputs, params) {",
+        "    const inp = inputs[0], out = outputs[0]; if (!inp || !inp.length) return true;",
+        "    const gain = params.gain[0], ceil = params.ceiling[0], rel = params.release[0];",
+        "    const nch = Math.min(2, inp.length), L = this.L, frames = inp[0].length;",
+        "    const cRel = Math.exp(-1 / (sampleRate * rel)), cAtk = Math.exp(-1 / (L * 0.25));",
+        "    for (let i = 0; i < frames; i++) {",
+        "      let pk = 0;",
+        "      for (let c = 0; c < nch; c++) { const v = inp[c][i] * gain; this.hist[c][this.hw] = v; const av = Math.abs(v); if (av > pk) pk = av }",
+        "      this.hw = (this.hw + 1) & 15;",
+        "      for (let c = 0; c < nch; c++) { const tp = this.truePeak(c); if (tp > pk) pk = tp }",
+        "      const reqNew = pk > ceil ? ceil / pk : 1;",
+        "      let mn = reqNew; const rq = this.req; for (let j = 0; j < L; j++) if (rq[j] < mn) mn = rq[j];",
+        "      const w = this.w;",
+        "      if (mn < this.g) this.g = this.g * cAtk + mn * (1 - cAtk); else this.g = this.g * cRel + mn * (1 - cRel);",
+        "      const g = this.g; if (g < this.grMin) this.grMin = g;",
+        "      for (let c = 0; c < nch; c++) { const d = this.buf[c][w]; this.buf[c][w] = this.hist[c][(this.hw - 1 + 16) & 15];",
+        "        let y = d * g; if (y > ceil) y = ceil; else if (y < -ceil) y = -ceil; if (out[c]) out[c][i] = y }",
+        "      for (let c = nch; c < out.length; c++) out[c][i] = out[0][i];",
+        "      rq[w] = reqNew; this.w = (w + 1) % L;",
+        "      if (++this.n >= 2048) { this.port.postMessage(this.grMin); this.grMin = 1; this.n = 0 } }",
+        "    return true } }",
+        "registerProcessor('ssp-transient', SspTransient);",
+        "registerProcessor('ssp-limiter', SspLimiter);"
+    ].join('\n');
+    let WORKLET_URL = null;
+    try {
+        WORKLET_URL = URL.createObjectURL(new Blob([SSP_WORKLET_SRC], {
+            type: 'application/javascript'
+        }))
+    } catch (e) {}
+    function makeTransient(a) {
+        return bypassBlock(a)
+    }
+    function makeSub(a) {
+        const b = bypassBlock(a);
+        b.f = a.createBiquadFilter();
+        b.f.type = 'peaking';
+        b.f.frequency.value = 50;
+        b.f.Q.value = 1.1;
+        b.f.gain.value = 0;
+        b.inp.connect(b.f);
+        b.f.connect(b.wet);
+        return b
+    }
+    function makeCodec(a) {
+        const b = bypassBlock(a);
+        b.hp = a.createBiquadFilter();
+        b.hp.type = 'highpass';
+        b.hp.frequency.value = 7000;
+        b.hp.Q.value = .707;
+        b.sh = a.createWaveShaper();
+        const n = 1024,
+            c = new Float32Array(n),
+            tk = Math.tanh(2.2);
+        for (let i = 0; i < n; i++) {
+            const x = i / (n - 1) * 2 - 1;
+            c[i] = Math.tanh(2.2 * x) / tk
+        }
+        b.sh.curve = c;
+        b.sh.oversample = '2x';
+        b.inp.connect(b.hp);
+        b.hp.connect(b.sh);
+        b.sh.connect(b.wet);
+        return b
+    }
+    function makeMax(a) {
+        return bypassBlock(a)
+    }
+    let mxGR = 1;
+    function attachWorklets(a, n, live) {
+        try {
+            n.tr.node = new AudioWorkletNode(a, 'ssp-transient', {
+                outputChannelCount: [2]
+            });
+            n.tr.inp.connect(n.tr.node);
+            n.tr.node.connect(n.tr.wet);
+            n.mx.node = new AudioWorkletNode(a, 'ssp-limiter', {
+                outputChannelCount: [2]
+            });
+            n.mx.inp.connect(n.mx.node);
+            n.mx.node.connect(n.mx.wet);
+            if (live)
+                n.mx.node.port.onmessage = e => {
+                    mxGR = e.data
+                };
+        } catch (e) {}
+    }
+    function loadWorklets() {
+        if (!AC || !AC.audioWorklet || !WORKLET_URL)
+            return;
+        AC.audioWorklet.addModule(WORKLET_URL).then(() => {
+            attachWorklets(AC, N, true);
+            applyStages()
+        }).catch(() => {});
     }
 
     function buildGraph() {
@@ -3715,13 +3951,20 @@
         N.dn = makeDenoise(a);
         N.de = makeDeEss(a);
         N.haas = makeHaas(a);
+        N.tr = makeTransient(a);
+        N.sub = makeSub(a);
+        N.codec = makeCodec(a);
+        N.mx = makeMax(a);
         N.inWet.connect(N.dn.inp);
-        N.dn.out.connect(N.shaper);
+        N.dn.out.connect(N.tr.inp);
+        N.tr.out.connect(N.shaper);
         N.shaper.connect(N.preTrim);
         N.preTrim.connect(N.low);
         N.low.connect(N.mid);
         N.mid.connect(N.high);
-        N.high.connect(N.de.inp);
+        N.high.connect(N.sub.inp);
+        N.sub.out.connect(N.codec.inp);
+        N.codec.out.connect(N.de.inp);
         N.de.out.connect(N.comp);
         /* M/S width matrix: mid untouched (mono-safe), side scaled by width */
         N.wsplit = a.createChannelSplitter(2);
@@ -3763,7 +4006,8 @@
         N.panOut.connect(N.out);
         N.wideOut.connect(N.spatialByp);
         N.spatialByp.connect(N.out);
-        N.out.connect(N.safety);
+        N.out.connect(N.mx.inp);
+        N.mx.out.connect(N.safety);
         N.safety.connect(N.wet);
         // dry chain
         N.inDry.connect(N.dry);
@@ -4467,6 +4711,50 @@
         }
     }
     $('btnLearn').addEventListener('click', learnNoise);
+    /* stages II controls */
+    bindSlider('sTrAtk', 'vTrAtk', v => (v > 0 ? '+' : '') + v + '%', v => {
+        P.trAtk = v / 100;
+        if (v)
+            ctx();
+        applyStages()
+    });
+    bindSlider('sTrSus', 'vTrSus', v => (v > 0 ? '+' : '') + v + '%', v => {
+        P.trSus = v / 100;
+        if (v)
+            ctx();
+        applyStages()
+    });
+    bindSlider('sSub', 'vSub', v => (v > 0 ? '+' : '') + v.toFixed(1) + ' dB', v => {
+        P.subDb = v;
+        if (v)
+            ctx();
+        applyStages()
+    });
+    bindSlider('sCodec', 'vCodec', v => v + '%', v => {
+        P.codec = v / 100;
+        if (v)
+            ctx();
+        applyStages()
+    });
+    $('tglMx').addEventListener('click', () => {
+        P.mxOn = !P.mxOn;
+        $('tglMx').classList.toggle('on', P.mxOn);
+        ctx();
+        applyStages();
+        toast(P.mxOn ? 'MAXIMIZER ENGAGED · CEILING ' + P.mxCeil.toFixed(1) + ' dBTP' : 'MAXIMIZER · BYPASSED (CHAIN UNTOUCHED)')
+    });
+    bindSlider('sMxDrive', 'vMxDrive', v => '+' + v.toFixed(1) + ' dB', v => {
+        P.mxDrive = v;
+        applyStages()
+    });
+    bindSlider('sMxCeil', 'vMxCeil', v => v.toFixed(1) + ' dBTP', v => {
+        P.mxCeil = v;
+        applyStages()
+    });
+    bindSlider('sMxRel', 'vMxRel', v => v + ' ms', v => {
+        P.mxRel = v;
+        applyStages()
+    });
     /* output telemetry: 4x-oversampled (windowed-sinc) true-peak estimate, RMS, clip count, RTA bars */
     const TP_PH = 4,
         TP_HALF = 6;
@@ -4536,6 +4824,9 @@
             $('tRms').textContent = db(rms);
             $('tClip').textContent = clipCount;
             $('tClip').style.color = clipCount ? 'var(--red)' : 'var(--green)';
+            const gr = P.mxOn && mxGR > 0 ? -20 * Math.log10(mxGR) : 0;
+            $('tGr').textContent = gr.toFixed(1);
+            $('tGr').style.color = gr > 6 ? 'var(--red)' : gr > 2 ? 'var(--amber)' : 'var(--green)';
         }
         if (bins) {
             const w = rtaCv.clientWidth,
@@ -5215,8 +5506,18 @@
         const off = {
             dn: makeDenoise(oc),
             de: makeDeEss(oc),
-            haas: makeHaas(oc)
+            haas: makeHaas(oc),
+            tr: makeTransient(oc),
+            sub: makeSub(oc),
+            codec: makeCodec(oc),
+            mx: makeMax(oc)
         };
+        if (oc.audioWorklet && WORKLET_URL && (P.trAtk || P.trSus || P.mxOn)) {
+            try {
+                await oc.audioWorklet.addModule(WORKLET_URL);
+                attachWorklets(oc, off, false)
+            } catch (e) {}
+        }
         setStageParams(off, oc, 0);
         const drive = v === 'mv3' ? Math.min(1, P.drive * 1.3 + .1) : P.drive;
         const sh = oc.createWaveShaper();
@@ -5246,12 +5547,15 @@
         const out = oc.createGain();
         out.gain.value = Math.pow(10, P.out / 20);
         s.connect(off.dn.inp);
-        off.dn.out.connect(sh);
+        off.dn.out.connect(off.tr.inp);
+        off.tr.out.connect(sh);
         sh.connect(pt);
         pt.connect(lo);
         lo.connect(mi);
         mi.connect(hi);
-        hi.connect(off.de.inp);
+        hi.connect(off.sub.inp);
+        off.sub.out.connect(off.codec.inp);
+        off.codec.out.connect(off.de.inp);
         off.de.out.connect(cp);
         const wTot = (P.width || 1) * (v === 'model' ? 1.28 : 1);
         let post = cp;
@@ -5296,19 +5600,21 @@
             rw.connect(out)
         }
         post.connect(out);
+        out.connect(off.mx.inp);
+        const fin = off.mx.out;
         if (v === 'mono') {
             const monoSplit = oc.createChannelSplitter(2);
             const monoSum = oc.createGain();
             monoSum.gain.value = .5;
             const monoMerge = oc.createChannelMerger(2);
-            out.connect(monoSplit);
+            fin.connect(monoSplit);
             monoSplit.connect(monoSum, 0);
             monoSplit.connect(monoSum, 1);
             monoSum.connect(monoMerge, 0, 0);
             monoSum.connect(monoMerge, 0, 1);
             monoMerge.connect(oc.destination);
         } else {
-            out.connect(oc.destination);
+            fin.connect(oc.destination);
         }
         s.start();
         return await oc.startRendering();
