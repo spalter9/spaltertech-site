@@ -209,6 +209,32 @@
         display: none
     }
 
+    .resetBtn {
+        -webkit-text-fill-color: var(--dim);
+        filter: none;
+        font-family: var(--disp);
+        font-size: 9px;
+        letter-spacing: .16em;
+        color: var(--dim);
+        background: rgba(255, 255, 255, .04);
+        border: 1px solid rgba(255, 255, 255, .16);
+        border-radius: 20px;
+        padding: 4px 10px;
+        cursor: pointer;
+        white-space: nowrap;
+        transition: color .15s, border-color .15s, background .15s
+    }
+
+    .resetBtn:hover {
+        color: #fff;
+        border-color: rgba(255, 120, 60, .7);
+        background: rgba(255, 120, 60, .12)
+    }
+
+    .resetBtn:active {
+        transform: scale(.96)
+    }
+
     .panel.fold.closed {
         padding-bottom: 12px
     }/* ---------- LOCK SCREEN ---------- */
@@ -2724,7 +2750,7 @@
             <div class="grid2">
                 <!-- VALVE PIPELINE -->
                 <div class="panel">
-                    <h2>VALVE PIPELINE · DSP</h2>
+                    <h2>VALVE PIPELINE · DSP<button type="button" class="resetBtn" id="resetPipeline" title="Reset every Valve Pipeline slider back to its default setting">⟲ RESET TO DEFAULT</button></h2>
                     <div class="ctl">
                         <div class="row">
                             <span>VALVE DRIVE</span>
@@ -7463,6 +7489,19 @@
     P.surreal = 40;
     bindSlider('sSur', 'vSur', v => v + '%', v => {
         P.surreal = v
+    });
+
+    // Reset key — snaps the main Valve Pipeline sliders back to their shipped
+    // defaults (not the Surreal Stage panels; those have their own settings).
+    const PIPELINE_DEFAULTS = { sDrive: 20, sLow: 3, sMid: 1.5, sHigh: 3, sWide: 100, sComp: -16, sOut: 0, sSur: 40 };
+    $('resetPipeline').addEventListener('click', e => {
+        e.stopPropagation();
+        for (const id in PIPELINE_DEFAULTS) {
+            const s = $(id);
+            s.value = PIPELINE_DEFAULTS[id];
+            s.dispatchEvent(new Event('input', { bubbles: true }))
+        }
+        toast('VALVE PIPELINE RESET TO DEFAULT')
     });
     let srvJob = null;
     async function srvUpload() {
