@@ -373,7 +373,129 @@
         font-size: 10px;
         letter-spacing: .25em;
         color: var(--dim)
-    }/* ---------- TOP BAR ---------- */
+    }
+
+    #siteLock {
+        position: fixed;
+        inset: 0;
+        z-index: 500;
+        background: var(--chassis);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-direction: column;
+        gap: 26px
+    }
+
+    #siteLock::before {
+        content: "";
+        position: absolute;
+        left: 50%;
+        top: 50%;
+        width: 340px;
+        height: 340px;
+        border-radius: 50%;
+        border: 1px solid rgba(255, 90, 31, .25);
+        box-shadow: 0 0 40px rgba(255, 90, 31, .12) inset;
+        animation: ringspin 14s linear infinite;
+        pointer-events: none;
+        z-index: 0
+    }
+
+    #siteLock::after {
+        content: "";
+        position: absolute;
+        left: 50%;
+        top: 50%;
+        width: 420px;
+        height: 420px;
+        border-radius: 50%;
+        border: 1px dashed rgba(56, 220, 255, .22);
+        animation: ringspin 26s linear infinite reverse;
+        pointer-events: none;
+        z-index: 0
+    }
+
+    #siteLock > * {
+        position: relative;
+        z-index: 1
+    }
+
+    #siteLock .logo {
+        font-family: var(--disp);
+        font-weight: 700;
+        font-size: 32px;
+        letter-spacing: .34em;
+        color: var(--bone);
+        text-shadow: 0 0 24px rgba(255, 90, 31, .35);
+        animation: logopulse 3.2s ease-in-out infinite
+    }
+
+    #siteLock .logo b {
+        color: var(--valve);
+        text-shadow: 0 0 18px rgba(255, 106, 43, .6)
+    }
+
+    #siteLock .hint {
+        font-size: 10px;
+        letter-spacing: .25em;
+        color: var(--dim)
+    }
+
+    #siteLockDots {
+        display: flex;
+        gap: 14px;
+        height: 16px
+    }
+
+    #siteLockDots i {
+        width: 12px;
+        height: 12px;
+        border-radius: 50%;
+        border: 1px solid var(--line);
+        transition: .15s
+    }
+
+    #siteLockDots i.f {
+        background: var(--amber);
+        border-color: var(--amber);
+        box-shadow: 0 0 10px var(--amber)
+    }
+
+    #siteLockDots.bad i {
+        border-color: var(--red);
+        background: var(--red);
+        box-shadow: 0 0 10px var(--red)
+    }
+
+    #siteKeypad {
+        display: grid;
+        grid-template-columns: repeat(3, 72px);
+        gap: 12px
+    }
+
+    #siteKeypad button {
+        height: 72px;
+        border-radius: 50%;
+        border: 1px solid rgba(255, 90, 31, .5);
+        background: radial-gradient(circle at 35% 28%, #2a2334, #1e0e0b 75%);
+        font-family: var(--disp);
+        font-size: 22px;
+        color: #ffd9c2;
+        text-shadow: 0 0 8px rgba(255, 90, 31, .6);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, .55), 0 0 14px rgba(255, 90, 31, .22), 0 1px 0 rgba(255, 255, 255, .06) inset
+    }
+
+    #siteKeypad button:active {
+        transform: translateY(2px);
+        box-shadow: 0 1px 3px rgba(0, 0, 0, .6)
+    }
+
+    #siteKeypad .util {
+        font-size: 11px;
+        color: var(--dim)
+    }
+/* ---------- TOP BAR ---------- */
     .top {
         display: flex;
         align-items: center;
@@ -2089,6 +2211,22 @@
     </style>
 </head>
 <body>
+    <div id="siteLock">
+        <div class="logo">
+            SPALTER
+            <b>TECH</b>
+        </div>
+        <div class="sk">THIS SITE IS PRIVATE · ACCESS CODE REQUIRED</div>
+        <div id="siteLockDots">
+            <i></i>
+            <i></i>
+            <i></i>
+            <i></i>
+        </div>
+        <div id="siteKeypad"></div>
+        <div class="hint">MOUSE / TOUCH ONLY · NO KEYBOARD REQUIRED</div>
+    </div>
+
     <div id="bgA"></div>
     <div id="bgB"></div>
 
@@ -3893,7 +4031,47 @@
         $('invExit').addEventListener('click', () => show('landing'));
     })();
 
-    /* ================= LOCK (code 888, mouse-only keypad) ================= */
+    /* ================= SITE LOCK (code 1967, gates the entire site) ================= */
+    (function() {
+        const CODE = '1967';
+        let entry = '';
+        const pad = $('siteKeypad'),
+            dots = $('siteLockDots').children;
+        const keys = ['1', '2', '3', '4', '5', '6', '7', '8', '9', 'CLR', '0', '◀'];
+        keys.forEach(k => {
+            const b = document.createElement('button');
+            b.textContent = k;
+            if (k === 'CLR' || k === '◀')
+                b.className = 'util';
+            b.addEventListener('click', () => {
+                if (k === 'CLR')
+                    entry = '';
+                else if (k === '◀')
+                    entry = entry.slice(0, -1);
+                else if (entry.length < 4)
+                    entry += k;
+                for (let i = 0; i < 4; i++)
+                    dots[i].classList.toggle('f', i < entry.length);
+                if (entry.length === 4) {
+                    if (entry === CODE) {
+                        $('siteLock').style.display = 'none';
+                    }
+                    else {
+                        $('siteLockDots').classList.add('bad');
+                        setTimeout(() => {
+                            $('siteLockDots').classList.remove('bad');
+                            entry = '';
+                            for (const d of dots)
+                                d.classList.remove('f')
+                        }, 350)
+                    }
+                }
+            });
+            pad.appendChild(b)
+        });
+    })();
+
+    /* ================= LOCK (code 1967, mouse-only keypad) ================= */
     (function() {
         const CODE = '1967';
         let entry = '';
