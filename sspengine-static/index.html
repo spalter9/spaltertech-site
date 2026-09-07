@@ -2892,30 +2892,30 @@
                     <div class="ctl">
                         <div class="row">
                             <span>VALVE DRIVE</span>
-                            <b id="vDrive">20%</b>
+                            <b id="vDrive">0%</b>
                         </div>
-                        <input type="range" id="sDrive" min="0" max="100" value="20">
+                        <input type="range" id="sDrive" min="0" max="100" value="0">
                     </div>
                     <div class="ctl">
                         <div class="row">
                             <span>LOW SHELF · 90 Hz</span>
-                            <b id="vLow">+3.0 dB</b>
+                            <b id="vLow">0.0 dB</b>
                         </div>
-                        <input type="range" id="sLow" min="-12" max="12" value="3" step="0.5">
+                        <input type="range" id="sLow" min="-12" max="12" value="0" step="0.5">
                     </div>
                     <div class="ctl">
                         <div class="row">
                             <span>PRESENCE · 2.8 kHz</span>
-                            <b id="vMid">+1.5 dB</b>
+                            <b id="vMid">0.0 dB</b>
                         </div>
-                        <input type="range" id="sMid" min="-12" max="12" value="1.5" step="0.5">
+                        <input type="range" id="sMid" min="-12" max="12" value="0" step="0.5">
                     </div>
                     <div class="ctl">
                         <div class="row">
                             <span>AIR SHELF · 11 kHz</span>
-                            <b id="vHigh">+3.0 dB</b>
+                            <b id="vHigh">0.0 dB</b>
                         </div>
-                        <input type="range" id="sHigh" min="-12" max="12" value="3" step="0.5">
+                        <input type="range" id="sHigh" min="-12" max="12" value="0" step="0.5">
                     </div>
                     <div class="ctl">
                         <div class="row">
@@ -2927,9 +2927,9 @@
                     <div class="ctl">
                         <div class="row">
                             <span>GLUE COMP · THRESH</span>
-                            <b id="vComp">-16 dB</b>
+                            <b id="vComp">0 dB</b>
                         </div>
-                        <input type="range" id="sComp" min="-40" max="0" value="-16">
+                        <input type="range" id="sComp" min="-40" max="0" value="0">
                     </div>
                     <div class="ctl">
                         <div class="row">
@@ -2941,9 +2941,9 @@
                     <div class="ctl">
                         <div class="row">
                             <span>SURREAL CLEAN · AI ARTIFACTS</span>
-                            <b id="vSur">40%</b>
+                            <b id="vSur">0%</b>
                         </div>
-                        <input type="range" id="sSur" min="0" max="100" value="40">
+                        <input type="range" id="sSur" min="0" max="100" value="0">
                     </div>
                 </div>
 
@@ -2999,16 +2999,16 @@
                         <div class="ctl" style="margin-top:10px">
                             <div class="row">
                                 <span>HISS REDUCTION · 5–12 kHz</span>
-                                <b id="vDnHiss">6 dB</b>
+                                <b id="vDnHiss">0 dB</b>
                             </div>
-                            <input type="range" id="sDnHiss" min="0" max="12" value="6" step="0.5">
+                            <input type="range" id="sDnHiss" min="0" max="12" value="0" step="0.5">
                         </div>
                         <div class="ctl">
                             <div class="row">
                                 <span>SPECTRAL GATE DEPTH</span>
-                                <b id="vDnGate">8 dB</b>
+                                <b id="vDnGate">0 dB</b>
                             </div>
-                            <input type="range" id="sDnGate" min="0" max="18" value="8" step="0.5">
+                            <input type="range" id="sDnGate" min="0" max="18" value="0" step="0.5">
                         </div>
                         <div class="ctl">
                             <div class="row">
@@ -3037,9 +3037,9 @@
                         <div class="ctl">
                             <div class="row">
                                 <span>DE-ESS RATIO</span>
-                                <b id="vDeRatio">4.0 : 1</b>
+                                <b id="vDeRatio">1.0 : 1</b>
                             </div>
-                            <input type="range" id="sDeRatio" min="1" max="10" value="4" step="0.5">
+                            <input type="range" id="sDeRatio" min="1" max="10" value="1" step="0.5">
                         </div>
                     </div>
                     <div>
@@ -3118,9 +3118,9 @@
                         <div class="ctl" style="margin-top:10px">
                             <div class="row">
                                 <span>MAXIMIZER DRIVE</span>
-                                <b id="vMxDrive">+4.0 dB</b>
+                                <b id="vMxDrive">0.0 dB</b>
                             </div>
-                            <input type="range" id="sMxDrive" min="0" max="12" value="4" step="0.5">
+                            <input type="range" id="sMxDrive" min="0" max="12" value="0" step="0.5">
                         </div>
                         <div class="ctl">
                             <div class="row">
@@ -4122,11 +4122,11 @@
         offset = 0;
     const P = {
         width: 1,
-        drive: .20,
-        low: 3,
-        mid: 1.5,
-        high: 3,
-        comp: -16,
+        drive: 0,
+        low: 0,
+        mid: 0,
+        high: 0,
+        comp: 0,
         out: 0,
         spatial: false,
         orbit: false,
@@ -4135,13 +4135,13 @@
         padZ: 0,
         /* Surreal stages — all OFF / zero by default so the chain is untouched */
         dnOn: false,
-        dnHiss: 6,
-        dnGate: 8,
+        dnHiss: 0,
+        dnGate: 0,
         dnFloor: -70,
         deOn: false,
         deFreq: 6000,
         deThr: -24,
-        deRatio: 4,
+        deRatio: 1,
         haasMs: 18,
         haasMix: 0,
         erMix: 0,
@@ -4150,7 +4150,7 @@
         subDb: 0,
         codec: 0,
         mxOn: false,
-        mxDrive: 4,
+        mxDrive: 0,
         mxCeil: -0.3,
         mxRel: 120
     };
@@ -7664,14 +7664,14 @@
     })();
 
     /* ================= SERVER LAYER (Cloudflare Worker /api) ================= */
-    P.surreal = 40;
+    P.surreal = 0;
     bindSlider('sSur', 'vSur', v => v + '%', v => {
         P.surreal = v
     });
 
     // Reset key — snaps the main Valve Pipeline sliders back to their shipped
     // defaults (not the Surreal Stage panels; those have their own settings).
-    const PIPELINE_DEFAULTS = { sDrive: 20, sLow: 3, sMid: 1.5, sHigh: 3, sWide: 100, sComp: -16, sOut: 0, sSur: 40 };
+    const PIPELINE_DEFAULTS = { sDrive: 0, sLow: 0, sMid: 0, sHigh: 0, sWide: 100, sComp: 0, sOut: 0, sSur: 0 };
     $('resetPipeline').addEventListener('click', e => {
         e.stopPropagation();
         for (const id in PIPELINE_DEFAULTS) {
