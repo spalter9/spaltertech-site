@@ -3312,6 +3312,7 @@
                 <div class="sk">STEM MODE · REAL SOURCE SEPARATION — SENDS THE LOADED FILE TO LALAL.AI, THEN MEASURES EACH STEM HERE</div>
                 <button id="btnStems" style="width:100%;margin-top:10px;border:1px solid var(--mag);border-radius:8px;padding:13px;font-family:var(--disp);font-size:11px;letter-spacing:.22em;color:var(--mag);background:#101114">◈ SEPARATE STEMS &amp; EXAMINE EACH · VOCALS / DRUMS / BASS / RESIDUAL</button>
                 <div id="stemStatus" class="sk" style="margin-top:8px;display:none;color:var(--bone)"></div>
+                <div id="stemPlayer" style="display:none;margin-top:12px;background:rgba(6,7,12,.8);border:1px solid var(--line);border-radius:10px;padding:12px"></div>
                 <div id="stemResults" style="display:none;margin-top:12px;gap:10px"></div>
                 <div class="note">Stem mode uses LALAL.ai's separation model (a paid service, billed per minute of audio) to split the track into vocals, drums and bass; the residual is the mix minus those three. Each part is then examined with the same five measurements as band mode. Separation quality is the model's, not ours — bleed between stems is normal and shows up in the numbers.</div>
             </div>
@@ -3358,8 +3359,6 @@
                 </div>
                 <button id="btnAttr" style="width:100%;margin-top:10px;border:1px solid var(--blue);border-radius:8px;padding:13px;font-size:10px;letter-spacing:.18em;color:var(--blue);background:#101114">◈ ATTRIBUTE · FINGERPRINT + CREDITS + SPLITS</button>
                 <div id="attrSheet" style="display:none;margin-top:10px;background:#0b0c0e;border:1px solid var(--line);border-radius:8px;padding:12px;font-size:10px;line-height:1.8"></div>
-                <button id="btnStems" style="width:100%;margin-top:10px;border:1px solid #5aff9d;border-radius:8px;padding:13px;font-size:10px;letter-spacing:.18em;color:#5aff9d;background:#101114">◈ FORENSIC STEMS · SEPARATE + FINGERPRINT EACH LAYER</button>
-                <div id="stemSheet" style="display:none;margin-top:10px;background:#0b0c0e;border:1px solid rgba(90,255,157,.35);border-radius:8px;padding:12px;font-size:10px;line-height:1.8"></div>
                 <div style="margin-top:14px;border:1px dashed rgba(255,182,56,.45);border-radius:10px;padding:12px">
                     <div style="font-size:10px;letter-spacing:.2em;color:var(--valve);margin-bottom:6px">◈ LEGACY CATALOG INGESTION</div>
                     <div style="font-size:9.5px;color:var(--dim);line-height:1.6;margin-bottom:8px">Drop a batch of legacy masters. Each record is ingested, QC-verified, cryptographically sealed, run through the Surrealizer restoration stage, and printed as a new modern master — with measured before/after numbers on every manifest.</div>
@@ -7141,6 +7140,7 @@
     function stemStatus(msg) {
         const el = $('stemStatus');
         el.style.display = 'block';
+        el.style.color = 'var(--bone)';
         el.textContent = msg
     }
     async function apiJson(url, opts) {
@@ -7162,6 +7162,188 @@
             '<div style="margin-top:8px;font-size:9px;line-height:1.7;color:var(--dim)">' + R.featureDefs.map(f => '<span style="color:var(--bone)">' + f.label + '</span> · ' + f.read).join('<br>') + '</div>';
         return c
     }
+    /* ---- Stem player: hear and control each separated stem — play in sync, mute/solo, volume, download ---- */
+    let stemPlayerState = null;
+    function buildStemPlayer(rowDefs) {
+        const host = $('stemPlayer');
+        if (stemPlayerState) {
+            stemPlayerState.rows.forEach(r => {
+                if (r.source) {
+                    try {
+                        r.source.stop()
+                    } catch (e) {}
+                }
+            });
+            try {
+                stemPlayerState.master.disconnect()
+            } catch (e) {}
+        }
+        host.innerHTML = '';
+        host.style.display = 'block';
+        const c = ctx();
+        const master = c.createGain();
+        master.connect(c.destination);
+        const rows = rowDefs.map(([key, label, buf]) => {
+            const gain = c.createGain();
+            gain.connect(master);
+            return {
+                key,
+                label,
+                buf,
+                gain,
+                muted: false,
+                solo: false,
+                vol: 1,
+                source: null
+            }
+        });
+        const duration = Math.max(...rows.map(r => r.buf.duration));
+        stemPlayerState = {
+            rows,
+            master,
+            playing: false,
+            startedAt: 0,
+            offset: 0,
+            duration
+        };
+        function applyMix() {
+            const anySolo = rows.some(r => r.solo);
+            rows.forEach(r => {
+                const audible = anySolo ? r.solo : !r.muted;
+                r.gain.gain.setTargetAtTime(audible ? r.vol : 0, c.currentTime, .01)
+            })
+        }
+        function stopSources() {
+            rows.forEach(r => {
+                if (r.source) {
+                    try {
+                        r.source.onended = null;
+                        r.source.stop()
+                    } catch (e) {}
+                    r.source.disconnect();
+                    r.source = null
+                }
+            })
+        }
+        function playFrom(t) {
+            stopSources();
+            const now = c.currentTime;
+            rows.forEach((r, i) => {
+                const src = c.createBufferSource();
+                src.buffer = r.buf;
+                src.connect(r.gain);
+                src.start(now, Math.min(t, Math.max(0, r.buf.duration - .01)));
+                if (i === 0)
+                    src.onended = () => {
+                        if (stemPlayerState && stemPlayerState.playing) {
+                            stemPlayerState.playing = false;
+                            stemPlayerState.offset = 0;
+                            playBtn.textContent = '▶ PLAY ALL'
+                        }
+                    };
+                r.source = src
+            });
+            stemPlayerState.startedAt = now;
+            stemPlayerState.offset = t;
+            stemPlayerState.playing = true
+        }
+        const transport = document.createElement('div');
+        transport.style.cssText = 'display:flex;align-items:center;gap:10px;margin-bottom:10px;flex-wrap:wrap';
+        const playBtn = document.createElement('button');
+        playBtn.textContent = '▶ PLAY ALL';
+        playBtn.style.cssText = 'border:1px solid var(--mag);color:var(--mag);background:none;border-radius:8px;padding:8px 16px;font-family:var(--disp);font-size:11px;letter-spacing:.14em;cursor:pointer';
+        const stopBtn = document.createElement('button');
+        stopBtn.textContent = '■ STOP';
+        stopBtn.style.cssText = 'border:1px solid var(--line);color:var(--dim);background:none;border-radius:8px;padding:8px 14px;font-size:11px;letter-spacing:.1em;cursor:pointer';
+        playBtn.addEventListener('click', () => {
+            if (stemPlayerState.playing) {
+                stemPlayerState.offset += c.currentTime - stemPlayerState.startedAt;
+                stopSources();
+                stemPlayerState.playing = false;
+                playBtn.textContent = '▶ PLAY ALL'
+            } else {
+                const startAt = stemPlayerState.offset >= stemPlayerState.duration - .05 ? 0 : stemPlayerState.offset;
+                playFrom(startAt);
+                playBtn.textContent = '⏸ PAUSE ALL'
+            }
+        });
+        stopBtn.addEventListener('click', () => {
+            stopSources();
+            stemPlayerState.playing = false;
+            stemPlayerState.offset = 0;
+            playBtn.textContent = '▶ PLAY ALL'
+        });
+        const hint = document.createElement('span');
+        hint.style.cssText = 'font-size:9px;letter-spacing:.1em;color:var(--dim)';
+        hint.textContent = 'STEMS PLAY IN SYNC · MUTE (M) / SOLO (S) / VOLUME PER STEM · RAW, UNPROCESSED';
+        transport.appendChild(playBtn);
+        transport.appendChild(stopBtn);
+        transport.appendChild(hint);
+        host.appendChild(transport);
+        rows.forEach(r => {
+            const row = document.createElement('div');
+            row.style.cssText = 'display:flex;align-items:center;gap:8px;padding:7px 0;border-top:1px solid var(--line)';
+            const nameEl = document.createElement('span');
+            nameEl.textContent = r.label;
+            nameEl.style.cssText = 'width:88px;flex:none;font-family:var(--disp);font-size:10px;letter-spacing:.12em;color:var(--bone)';
+            const muteBtn = document.createElement('button');
+            muteBtn.textContent = 'M';
+            muteBtn.title = 'Mute this stem';
+            muteBtn.style.cssText = 'width:24px;height:24px;border-radius:5px;border:1px solid var(--line);background:none;color:var(--dim);font-size:10px;cursor:pointer;flex:none';
+            const soloBtn = document.createElement('button');
+            soloBtn.textContent = 'S';
+            soloBtn.title = 'Solo this stem';
+            soloBtn.style.cssText = muteBtn.style.cssText;
+            const vol = document.createElement('input');
+            vol.type = 'range';
+            vol.min = 0;
+            vol.max = 150;
+            vol.value = 100;
+            vol.style.cssText = 'flex:1';
+            const dl = document.createElement('button');
+            dl.textContent = '⬇';
+            dl.title = 'Download this stem as WAV';
+            dl.style.cssText = 'width:26px;height:24px;border-radius:5px;border:1px solid var(--green);background:none;color:var(--green);font-size:11px;cursor:pointer;flex:none';
+
+            function refresh() {
+                muteBtn.style.background = r.muted ? 'rgba(255,90,90,.18)' : 'none';
+                muteBtn.style.color = r.muted ? '#ff7d7d' : 'var(--dim)';
+                muteBtn.style.borderColor = r.muted ? '#ff7d7d' : 'var(--line)';
+                soloBtn.style.background = r.solo ? 'rgba(232,180,76,.18)' : 'none';
+                soloBtn.style.color = r.solo ? 'var(--amber)' : 'var(--dim)';
+                soloBtn.style.borderColor = r.solo ? 'var(--amber)' : 'var(--line)'
+            }
+            muteBtn.addEventListener('click', () => {
+                r.muted = !r.muted;
+                refresh();
+                applyMix()
+            });
+            soloBtn.addEventListener('click', () => {
+                r.solo = !r.solo;
+                refresh();
+                applyMix()
+            });
+            vol.addEventListener('input', () => {
+                r.vol = vol.value / 100;
+                applyMix()
+            });
+            dl.addEventListener('click', () => {
+                const wav = wavFloat32(r.buf);
+                deliver(new Blob([wav], {
+                    type: 'audio/wav'
+                }), (window.__srcName || 'stem') + '_' + r.key.toUpperCase() + '.wav')
+            });
+            row.appendChild(nameEl);
+            row.appendChild(muteBtn);
+            row.appendChild(soloBtn);
+            row.appendChild(vol);
+            row.appendChild(dl);
+            host.appendChild(row);
+            refresh()
+        });
+        applyMix()
+    }
+
     async function runStemExaminer() {
         if (!buffer || !window.__srcFile) {
             toast('LOAD AUDIO FIRST');
@@ -7259,6 +7441,10 @@
                     }
                 }
             }
+            const playerRows = STEM_DEFS.map(s => [s.key, s.label, stems[s.key]]);
+            if (residual)
+                playerRows.push(['residual', 'RESIDUAL', residual]);
+            buildStemPlayer(playerRows);
             stemStatus('EXAMINING EACH STEM…');
             const report = [],
                 list = STEM_DEFS.map(s => [s.label, stems[s.key]]);
@@ -7278,8 +7464,10 @@
             }), (window.__srcName || 'sspengine') + '_STEM_EXAMINER.txt');
             toast('STEM EXAMINER COMPLETE — TAP SAVE IN THE LEDGER')
         } catch (e) {
-            stemStatus('STEM EXAMINER FAILED · ' + (e && e.message ? e.message : 'unknown error'));
-            toast('STEM EXAMINER FAILED — SEE STATUS LINE')
+            const reason = (e && e.message) ? e.message : 'unknown error';
+            stemStatus('STEM EXAMINER FAILED · ' + reason);
+            $('stemStatus').style.color = '#ff7d7d';
+            toast('STEM EXAMINER FAILED · ' + reason.slice(0, 90))
         }
         finally {
             stemBusy = false;
@@ -7507,55 +7695,6 @@
             }, 500);
         }
     })();
-
-    /* ---------- FORENSIC STEMS ---------- */
-    $('btnStems').addEventListener('click', async () => {
-        const sheet = $('stemSheet');
-        sheet.style.display = 'block';
-        if (!BUF) {
-            sheet.innerHTML = '<span style="color:#ff7d7d">Load a track first.</span>';
-            return
-        }
-        sheet.innerHTML = '<span style="color:#5aff9d">◈ UPLOADING SOURCE → SEPARATING → FINGERPRINTING… (full track, server engine)</span>';
-        try {
-            const jobId = await srvUpload();
-            const r = await fetch('/api/stems', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({
-                    jobId,
-                    attr: true
-                })
-            });
-            if (!r.ok)
-                throw new Error('server ' + r.status);
-            const m = await r.json();
-            let h = '<div style="color:#5aff9d;letter-spacing:.15em">SSP FORENSIC STEM MANIFEST · ' + m.engine + '</div>';
-            h += '<div style="color:var(--bone)">RECOMBINATION RESIDUAL: <b>' + m.residualDb + ' dB</b> — sample-accurate: <b style="color:#5aff9d">' + (m.sampleAccurate ? 'VERIFIED' : 'REVIEW') + '</b> · the four stems sum back to the master; nothing invented, nothing lost.</div>';
-            for (const name of ['vocals', 'drums', 'bass', 'other']) {
-                const st = m.stems[name];
-                h += '<div style="border-top:1px solid rgba(255,255,255,.08);margin-top:6px;padding-top:6px"><b style="color:#9fe8ff">' + name.toUpperCase() + '</b> · ' + st.energyPct + '% energy · sha256 ' + st.sha256.slice(0, 16) + '… <button data-stem="' + st.fileId + '" data-nm="' + name + '" class="stemSave" style="border:1px solid #5aff9d;color:#5aff9d;background:none;border-radius:6px;padding:2px 8px;font-size:9px">⬇ SAVE</button>';
-                if (st.attribution) {
-                    const a2 = st.attribution;
-                    h += '<div style="color:var(--dim)">attribution: ' + (a2.status || '') + (a2.splits && a2.splits.length ? (' · ' + a2.splits.length + ' split lines — designer 50% / recovered parties share 50% evenly') : '') + '</div>'
-                }
-                h += '</div>'
-            }
-            sheet.innerHTML = h;
-            sheet.querySelectorAll('.stemSave').forEach(b => b.addEventListener('click', () => {
-                const a3 = document.createElement('a');
-                a3.href = '/api/file?id=' + b.dataset.stem;
-                a3.download = 'SSP-STEM-' + b.dataset.nm + '.wav';
-                document.body.appendChild(a3);
-                a3.click();
-                a3.remove()
-            }));
-        } catch (e) {
-            sheet.innerHTML = '<span style="color:#ffcf6b">Forensic stems run on the live SSP server (full-track, deterministic engine). In this preview booth the network is blocked — deploy via the GOLIVE zip + full-stack Worker and this button separates, hashes, and fingerprints every layer of the record. (' + e.message + ')</span>';
-        }
-    });
 
     /* ---------- SPLIT SESSION · QR + SOVEREIGN SEAL ---------- */
     let sesId = null;
