@@ -3380,7 +3380,10 @@
     <div id="spalty">
         <div id="spaltyHead">
             <span class="t">◉ SPALTY</span>
-            <button class="pill" id="spaltyClose">CLOSE</button>
+            <div style="display:flex;gap:8px;align-items:center">
+                <button class="pill" id="spaltyVoiceTgl"><span class="led" id="spaltyVoiceLed"></span> VOICE</button>
+                <button class="pill" id="spaltyClose">CLOSE</button>
+            </div>
         </div>
         <div id="spaltyLog"></div>
         <div id="spaltyIn">
@@ -7793,15 +7796,18 @@
     let voiceOn = false;
     $('spaltyBtn').addEventListener('click', () => $('spalty').classList.add('open'));
     $('spaltyClose').addEventListener('click', () => $('spalty').classList.remove('open'));
-    $('voiceTgl').addEventListener('click', () => {
-        voiceOn = !voiceOn;
+    function setVoice(on) {
+        voiceOn = on;
         $('voiceLed').classList.toggle('on', voiceOn);
+        $('spaltyVoiceLed').classList.toggle('on', voiceOn);
         toast(voiceOn ? 'SPALTY VOICE ON' : 'SPALTY VOICE OFF');
         if (!voiceOn)
             speechSynthesis.cancel();
         else
             speak('Voice check. Spalty on the board. Valves are warm, ledger is clean — let\'s make something undeniable.')
-    });
+    }
+    $('voiceTgl').addEventListener('click', () => setVoice(!voiceOn));
+    $('spaltyVoiceTgl').addEventListener('click', () => setVoice(!voiceOn));
     function spMsg(txt, who) {
         const d = document.createElement('div');
         d.className = 'msg ' + who;
