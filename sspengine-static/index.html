@@ -583,6 +583,94 @@
         color: var(--amber);
         letter-spacing: .08em;
         word-break: break-all
+    }
+
+    #trackRack {
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+        margin-top: 12px
+    }
+
+    #trackRack:empty {
+        display: none
+    }
+
+    .trackRow {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 8px 10px;
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        background: rgba(255, 255, 255, .02);
+        cursor: pointer;
+        transition: .15s
+    }
+
+    .trackRow:hover {
+        border-color: var(--dim);
+        background: rgba(255, 255, 255, .05)
+    }
+
+    .trackRow.active {
+        border-color: var(--amber);
+        background: rgba(232, 180, 76, .08)
+    }
+
+    .trackRow .idx {
+        font-family: var(--disp);
+        font-size: 10px;
+        color: var(--dim);
+        width: 16px;
+        flex: none;
+        text-align: center
+    }
+
+    .trackRow.active .idx {
+        color: var(--amber)
+    }
+
+    .trackRow .tnm {
+        flex: 1;
+        min-width: 0;
+        font-size: 12px;
+        letter-spacing: .04em;
+        color: var(--bone);
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap
+    }
+
+    .trackRow.active .tnm {
+        color: var(--amber)
+    }
+
+    .trackRow .tdur {
+        font-size: 10px;
+        color: var(--dim);
+        flex: none
+    }
+
+    .trackRow .trm {
+        flex: none;
+        color: var(--dim);
+        font-size: 14px;
+        line-height: 1;
+        padding: 2px 4px;
+        border-radius: 4px
+    }
+
+    .trackRow .trm:hover {
+        color: var(--red);
+        background: rgba(255, 90, 90, .12)
+    }
+
+    .rackNote {
+        font-size: 10px;
+        letter-spacing: .12em;
+        color: var(--dim);
+        margin-top: 8px
     }/* ---------- VISUALIZER ---------- */
     #vizBox {
         position: relative;
@@ -2822,15 +2910,17 @@
             <div class="panel">
                 <h2>AUDIO INGEST</h2>
                 <div id="drop">
-                    <div class="big">DROP MP3 / WAV HERE</div>
-                    <div>or click to browse · decoded to Float32 on load</div>
-                    <input type="file" id="fileIn" accept=".mp3,.wav,audio/mpeg,audio/wav,audio/x-wav" style="display:none">
+                    <div class="big">DROP UP TO 10 TRACKS HERE</div>
+                    <div>or click to browse · decoded to Float32 on select</div>
+                    <input type="file" id="fileIn" accept=".mp3,.wav,audio/mpeg,audio/wav,audio/x-wav" multiple style="display:none">
                 </div>
                 <div id="fileMeta">
                     <span class="nm" id="fName"></span>
                     <span id="fSpec"></span>
                     <span id="fHash" style="color:var(--green);word-break:break-all"></span>
                 </div>
+                <div id="trackRack"></div>
+                <div class="rackNote" id="rackNote" style="display:none">CLICK A TRACK TO ARM IT · YOUR VALVE PIPELINE AND STAGE SETTINGS CARRY OVER BETWEEN TRACKS</div>
             </div>
 
             <!-- VIZ -->
@@ -4649,9 +4739,14 @@
         N.spatialByp.gain.setTargetAtTime(1 - on, t, .03);
     }
 
-    /* ================= FILE INGEST ================= */
+    /* ================= FILE INGEST — TRACK RACK (up to 10 tracks, switch freely) ================= */
     const drop = $('drop'),
         fileIn = $('fileIn');
+    const MAX_TRACKS = 10;
+    let tracks = [];
+    let activeTrackId = null;
+    let trackSeq = 0;
+
     drop.addEventListener('click', () => fileIn.click());
     ['dragenter', 'dragover'].forEach(e => drop.addEventListener(e, ev => {
         ev.preventDefault();
@@ -4662,40 +4757,127 @@
         drop.classList.remove('hot')
     }));
     drop.addEventListener('drop', ev => {
-        const f = ev.dataTransfer.files[0];
-        if (f)
-            loadFile(f)
+        addTracks(ev.dataTransfer.files)
     });
     fileIn.addEventListener('change', () => {
-        if (fileIn.files[0])
-            loadFile(fileIn.files[0])
+        addTracks(fileIn.files);
+        fileIn.value = ''
     });
 
-    async function loadFile(f) {
-        if (!/\.(mp3|wav)$/i.test(f.name)) {
+    function renderRack() {
+        const rack = $('trackRack');
+        rack.innerHTML = '';
+        tracks.forEach((t, i) => {
+            const row = document.createElement('div');
+            row.className = 'trackRow' + (t.id === activeTrackId ? ' active' : '');
+            row.innerHTML = '<span class="idx">' + (i + 1) + '</span><span class="tnm">' + t.name + '</span><span class="tdur">' + (t.duration != null ? fmtT(t.duration) : '…') + '</span><span class="trm">✕</span>';
+            row.addEventListener('click', ev => {
+                if (ev.target.classList.contains('trm')) {
+                    removeTrack(t.id);
+                    return
+                }
+                selectTrack(t.id)
+            });
+            rack.appendChild(row)
+        });
+        $('rackNote').style.display = tracks.length > 1 ? 'block' : 'none'
+    }
+
+    function readDuration(t) {
+        const el = new Audio();
+        el.preload = 'metadata';
+        const url = URL.createObjectURL(t.file);
+        el.src = url;
+        el.addEventListener('loadedmetadata', () => {
+            t.duration = el.duration;
+            URL.revokeObjectURL(url);
+            renderRack()
+        });
+        el.addEventListener('error', () => URL.revokeObjectURL(url))
+    }
+
+    function addTracks(fileList) {
+        const files = [...fileList].filter(f => /\.(mp3|wav)$/i.test(f.name));
+        if (!files.length) {
             toast('MP3 / WAV ONLY');
             return
         }
-        toast('DECODING · ' + f.name.toUpperCase());
-        const ab = await f.arrayBuffer();
-        const hash = await sha256(ab.slice(0));
-        try {
-            buffer = await ctx().decodeAudioData(ab);
-        } catch (e) {
-            toast('DECODE FAILED — FILE UNREADABLE');
-            return
+        const wasEmpty = tracks.length === 0;
+        let added = 0,
+            rejected = 0;
+        for (const f of files) {
+            if (tracks.length >= MAX_TRACKS) {
+                rejected++;
+                continue
+            }
+            const t = {
+                id: ++trackSeq,
+                file: f,
+                name: f.name.replace(/\.(mp3|wav)$/i, ''),
+                hash: null,
+                decoded: null,
+                duration: null
+            };
+            tracks.push(t);
+            added++;
+            readDuration(t)
         }
+        if (rejected)
+            toast('TRACK RACK FULL · ' + MAX_TRACKS + ' MAX — ' + rejected + ' NOT ADDED');
+        if (added)
+            renderRack();
+        if (wasEmpty && tracks.length)
+            selectTrack(tracks[0].id)
+    }
+
+    function removeTrack(id) {
+        const wasActive = id === activeTrackId;
+        tracks = tracks.filter(t => t.id !== id);
+        if (wasActive) {
+            stopAll();
+            buffer = null;
+            offset = 0;
+            activeTrackId = null;
+            $('fileMeta').style.display = 'none';
+            window.__srcHash = null;
+            window.__srcName = null;
+            window.__srcFile = null
+        }
+        renderRack()
+    }
+
+    async function selectTrack(id) {
+        const t = tracks.find(x => x.id === id);
+        if (!t || id === activeTrackId)
+            return;
         stopAll();
         offset = 0;
+        if (!t.decoded) {
+            toast('DECODING · ' + t.name.toUpperCase());
+            try {
+                const ab = await t.file.arrayBuffer();
+                if (!t.hash)
+                    t.hash = await sha256(ab.slice(0));
+                t.decoded = await ctx().decodeAudioData(ab)
+            } catch (e) {
+                toast('DECODE FAILED — FILE UNREADABLE');
+                return
+            }
+        }
+        buffer = t.decoded;
+        activeTrackId = t.id;
+        if (t.duration == null)
+            t.duration = buffer.duration;
         $('fileMeta').style.display = 'flex';
-        $('fName').textContent = f.name;
+        $('fName').textContent = t.file.name;
         $('fSpec').textContent = buffer.numberOfChannels + 'CH · ' + buffer.sampleRate + ' Hz · ' + fmtT(buffer.duration) + ' · FLOAT32';
-        $('fHash').textContent = 'SRC SHA-256 ' + hash.slice(0, 20) + '…';
-        window.__srcHash = hash;
-        window.__srcName = f.name.replace(/\.(mp3|wav)$/i, '');
-        window.__srcFile = f;
+        $('fHash').textContent = 'SRC SHA-256 ' + t.hash.slice(0, 20) + '…';
+        window.__srcHash = t.hash;
+        window.__srcName = t.name;
+        window.__srcFile = t.file;
         $('hudMode').textContent = P.boom ? 'MASTER CHAIN' : 'ORIGINAL';
-        toast('LOADED · TRANSPORT ARMED');
+        renderRack();
+        toast('TRACK ARMED · ' + t.name.toUpperCase());
     }
 
     /* ================= TRANSPORT ================= */
