@@ -7833,11 +7833,39 @@
         $('spaltyLog').scrollTop = 1e6;
         return d
     }
-    let premiumVoice = true,
-        curAudio = null,
-        voiceRetryAt = 0,
-        voiceWarned = false,
+    let curAudio = null,
         chipKeepAlive = null;
+    /* Ranks the browser's built-in voices and picks the best-sounding one available —
+       there is no premium voice backend wired up (no /api/spalty-voice function exists),
+       so this local voice is the only voice Spalty ever actually speaks with. */
+    function pickBestVoice() {
+        const vs = speechSynthesis.getVoices();
+        if (!vs.length)
+            return null;
+        const score = v => {
+            const n = v.name.toLowerCase();
+            let s = 0;
+            if (!/^en/i.test(v.lang))
+                s -= 100;
+            if (/online \(natural\)|neural|premium/.test(n))
+                s += 50;
+            if (/google/.test(n))
+                s += 30;
+            if (/enhanced/.test(n))
+                s += 25;
+            if (/guy|andrew|daniel|alex|david|christopher/.test(n))
+                s += 10;
+            if (/en-us|en_us/.test(v.lang.toLowerCase()))
+                s += 5;
+            if (v.localService)
+                s += 3;
+            return s
+        };
+        return vs.map(v => ({
+            v,
+            s: score(v)
+        })).sort((a, b) => b.s - a.s)[0].v
+    }
     function chipSpeak(t) {
         try {
             if (chipKeepAlive) {
@@ -7854,8 +7882,7 @@
                 u.rate = 1.02;
                 u.pitch = .95;
                 u.volume = 1;
-                const vs = speechSynthesis.getVoices();
-                u.voice = vs.find(v => /en/i.test(v.lang) && /male|daniel|alex|guy|david/i.test(v.name)) || vs.find(v => /en/i.test(v.lang)) || null;
+                u.voice = pickBestVoice();
                 const stopKeepAlive = () => {
                     if (chipKeepAlive) {
                         clearInterval(chipKeepAlive);
@@ -7883,48 +7910,6 @@
         if (curAudio) {
             curAudio.pause();
             curAudio = null
-        }
-        if (premiumVoice && Date.now() >= voiceRetryAt) {
-            try {
-                const r = await fetch('/api/spalty-voice', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({
-                        text: t
-                    })
-                });
-                if (r.ok) {
-                    const b = await r.blob();
-                    const url = URL.createObjectURL(b);
-                    curAudio = new Audio(url);
-                    curAudio.addEventListener('ended', () => {
-                        URL.revokeObjectURL(url);
-                        curAudio = null
-                    });
-                    curAudio.play().catch(() => chipSpeak(t));
-                    voiceWarned = false;
-                    return
-                }
-                /* say why, once, then keep trying the real voice after a short cooldown instead of giving up for the session */
-                let why = 'HTTP ' + r.status;
-                try {
-                    const j = await r.json();
-                    why += ' · ' + ((j.detail && (j.detail.message || j.detail.status)) || j.error || j.message || '')
-                } catch (e) {}
-                if (!voiceWarned) {
-                    toast('SPALTY VOICE SERVER FAILED (' + why + ') — USING BACKUP VOICE, WILL RETRY');
-                    voiceWarned = true
-                }
-                crashLog('voice', why);
-            } catch (e) {
-                if (!voiceWarned) {
-                    toast('SPALTY VOICE SERVER UNREACHABLE — USING BACKUP VOICE, WILL RETRY');
-                    voiceWarned = true
-                }
-            }
-            voiceRetryAt = Date.now() + 8000;
         }
         chipSpeak(t);
     }
