@@ -241,6 +241,12 @@
         transform: scale(.96)
     }
 
+    .resetBtn.on {
+        color: var(--amber);
+        border-color: var(--amber);
+        background: rgba(255, 120, 60, .1)
+    }
+
     .panel.fold.closed {
         padding-bottom: 12px
     }/* ---------- LOCK SCREEN ---------- */
@@ -3084,7 +3090,7 @@
 
             <!-- SURREAL STAGES (all default OFF — the chain above is untouched until enabled) -->
             <div class="panel fold closed">
-                <h2>SURREAL STAGES · DENOISE / DE-ESS / HAAS <span class="foldHint">▸ TAP TO OPEN</span></h2>
+                <h2>SURREAL STAGES · DENOISE / DE-ESS / HAAS <button type="button" class="resetBtn" id="abSurreal1" title="First press: bypass this stage so you can hear the untouched chain. Press again to bring your settings back.">⇄ A/B BYPASS</button><span class="foldHint">▸ TAP TO OPEN</span></h2>
                 <div class="sk">EVERY STAGE BELOW IS A TRUE BYPASS WHEN OFF — YOUR MASTER CHAIN IS BIT-IDENTICAL UNTIL YOU SWITCH ONE ON</div>
                 <div class="grid2" style="margin-top:12px">
                     <div>
@@ -3174,7 +3180,7 @@
 
             <!-- SURREAL STAGES II (transient / sub / codec restore / maximizer — all default OFF) -->
             <div class="panel fold closed">
-                <h2>SURREAL STAGES II · SHAPE / RESTORE / MAXIMIZE <span class="foldHint">▸ TAP TO OPEN</span></h2>
+                <h2>SURREAL STAGES II · SHAPE / RESTORE / MAXIMIZE <button type="button" class="resetBtn" id="abSurreal2" title="First press: bypass this stage so you can hear the untouched chain. Press again to bring your settings back.">⇄ A/B BYPASS</button><span class="foldHint">▸ TAP TO OPEN</span></h2>
                 <div class="sk">SECONDARY STAGES — ZERO = BYPASSED. THE VALVE PIPELINE ABOVE REMAINS THE MASTER CHAIN.</div>
                 <div class="grid2" style="margin-top:12px">
                     <div>
@@ -4431,8 +4437,11 @@
         ramp(n.tr.byp.gain, trOn ? 0 : 1);
         ramp(n.tr.wet.gain, trOn ? 1 : 0);
         if (n.tr.node) {
-            ramp(n.tr.node.parameters.get('attack'), P.trAtk);
-            ramp(n.tr.node.parameters.get('sustain'), P.trSus)
+            /* the worklet's attack/sustain params are declared -1..1; the sliders are -100..100,
+               so this must be normalized or the browser silently clamps every non-trivial slider
+               move to the same maxed-out value instead of scaling with the slider */
+            ramp(n.tr.node.parameters.get('attack'), P.trAtk / 100);
+            ramp(n.tr.node.parameters.get('sustain'), P.trSus / 100)
         }
         const subOn = P.subDb > 0;
         ramp(n.sub.f.gain, P.subDb);
@@ -5351,6 +5360,17 @@
         if (hint)
             hint.textContent = closed ? '▸ TAP TO OPEN' : '▾ TAP TO CLOSE';
     }));
+    /* A slider under a true-bypass toggle is inert while the toggle is off — that reads as
+       "broken" rather than "bypassed", so dragging it off its shipped default switches the
+       stage on automatically. The toggle button still works as a manual off switch. */
+    function autoEngage(flagKey, toggleBtnId, sliderId, v) {
+        if (P[flagKey] || v === parseFloat($(sliderId).defaultValue))
+            return;
+        P[flagKey] = true;
+        $(toggleBtnId).classList.add('on');
+        ctx();
+        toast($(toggleBtnId).textContent + ' ENGAGED')
+    }
     $('tglDn').addEventListener('click', () => {
         P.dnOn = !P.dnOn;
         $('tglDn').classList.toggle('on', P.dnOn);
@@ -5360,13 +5380,16 @@
     });
     bindSlider('sDnHiss', 'vDnHiss', v => v + ' dB', v => {
         P.dnHiss = v;
+        autoEngage('dnOn', 'tglDn', 'sDnHiss', v);
         applyStages()
     });
     bindSlider('sDnGate', 'vDnGate', v => v + ' dB', v => {
-        P.dnGate = v
+        P.dnGate = v;
+        autoEngage('dnOn', 'tglDn', 'sDnGate', v)
     });
     bindSlider('sDnFloor', 'vDnFloor', v => v + ' dB', v => {
-        P.dnFloor = v
+        P.dnFloor = v;
+        autoEngage('dnOn', 'tglDn', 'sDnFloor', v)
     });
     $('tglDe').addEventListener('click', () => {
         P.deOn = !P.deOn;
@@ -5377,14 +5400,17 @@
     });
     bindSlider('sDeFreq', 'vDeFreq', v => (v / 1000).toFixed(1) + ' kHz', v => {
         P.deFreq = v;
+        autoEngage('deOn', 'tglDe', 'sDeFreq', v);
         applyStages()
     });
     bindSlider('sDeThr', 'vDeThr', v => v + ' dB', v => {
         P.deThr = v;
+        autoEngage('deOn', 'tglDe', 'sDeThr', v);
         applyStages()
     });
     bindSlider('sDeRatio', 'vDeRatio', v => v.toFixed(1) + ' : 1', v => {
         P.deRatio = v;
+        autoEngage('deOn', 'tglDe', 'sDeRatio', v);
         applyStages()
     });
     bindSlider('sHaasMs', 'vHaasMs', v => v + ' ms', v => {
@@ -5403,6 +5429,48 @@
             ctx();
         applyStages()
     });
+    /* A/B bypass: first press snapshots every slider + toggle in the panel and snaps them to
+       their shipped (bypassed) defaults so you can hear the untouched chain; second press
+       restores exactly what you had, so the button toggles A (your sound) / B (bypassed). */
+    function bindABBypass(btnId, sliderIds, toggleIds) {
+        let snap = null;
+        $(btnId).addEventListener('click', e => {
+            e.stopPropagation();
+            if (!snap) {
+                snap = {};
+                sliderIds.forEach(id => snap[id] = $(id).value);
+                toggleIds.forEach(id => snap[id] = $(id).classList.contains('on'));
+                sliderIds.forEach(id => {
+                    const s = $(id);
+                    s.value = s.defaultValue;
+                    s.dispatchEvent(new Event('input', { bubbles: true }))
+                });
+                toggleIds.forEach(id => {
+                    if ($(id).classList.contains('on'))
+                        $(id).click()
+                });
+                $(btnId).classList.add('on');
+                $(btnId).textContent = '⇄ A/B · HEAR MINE';
+                toast('BYPASSED — A/B AGAINST THE UNTOUCHED CHAIN')
+            } else {
+                sliderIds.forEach(id => {
+                    const s = $(id);
+                    s.value = snap[id];
+                    s.dispatchEvent(new Event('input', { bubbles: true }))
+                });
+                toggleIds.forEach(id => {
+                    if (!!snap[id] !== $(id).classList.contains('on'))
+                        $(id).click()
+                });
+                snap = null;
+                $(btnId).classList.remove('on');
+                $(btnId).textContent = '⇄ A/B BYPASS';
+                toast('YOUR SETTINGS RESTORED')
+            }
+        })
+    }
+    bindABBypass('abSurreal1', ['sDnHiss', 'sDnGate', 'sDnFloor', 'sDeFreq', 'sDeThr', 'sDeRatio', 'sHaasMs', 'sHaasMix', 'sErMix'], ['tglDn', 'tglDe']);
+    bindABBypass('abSurreal2', ['sTrAtk', 'sTrSus', 'sSub', 'sCodec', 'sMxDrive', 'sMxCeil', 'sMxRel'], ['tglMx']);
     /* spectral gate: driven from the pre-chain analyser every animation frame */
     let gateBuf = null;
     function gateTick() {
