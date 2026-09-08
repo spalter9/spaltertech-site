@@ -7793,13 +7793,24 @@
     });
     /* ================= SPALTY ================= */
     const spHist = [];
-    let voiceOn = false;
+    let voiceOn = false,
+        voiceOffHinted = false;
+    try {
+        voiceOn = localStorage.getItem('spaltyVoiceOn') === '1'
+    } catch (e) {}
     $('spaltyBtn').addEventListener('click', () => $('spalty').classList.add('open'));
     $('spaltyClose').addEventListener('click', () => $('spalty').classList.remove('open'));
+    function syncVoiceLeds() {
+        $('voiceLed').classList.toggle('on', voiceOn);
+        $('spaltyVoiceLed').classList.toggle('on', voiceOn)
+    }
+    syncVoiceLeds();
     function setVoice(on) {
         voiceOn = on;
-        $('voiceLed').classList.toggle('on', voiceOn);
-        $('spaltyVoiceLed').classList.toggle('on', voiceOn);
+        try {
+            localStorage.setItem('spaltyVoiceOn', on ? '1' : '0')
+        } catch (e) {}
+        syncVoiceLeds();
         toast(voiceOn ? 'SPALTY VOICE ON' : 'SPALTY VOICE OFF');
         if (!voiceOn)
             speechSynthesis.cancel();
@@ -7954,6 +7965,10 @@
                 content: txt
             });
             speak(txt);
+            if (!voiceOn && !voiceOffHinted) {
+                toast('SPALTY VOICE IS OFF — TAP VOICE TO HEAR REPLIES');
+                voiceOffHinted = true
+            }
         } catch (e) {
             wait.textContent = 'Brain link blocked in this preview booth — I go fully live once we deploy to sspengine.com. My voice box works now though: flip SPALTY VOICE up top.';
             speak('Brain link is blocked in this preview. I go fully live on the real site.')
