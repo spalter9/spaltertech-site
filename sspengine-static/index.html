@@ -7968,8 +7968,17 @@
             mic.addEventListener('click', () => toast('VOICE INPUT NOT SUPPORTED IN THIS VIEWER — WORKS IN CHROME/SAFARI + ON SSPENGINE.COM'));
             return
         }
+        const MIC_ERROR_MSG = {
+            'no-speech': 'NO SPEECH DETECTED — TRY SPEAKING CLOSER TO THE MIC',
+            'audio-capture': 'NO MICROPHONE FOUND — CHECK YOUR AUDIO INPUT DEVICE',
+            'network': 'MIC SERVICE NEEDS A NETWORK CONNECTION — CHECK YOUR CONNECTION',
+            'service-not-allowed': 'SPEECH SERVICE BLOCKED BY THE BROWSER — TYPE INSTEAD',
+            'language-not-supported': 'LANGUAGE NOT SUPPORTED FOR VOICE INPUT',
+            'bad-grammar': 'RECOGNITION GRAMMAR ERROR — TRY AGAIN'
+        };
         let rec = null,
-            listening = false;
+            listening = false,
+            manualStop = false;
         function stopRec() {
             if (rec) {
                 try {
@@ -7982,9 +7991,11 @@
         }
         mic.addEventListener('click', () => {
             if (listening) {
+                manualStop = true;
                 stopRec();
                 return
             }
+            manualStop = false;
             rec = new SR();
             rec.lang = 'en-US';
             rec.interimResults = true;
@@ -8006,8 +8017,15 @@
                 $('spaltyText').value = (finalTxt + interim).trim();
             };
             rec.onerror = ev => {
+                const wasManual = manualStop;
                 stopRec();
-                toast(ev.error === 'not-allowed' ? 'MIC PERMISSION DENIED — ALLOW MICROPHONE ACCESS' : 'MIC ERROR — TRY AGAIN')
+                if (ev.error === 'aborted' && wasManual)
+                    return;
+                if (ev.error === 'not-allowed')
+                    toast('MIC PERMISSION DENIED — ALLOW MICROPHONE ACCESS IN THE BROWSER/SITE SETTINGS');
+                else
+                    toast(MIC_ERROR_MSG[ev.error] || ('MIC ERROR (' + ev.error + ') — TRY AGAIN'));
+                crashLog('mic', ev.error || 'unknown')
             };
             rec.onend = () => {
                 const had = listening;
@@ -8019,7 +8037,7 @@
                 rec.start()
             } catch (e) {
                 stopRec();
-                toast('MIC ERROR — TRY AGAIN')
+                toast('MIC ERROR (' + ((e && e.message) || 'could not start') + ') — TRY AGAIN')
             }
         });
     })();
