@@ -7980,7 +7980,12 @@
         const mic = $('spaltyMic');
         const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
         if (!SR) {
-            mic.addEventListener('click', () => toast('VOICE INPUT NOT SUPPORTED IN THIS VIEWER — WORKS IN CHROME/SAFARI + ON SSPENGINE.COM'));
+            const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+            mic.addEventListener('click', () => toast(
+                isIOS
+                ? 'VOICE INPUT ISN\'T SUPPORTED ON IPHONE/IPAD — APPLE HAS NEVER SHIPPED THIS IN SAFARI, EVEN IN CHROME FOR IOS. TYPE YOUR MESSAGE INSTEAD'
+                : 'VOICE INPUT NOT SUPPORTED IN THIS BROWSER — TRY CHROME ON DESKTOP OR ANDROID, OR TYPE YOUR MESSAGE'
+            ));
             return
         }
         const MIC_ERROR_MSG = {
