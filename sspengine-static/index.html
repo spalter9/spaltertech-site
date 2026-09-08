@@ -7819,16 +7819,45 @@
     let premiumVoice = true,
         curAudio = null,
         voiceRetryAt = 0,
-        voiceWarned = false;
+        voiceWarned = false,
+        chipKeepAlive = null;
     function chipSpeak(t) {
         try {
-            speechSynthesis.cancel();
-            const u = new SpeechSynthesisUtterance(t);
-            u.rate = 1.02;
-            u.pitch = .95;
-            const vs = speechSynthesis.getVoices();
-            u.voice = vs.find(v => /en/i.test(v.lang) && /male|daniel|alex|guy|david/i.test(v.name)) || vs.find(v => /en/i.test(v.lang)) || null;
-            speechSynthesis.speak(u);
+            if (chipKeepAlive) {
+                clearInterval(chipKeepAlive);
+                chipKeepAlive = null
+            }
+            /* Chrome silently drops a new utterance if speak() lands in the same tick as cancel() —
+               only cancel when something is actually queued, and give the engine a beat to reset */
+            const needsCancel = speechSynthesis.speaking || speechSynthesis.pending;
+            if (needsCancel)
+                speechSynthesis.cancel();
+            setTimeout(() => {
+                const u = new SpeechSynthesisUtterance(t);
+                u.rate = 1.02;
+                u.pitch = .95;
+                u.volume = 1;
+                const vs = speechSynthesis.getVoices();
+                u.voice = vs.find(v => /en/i.test(v.lang) && /male|daniel|alex|guy|david/i.test(v.name)) || vs.find(v => /en/i.test(v.lang)) || null;
+                const stopKeepAlive = () => {
+                    if (chipKeepAlive) {
+                        clearInterval(chipKeepAlive);
+                        chipKeepAlive = null
+                    }
+                };
+                u.onend = stopKeepAlive;
+                u.onerror = stopKeepAlive;
+                speechSynthesis.speak(u);
+                /* Chrome auto-pauses long utterances (~15s) and never resumes on its own — nudge it every few seconds so replies don't cut off mid-sentence */
+                chipKeepAlive = setInterval(() => {
+                    if (!speechSynthesis.speaking) {
+                        stopKeepAlive();
+                        return
+                    }
+                    speechSynthesis.pause();
+                    speechSynthesis.resume()
+                }, 6000)
+            }, needsCancel ? 120 : 0)
         } catch (e) {}
     }
     async function speak(t) {
@@ -7851,7 +7880,12 @@
                 });
                 if (r.ok) {
                     const b = await r.blob();
-                    curAudio = new Audio(URL.createObjectURL(b));
+                    const url = URL.createObjectURL(b);
+                    curAudio = new Audio(url);
+                    curAudio.addEventListener('ended', () => {
+                        URL.revokeObjectURL(url);
+                        curAudio = null
+                    });
                     curAudio.play().catch(() => chipSpeak(t));
                     voiceWarned = false;
                     return
@@ -7873,7 +7907,7 @@
                     voiceWarned = true
                 }
             }
-            voiceRetryAt = Date.now() + 60000;
+            voiceRetryAt = Date.now() + 8000;
         }
         chipSpeak(t);
     }
