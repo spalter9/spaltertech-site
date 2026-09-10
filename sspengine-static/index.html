@@ -996,6 +996,30 @@
         border-color: var(--valve);
         color: var(--valve);
         box-shadow: 0 0 12px rgba(255, 106, 43, .3)
+    }
+
+    .mbPresets {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 8px;
+        margin-top: 10px
+    }
+
+    .mbPresets button {
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        padding: 11px 6px;
+        background: #101114;
+        font-family: var(--disp);
+        font-size: 10px;
+        letter-spacing: .14em;
+        color: var(--bone)
+    }
+
+    .mbPresets button.on {
+        border-color: var(--green);
+        color: var(--green);
+        box-shadow: 0 0 12px rgba(60, 220, 140, .25)
     }/* ---------- SPATIAL PAD ---------- */
     #pad {
         position: relative;
@@ -3321,6 +3345,17 @@
             <div class="panel fold closed">
                 <h2>SURREAL STAGES III · MULTIBAND COMPRESSION <button type="button" class="resetBtn" id="abSurreal3" title="First press: bypass this stage so you can hear the untouched chain. Press again to bring your settings back.">⇄ A/B BYPASS</button><span class="foldHint">▸ TAP TO OPEN</span></h2>
                 <div class="sk">TRUE BYPASS WHEN OFF · FIXED CROSSOVERS AT 250 Hz / 4 kHz (LR4 — flat when summed)</div>
+                <div class="sk" style="margin-top:10px">PICK A STARTING POINT — TAP ONE, THEN FINE-TUNE BELOW IF YOU WANT</div>
+                <div class="mbPresets">
+                    <button data-mbpre="off">OFF · UNTOUCHED</button>
+                    <button data-mbpre="transparent">TRANSPARENT · LIGHT</button>
+                    <button data-mbpre="gentle">GENTLE GLUE</button>
+                    <button data-mbpre="punchy">PUNCHY · MODERN</button>
+                    <button data-mbpre="bass">TAME THE BASS</button>
+                    <button data-mbpre="vocal">VOCAL CONTROL</button>
+                    <button data-mbpre="smoothhi">SMOOTH THE HIGHS</button>
+                    <button data-mbpre="loud">LOUD & CONSISTENT</button>
+                </div>
                 <div class="grid2" style="margin-top:12px">
                     <div>
                         <div class="tglRow">
@@ -5763,6 +5798,34 @@
             s.dispatchEvent(new Event('input'))
         }
         toast('PRESET · ' + b.textContent.trim());
+    }));
+    /* Multiband compression presets — most people aren't going to hand-tune three
+       compressor thresholds and a ratio, so these cover the normal spread of use:
+       off, a light touch, general glue, a punchier modern setting, and three
+       problem-specific ones (bass/vocal/highs) plus a loud-and-consistent option. */
+    const MB_PRESETS = {
+        off: { on: false, low: 0, mid: 0, high: 0, ratio: 2 },
+        transparent: { on: true, low: -4, mid: -3, high: -3, ratio: 1.5 },
+        gentle: { on: true, low: -8, mid: -6, high: -6, ratio: 2.5 },
+        punchy: { on: true, low: -10, mid: -8, high: -6, ratio: 4 },
+        bass: { on: true, low: -14, mid: -4, high: -2, ratio: 3 },
+        vocal: { on: true, low: -3, mid: -12, high: -4, ratio: 3 },
+        smoothhi: { on: true, low: -3, mid: -4, high: -14, ratio: 3 },
+        loud: { on: true, low: -16, mid: -14, high: -10, ratio: 6 }
+    };
+    document.querySelectorAll('.mbPresets button').forEach(b => b.addEventListener('click', () => {
+        document.querySelectorAll('.mbPresets button').forEach(x => x.classList.remove('on'));
+        b.classList.add('on');
+        const p = MB_PRESETS[b.dataset.mbpre];
+        const map = [['sMbLow', p.low], ['sMbMid', p.mid], ['sMbHigh', p.high], ['sMbRatio', p.ratio]];
+        for (const [id, v] of map) {
+            const s = $(id);
+            s.value = v;
+            s.dispatchEvent(new Event('input', { bubbles: true }))
+        }
+        if ($('tglMb').classList.contains('on') !== p.on)
+            $('tglMb').click();
+        toast('MULTIBAND PRESET · ' + b.textContent.trim())
     }));
 
     /* ================= SURREAL STAGE CONTROLS (default OFF) ================= */
