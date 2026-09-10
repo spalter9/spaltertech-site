@@ -1183,6 +1183,24 @@
         color: var(--green)
     }
 
+    #xpStatus {
+        display: none;
+        margin-top: 10px;
+        font-family: var(--disp);
+        font-size: 11px;
+        letter-spacing: .14em;
+        color: var(--dim);
+        text-align: center
+    }
+
+    #xpStatus.done {
+        color: var(--green)
+    }
+
+    #xpStatus.error {
+        color: var(--red)
+    }
+
     @keyframes ledgerFlash {
         from {
             background: rgba(60, 220, 140, .22)
@@ -3335,6 +3353,7 @@
                         <span class="fn">WIDE FIELD PRINT</span>
                     </button>
                 </div>
+                <div id="xpStatus"></div>
                 <button id="mp3Bounce">◉ 3-MP3 BOUNCE · ORIGINAL + SSP MASTER + MONO</button>
                 <div id="bounceProgress">
                     <div id="bounceBarTrack">
@@ -6865,6 +6884,16 @@
         $('ledger').scrollTop = 1e6;
     }
     let renderBusy = false;
+    /* Shared persistent status line for the 4-Valve Export Matrix and Server Print — same
+       idea as the bounce's status line: it stays on screen (unlike the 2.6s toast) so it's
+       obvious what's rendering and when it's genuinely done or failed. */
+    function xpStatus(text, kind) {
+        const el = $('xpStatus');
+        el.style.display = 'block';
+        el.textContent = text;
+        el.classList.toggle('done', kind === 'done');
+        el.classList.toggle('error', kind === 'error')
+    }
     async function exportValve(v, btn) {
         if (!buffer) {
             toast('LOAD AUDIO FIRST');
@@ -6880,6 +6909,7 @@
         }
         renderBusy = true;
         btn.classList.add('hot');
+        xpStatus('RENDERING ' + v.toUpperCase() + '…');
         toast('VALVE HEATING · RENDERING ' + v.toUpperCase());
         try {
             let rb = await renderVariant(v);
@@ -6890,9 +6920,13 @@
             ledgerSave(new Date().toLocaleTimeString() + ' · ' + v.toUpperCase() + ' · FLOAT32 WAV', hash, new Blob([ab], {
                 type: 'audio/wav'
             }), name);
+            flashLedgerRow();
             ab = null;
+            xpStatus('✓ ' + v.toUpperCase() + ' READY — TAP SAVE IN THE LEDGER', 'done');
+            $('ledger').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
             toast(v.toUpperCase() + ' PRINTED — TAP SAVE IN THE LEDGER');
         } catch (e) {
+            xpStatus('✕ RENDER FAILED — TRACK MAY BE TOO LONG FOR THIS DEVICE', 'error');
             toast('RENDER FAILED — TRACK MAY BE TOO LONG FOR THIS DEVICE')
         }
         finally {
@@ -8383,8 +8417,10 @@
         renderBusy = true;
         const btn = $('srvPrint');
         btn.style.opacity = .5;
+        xpStatus('UPLOADING TO SERVER…');
         try {
             const jobId = await srvUpload();
+            xpStatus('SERVER RENDERING · SURREAL ' + P.surreal + '% · MASTER CHAIN…');
             toast('SERVER RENDERING · SURREAL ' + P.surreal + '% · MASTER CHAIN');
             const r = await fetch('/api/render', {
                 method: 'POST',
@@ -8412,8 +8448,12 @@
             const fr = await fetch(j.url);
             const fb = await fr.blob();
             ledgerSave(new Date().toLocaleTimeString() + ' · SERVER PRINT · MASTER' + (j.qc ? ' · QC ' + (j.qc.pass ? 'PASS ✓' : 'FLAGGED — CHECK PHASE/BALANCE') : '') + ' · STAMPED', j.sha256, fb, (window.__srcName || 'sspengine') + '_SERVER_MASTER_f32.wav');
+            flashLedgerRow();
+            xpStatus('✓ SERVER PRINT READY — TAP SAVE IN THE LEDGER', 'done');
+            $('ledger').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
             toast('SERVER PRINT COMPLETE — TAP SAVE IN THE LEDGER');
         } catch (e) {
+            xpStatus('✕ SERVER LAYER OFFLINE — DEPLOY BUNDLE TO CLOUDFLARE FIRST', 'error');
             toast('SERVER LAYER OFFLINE — DEPLOY BUNDLE TO CLOUDFLARE FIRST')
         }
         finally {
