@@ -2964,7 +2964,7 @@
                         <span class="led" id="voiceLed"></span>
                          SPALTY VOICE
                     </button>
-                    <button class="pill" id="btnSaveSession" title="Save your loaded track, Valve Pipeline and Surreal Stage settings — recall them anytime, even after closing this tab or restarting your computer.">⤓ SAVE SESSION</button>
+                    <button class="pill" id="btnSaveSession" title="Save every track in your Track Rack, plus your Valve Pipeline and Surreal Stage settings — recall them anytime, even after closing this tab or restarting your computer.">⤓ SAVE SESSION</button>
                     <button class="pill" id="btnRestoreSession" style="display:none;border-color:var(--amber);color:var(--amber)" title="Restore your last saved session.">⤒ RESTORE SESSION</button>
                 </div>
             </div>
@@ -5000,8 +5000,8 @@
                 toggles: {},
                 padX: P.padX,
                 padZ: P.padZ,
-                trackName: active ? active.file.name : null,
-                trackFile: active ? active.file : null
+                activeTrackName: active ? active.file.name : null,
+                trackFiles: tracks.map(t => t.file)
             };
             SESSION_SLIDERS.forEach(id => {
                 const el = $(id);
@@ -5019,7 +5019,8 @@
                 tx.oncomplete = resolve;
                 tx.onerror = () => reject(tx.error)
             });
-            toast('SESSION SAVED · ' + new Date(rec.savedAt).toLocaleTimeString() + (rec.trackName ? ' · ' + rec.trackName.toUpperCase() : '') + ' — RESTORE IT ANYTIME');
+            const trackNote = rec.trackFiles.length ? ' · ' + rec.trackFiles.length + ' TRACK' + (rec.trackFiles.length > 1 ? 'S' : '') : '';
+            toast('SESSION SAVED · ' + new Date(rec.savedAt).toLocaleTimeString() + trackNote + ' — RESTORE IT ANYTIME');
             updateSessionBtn(rec.savedAt)
         } catch (e) {
             toast('SESSION SAVE FAILED — ' + (e && e.message ? e.message : 'STORAGE UNAVAILABLE ON THIS BROWSER'))
@@ -5031,13 +5032,18 @@
             toast('NO SAVED SESSION FOUND');
             return
         }
-        if (rec.trackFile) {
-            toast('RESTORING · ' + (rec.trackName || rec.trackFile.name).toUpperCase());
+        /* trackFiles is the whole rack (current schema); trackFile is a single-track save
+           from before the Track Rack was covered — still restorable either way. */
+        const files = rec.trackFiles && rec.trackFiles.length ? rec.trackFiles : (rec.trackFile ? [rec.trackFile] : []);
+        if (files.length) {
+            toast('RESTORING ' + files.length + ' TRACK' + (files.length > 1 ? 'S' : '') + '…');
             const before = tracks.length;
-            addTracks([rec.trackFile]);
-            const added = tracks[tracks.length - 1];
-            if (added && tracks.length > before)
-                await selectTrack(added.id)
+            addTracks(files);
+            const newlyAdded = tracks.slice(before);
+            const activeName = rec.activeTrackName || rec.trackName;
+            const toArm = newlyAdded.find(t => t.file.name === activeName) || newlyAdded[0];
+            if (toArm)
+                await selectTrack(toArm.id)
         }
         SESSION_TOGGLES.forEach(id => {
             const el = $(id);
