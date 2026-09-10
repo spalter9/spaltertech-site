@@ -1023,6 +1023,45 @@
         border-color: var(--green);
         color: var(--green);
         box-shadow: 0 0 12px rgba(60, 220, 140, .25)
+    }
+
+    /* Pick a preset, hear it — the raw sliders and switches underneath are one tap away for
+       anyone who wants them, closed by default so the panel reads simple first. */
+    details.advDisclosure {
+        margin-top: 14px;
+        border-top: 1px solid var(--line);
+        padding-top: 10px
+    }
+
+    details.advDisclosure summary {
+        cursor: pointer;
+        font-family: var(--disp);
+        font-size: 10px;
+        letter-spacing: .18em;
+        color: var(--dim);
+        list-style: none;
+        user-select: none
+    }
+
+    details.advDisclosure summary::-webkit-details-marker {
+        display: none
+    }
+
+    details.advDisclosure summary::before {
+        content: '▸ ';
+        color: var(--valve)
+    }
+
+    details.advDisclosure[open] summary::before {
+        content: '▾ '
+    }
+
+    details.advDisclosure summary:hover {
+        color: var(--bone)
+    }
+
+    details.advDisclosure[open] summary {
+        margin-bottom: 10px
     }/* ---------- SPATIAL PAD ---------- */
     #pad {
         position: relative;
@@ -3097,6 +3136,22 @@
                     <div class="tglRow">
                         <button class="tgl" id="tglWarm" title="Asymmetric saturation (even-harmonic bias) plus a low-end swell and high-end rolloff — a warmer, smoother character on the valve stage. Off by default; the plain drive curve is unchanged either way.">VALVE CHARACTER · WARMTH</button>
                     </div>
+                    <div class="gluePresets" id="warmPresetsRow" style="margin-top:8px">
+                        <button data-warmpre="off">OFF · CLEAN</button>
+                        <button data-warmpre="subtle">SUBTLE</button>
+                        <button data-warmpre="warm">WARM</button>
+                        <button data-warmpre="heavy">HEAVY</button>
+                    </div>
+                    <details class="advDisclosure">
+                        <summary>ADVANCED CONTROLS · FOR ENGINEERS</summary>
+                        <div class="ctl">
+                            <div class="row">
+                                <span>WARMTH AMOUNT</span>
+                                <b id="vWarmAmt">100%</b>
+                            </div>
+                            <input type="range" id="sWarmAmt" min="0" max="100" value="100">
+                        </div>
+                    </details>
                     <div class="ctl">
                         <div class="row">
                             <span>LOW SHELF · 90 Hz</span>
@@ -3362,12 +3417,14 @@
                     <button data-mbpre="smoothhi">SMOOTH THE HIGHS</button>
                     <button data-mbpre="loud">LOUD & CONSISTENT</button>
                 </div>
-                <div class="grid2" style="margin-top:12px">
+                <div class="tglRow" style="margin-top:12px">
+                    <button class="tgl" id="tglMb">MULTIBAND COMP</button>
+                </div>
+                <details class="advDisclosure">
+                    <summary>ADVANCED CONTROLS · FOR ENGINEERS</summary>
+                    <div class="grid2">
                     <div>
-                        <div class="tglRow">
-                            <button class="tgl" id="tglMb">MULTIBAND COMP</button>
-                        </div>
-                        <div class="ctl" style="margin-top:10px">
+                        <div class="ctl">
                             <div class="row">
                                 <span>LOW THRESHOLD · &lt;250 Hz</span>
                                 <b id="vMbLow">0 dB</b>
@@ -3383,7 +3440,7 @@
                         </div>
                     </div>
                     <div>
-                        <div class="ctl" style="margin-top:10px">
+                        <div class="ctl">
                             <div class="row">
                                 <span>HIGH THRESHOLD · &gt;4 kHz</span>
                                 <b id="vMbHigh">0 dB</b>
@@ -3399,7 +3456,8 @@
                         </div>
                         <div class="note">Independent compression on the low, mid and high bands — the single glue compressor above still runs first, this is a second, band-split stage after it. Ratio is shared across all three bands for now; crossover points are fixed.</div>
                     </div>
-                </div>
+                    </div>
+                </details>
             </div>
 
             <!-- SURREAL STAGES IV (vintage bus glue — default OFF) -->
@@ -3413,12 +3471,15 @@
                     <button data-gluepre="classic">CLASSIC GLUE</button>
                     <button data-gluepre="squash">SQUASH</button>
                 </div>
-                <div class="grid2" style="margin-top:12px">
+                <div class="tglRow" style="margin-top:12px">
+                    <button class="tgl" id="tglGlue">ENGAGE</button>
+                </div>
+                <div style="font-size:10px;letter-spacing:.14em;color:var(--dim);margin-top:8px">GAIN REDUCTION <b id="tGlueGr" style="color:var(--green)">0.0</b> dB</div>
+                <details class="advDisclosure">
+                    <summary>ADVANCED CONTROLS · FOR ENGINEERS</summary>
+                    <div class="grid2">
                     <div>
-                        <div class="tglRow">
-                            <button class="tgl" id="tglGlue">ENGAGE</button>
-                        </div>
-                        <div class="ctl" style="margin-top:10px">
+                        <div class="ctl">
                             <div class="row">
                                 <span>THRESHOLD</span>
                                 <b id="vGlueThr">-10 dB</b>
@@ -3432,7 +3493,6 @@
                             </div>
                             <input type="range" id="sGlueMix" min="0" max="100" value="100">
                         </div>
-                        <div style="font-size:10px;letter-spacing:.14em;color:var(--dim);margin-top:6px">GAIN REDUCTION <b id="tGlueGr" style="color:var(--green)">0.0</b> dB</div>
                     </div>
                     <div>
                         <div class="sk">RATIO</div>
@@ -3452,7 +3512,8 @@
                         </div>
                         <div class="note">The signature "glue" character: release time isn't fixed — a short transient snaps back fast, a sustained loud passage recovers slowly, exactly what the classic British console bus compressors do. Threshold and mix are the two controls that matter most; ratio and attack shape the character underneath.</div>
                     </div>
-                </div>
+                    </div>
+                </details>
             </div>
 
             <!-- PRESETS -->
@@ -4485,7 +4546,8 @@
         glueRatio: 4,
         glueAttack: 0.3,
         glueMix: 100,
-        warmChar: false
+        warmChar: false,
+        warmAmt: 100
     };
     let N = {}; // live nodes
 
@@ -4506,7 +4568,7 @@
        that even-harmonic asymmetry is the actual mechanism behind transformer-style
        "warmth", not just a tonal EQ tilt. The tilt (low swell, high rolloff) is a separate
        stage — see makeWarmth(). */
-    function valveCurve(amount, warm) {
+    function valveCurve(amount, warm, warmAmt) {
         const n = 2048,
             c = new Float32Array(n),
             k = 1 + amount * 10,
@@ -4518,8 +4580,11 @@
            what actually generates even-harmonic content. Normalizing with one shared
            denominator (the naive version of this) blows up: at x=-1 the DC-removed value can
            be several times larger than at x=+1, so dividing both sides by the same small
-           span sent it well past ±1. Per-side normalization fixes that by construction. */
-        const bias = warm ? .14 : 0,
+           span sent it well past ±1. Per-side normalization fixes that by construction.
+           warmAmt (0-100) scales the bias linearly — 100 matches the original fixed .14
+           bias this shipped with, 0 is identical to warm=false. */
+        const wa = Math.max(0, Math.min(100, warmAmt == null ? 100 : warmAmt)) / 100,
+            bias = warm ? .14 * wa : 0,
             mid = Math.tanh(k * bias),
             posSpan = Math.tanh(k * (1 + bias)) - mid,
             negSpan = mid - Math.tanh(k * (-1 + bias));
@@ -4792,7 +4857,10 @@
             ramp(n.glue.node.parameters.get('mix'), P.glueMix / 100)
         }
         ramp(n.warmth.byp.gain, P.warmChar ? 0 : 1);
-        ramp(n.warmth.wet.gain, P.warmChar ? 1 : 0)
+        ramp(n.warmth.wet.gain, P.warmChar ? 1 : 0);
+        const wAmt = Math.max(0, Math.min(100, P.warmAmt)) / 100;
+        ramp(n.warmth.lo.gain, 1.8 * wAmt);
+        ramp(n.warmth.hi.gain, -1.6 * wAmt)
     }
     function applyStages() {
         if (AC && N.dn)
@@ -5119,7 +5187,7 @@
         N.inWet = a.createGain();
         N.inDry = a.createGain();
         N.shaper = a.createWaveShaper();
-        N.shaper.curve = valveCurve(P.drive, P.warmChar);
+        N.shaper.curve = valveCurve(P.drive, P.warmChar, P.warmAmt);
         N.shaper.oversample = '4x';
         N.preTrim = a.createGain();
         N.preTrim.gain.value = 1;
@@ -5425,7 +5493,7 @@
        their raw control value, then replays them through each control's own
        input handler on restore — same approach as the A/B bypass and reset
        buttons, so this never drifts out of sync with what each slider does. */
-    const SESSION_SLIDERS = ['sDrive', 'sLow', 'sMid', 'sHigh', 'sWide', 'sComp', 'sOut', 'sSur', 'sRoom', 'sDnHiss', 'sDnGate', 'sDnFloor', 'sDeFreq', 'sDeThr', 'sDeRatio', 'sHaasMs', 'sHaasMix', 'sErMix', 'sTrAtk', 'sTrSus', 'sSub', 'sCodec', 'sMxDrive', 'sMxCeil', 'sMxRel', 'sMbLow', 'sMbMid', 'sMbHigh', 'sMbRatio', 'sGlueThr', 'sGlueMix'];
+    const SESSION_SLIDERS = ['sDrive', 'sLow', 'sMid', 'sHigh', 'sWide', 'sComp', 'sOut', 'sSur', 'sRoom', 'sDnHiss', 'sDnGate', 'sDnFloor', 'sDeFreq', 'sDeThr', 'sDeRatio', 'sHaasMs', 'sHaasMix', 'sErMix', 'sTrAtk', 'sTrSus', 'sSub', 'sCodec', 'sMxDrive', 'sMxCeil', 'sMxRel', 'sMbLow', 'sMbMid', 'sMbHigh', 'sMbRatio', 'sGlueThr', 'sGlueMix', 'sWarmAmt'];
     const SESSION_TOGGLES = ['tglSpatial', 'tglOrbit', 'tglMatch', 'tglDn', 'tglDe', 'tglMx', 'tglMb', 'tglGlue', 'tglWarm', 'boom'];
     function sessionDB() {
         return new Promise((resolve, reject) => {
@@ -5701,7 +5769,7 @@
         if (driveRAF)
             return;
         driveRAF = requestAnimationFrame(() => {
-            N.shaper.curve = valveCurve(P.drive, P.warmChar);
+            N.shaper.curve = valveCurve(P.drive, P.warmChar, P.warmAmt);
             driveRAF = null;
         });
     });
@@ -5709,10 +5777,30 @@
         P.warmChar = !P.warmChar;
         $('tglWarm').classList.toggle('on', P.warmChar);
         ctx();
-        N.shaper.curve = valveCurve(P.drive, P.warmChar);
+        N.shaper.curve = valveCurve(P.drive, P.warmChar, P.warmAmt);
         applyStages();
         toast(P.warmChar ? 'VALVE CHARACTER · WARMTH ENGAGED' : 'VALVE CHARACTER · CLEAN (DEFAULT CURVE)')
     });
+    bindSlider('sWarmAmt', 'vWarmAmt', v => v + '%', v => {
+        P.warmAmt = v;
+        autoEngage('warmChar', 'tglWarm', 'sWarmAmt', v);
+        N.shaper.curve = valveCurve(P.drive, P.warmChar, P.warmAmt);
+        applyStages()
+    });
+    /* Warmth presets — most people don't want to reason about bias amounts, they want to
+       pick "how warm" and hear it. OFF snaps back to the clean curve entirely. */
+    const WARM_PRESETS = { off: { on: false, amt: 100 }, subtle: { on: true, amt: 35 }, warm: { on: true, amt: 70 }, heavy: { on: true, amt: 100 } };
+    document.querySelectorAll('#warmPresetsRow button').forEach(b => b.addEventListener('click', () => {
+        document.querySelectorAll('#warmPresetsRow button').forEach(x => x.classList.remove('on'));
+        b.classList.add('on');
+        const p = WARM_PRESETS[b.dataset.warmpre];
+        const s = $('sWarmAmt');
+        s.value = p.amt;
+        s.dispatchEvent(new Event('input', { bubbles: true }));
+        if ($('tglWarm').classList.contains('on') !== p.on)
+            $('tglWarm').click();
+        toast('WARMTH PRESET · ' + b.textContent.trim())
+    }));
     bindSlider('sLow', 'vLow', v => (v > 0 ? '+' : '') + v.toFixed(1) + ' dB', v => {
         P.low = v;
         if (AC)
@@ -7282,7 +7370,7 @@
         setStageParams(off, oc, 0);
         const drive = v === 'mv3' ? Math.min(1, P.drive * 1.3 + .1) : P.drive;
         const sh = oc.createWaveShaper();
-        sh.curve = valveCurve(drive, P.warmChar);
+        sh.curve = valveCurve(drive, P.warmChar, P.warmAmt);
         sh.oversample = '4x';
         const pt = oc.createGain();
         pt.gain.value = .85;
