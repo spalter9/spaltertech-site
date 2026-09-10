@@ -998,14 +998,16 @@
         box-shadow: 0 0 12px rgba(255, 106, 43, .3)
     }
 
-    .mbPresets {
+    .mbPresets,
+    .gluePresets {
         display: grid;
         grid-template-columns: repeat(2, 1fr);
         gap: 8px;
         margin-top: 10px
     }
 
-    .mbPresets button {
+    .mbPresets button,
+    .gluePresets button {
         border: 1px solid var(--line);
         border-radius: 8px;
         padding: 11px 6px;
@@ -1016,7 +1018,8 @@
         color: var(--bone)
     }
 
-    .mbPresets button.on {
+    .mbPresets button.on,
+    .gluePresets button.on {
         border-color: var(--green);
         color: var(--green);
         box-shadow: 0 0 12px rgba(60, 220, 140, .25)
@@ -3396,6 +3399,59 @@
                 </div>
             </div>
 
+            <!-- SURREAL STAGES IV (vintage bus glue — default OFF) -->
+            <div class="panel fold closed">
+                <h2>SURREAL STAGES IV · VINTAGE BUS GLUE <button type="button" class="resetBtn" id="abSurreal4" title="First press: bypass this stage so you can hear the untouched chain. Press again to bring your settings back.">⇄ A/B BYPASS</button><span class="foldHint">▸ TAP TO OPEN</span></h2>
+                <div class="sk">TRUE BYPASS WHEN OFF · PROGRAM-DEPENDENT AUTO RELEASE · SIDECHAIN HIGH-PASSED AT 90 Hz</div>
+                <div class="sk" style="margin-top:10px">PICK A STARTING POINT — TAP ONE, THEN FINE-TUNE BELOW IF YOU WANT</div>
+                <div class="gluePresets" id="gluePresetsRow">
+                    <button data-gluepre="off">OFF · UNTOUCHED</button>
+                    <button data-gluepre="subtle">SUBTLE GLUE</button>
+                    <button data-gluepre="classic">CLASSIC GLUE</button>
+                    <button data-gluepre="squash">SQUASH</button>
+                </div>
+                <div class="grid2" style="margin-top:12px">
+                    <div>
+                        <div class="tglRow">
+                            <button class="tgl" id="tglGlue">ENGAGE</button>
+                        </div>
+                        <div class="ctl" style="margin-top:10px">
+                            <div class="row">
+                                <span>THRESHOLD</span>
+                                <b id="vGlueThr">-10 dB</b>
+                            </div>
+                            <input type="range" id="sGlueThr" min="-30" max="0" value="-10">
+                        </div>
+                        <div class="ctl">
+                            <div class="row">
+                                <span>MIX · PARALLEL BLEND</span>
+                                <b id="vGlueMix">100%</b>
+                            </div>
+                            <input type="range" id="sGlueMix" min="0" max="100" value="100">
+                        </div>
+                        <div style="font-size:10px;letter-spacing:.14em;color:var(--dim);margin-top:6px">GAIN REDUCTION <b id="tGlueGr" style="color:var(--green)">0.0</b> dB</div>
+                    </div>
+                    <div>
+                        <div class="sk">RATIO</div>
+                        <div class="tglRow" id="glueRatioRow" style="margin-top:8px;flex-wrap:wrap">
+                            <button class="tgl" data-glueratio="2">2 : 1</button>
+                            <button class="tgl on" data-glueratio="4">4 : 1</button>
+                            <button class="tgl" data-glueratio="10">10 : 1</button>
+                        </div>
+                        <div class="sk" style="margin-top:12px">ATTACK</div>
+                        <div class="tglRow" id="glueAttackRow" style="margin-top:8px;flex-wrap:wrap">
+                            <button class="tgl" data-glueattack="0.1">0.1 ms</button>
+                            <button class="tgl on" data-glueattack="0.3">0.3 ms</button>
+                            <button class="tgl" data-glueattack="1">1 ms</button>
+                            <button class="tgl" data-glueattack="3">3 ms</button>
+                            <button class="tgl" data-glueattack="10">10 ms</button>
+                            <button class="tgl" data-glueattack="30">30 ms</button>
+                        </div>
+                        <div class="note">The signature "glue" character: release time isn't fixed — a short transient snaps back fast, a sustained loud passage recovers slowly, exactly what the classic British console bus compressors do. Threshold and mix are the two controls that matter most; ratio and attack shape the character underneath.</div>
+                    </div>
+                </div>
+            </div>
+
             <!-- PRESETS -->
             <div class="panel">
                 <h2>ARTIST PRESETS</h2>
@@ -4420,7 +4476,12 @@
         mbLowThr: 0,
         mbMidThr: 0,
         mbHighThr: 0,
-        mbRatio: 2
+        mbRatio: 2,
+        glueOn: false,
+        glueThr: -10,
+        glueRatio: 4,
+        glueAttack: 0.3,
+        glueMix: 100
     };
     let N = {}; // live nodes
 
@@ -4693,7 +4754,16 @@
         ramp(n.mb.cMid.threshold, P.mbMidThr);
         ramp(n.mb.cMid.ratio, P.mbRatio);
         ramp(n.mb.cHigh.threshold, P.mbHighThr);
-        ramp(n.mb.cHigh.ratio, P.mbRatio)
+        ramp(n.mb.cHigh.ratio, P.mbRatio);
+        const glueOn = P.glueOn && !!n.glue.node;
+        ramp(n.glue.byp.gain, glueOn ? 0 : 1);
+        ramp(n.glue.wet.gain, glueOn ? 1 : 0);
+        if (n.glue.node) {
+            ramp(n.glue.node.parameters.get('threshold'), P.glueThr);
+            ramp(n.glue.node.parameters.get('ratio'), P.glueRatio);
+            ramp(n.glue.node.parameters.get('attackMs'), P.glueAttack);
+            ramp(n.glue.node.parameters.get('mix'), P.glueMix / 100)
+        }
     }
     function applyStages() {
         if (AC && N.dn)
@@ -4827,9 +4897,68 @@
         "      }",
         "    }",
         "    return true } }",
+        /* Vintage Bus Glue: a VCA-style feedforward bus compressor with program-dependent
+           "auto" release — the defining behavior of the classic British console glue sound.
+           A short, hard transient recovers fast; sustained heavy gain reduction slows the
+           release down, which is what makes it "glue" instead of pump. The release blend is
+           driven by a slow-moving average of how deep gain reduction has recently been, not
+           a fixed time — same mechanism real dual-time-constant auto-release circuits use.
+           Detector is sidechain-highpassed (~90 Hz) so bass energy doesn't over-trigger it,
+           a standard bus-comp technique. Fixed internal fast/slow release constants match how
+           the real hardware's Auto mode works — not user-adjustable there either. */
+        "class SspGlue extends AudioWorkletProcessor {",
+        "  static get parameterDescriptors() { return [",
+        "    { name: 'threshold', defaultValue: -10, minValue: -40, maxValue: 0, automationRate: 'k-rate' },",
+        "    { name: 'ratio', defaultValue: 4, minValue: 1, maxValue: 20, automationRate: 'k-rate' },",
+        "    { name: 'attackMs', defaultValue: 0.3, minValue: 0.05, maxValue: 50, automationRate: 'k-rate' },",
+        "    { name: 'mix', defaultValue: 1, minValue: 0, maxValue: 1, automationRate: 'k-rate' } ] }",
+        "  constructor() { super();",
+        "    this.env = 0; this.sustain = 0; this.lpZ = 0; this.peakGr = 0; this.n = 0",
+        "  }",
+        "  process(inputs, outputs, params) {",
+        "    const inp = inputs[0], out = outputs[0]; if (!inp || !inp.length) return true;",
+        "    const nch = Math.min(2, inp.length), frames = inp[0].length;",
+        "    const thr = params.threshold[0], ratio = params.ratio[0], atkMs = params.attackMs[0], mix = params.mix[0];",
+        "    const knee = 4;",
+        "    const atkCoef = Math.exp(-1 / (sampleRate * (atkMs / 1000)));",
+        "    const relFast = Math.exp(-1 / (sampleRate * 0.1));",
+        "    const relSlow = Math.exp(-1 / (sampleRate * 3.0));",
+        "    const sustCoef = Math.exp(-1 / (sampleRate * 0.5));",
+        "    const hpCoef = Math.exp(-2 * Math.PI * 90 / sampleRate);",
+        "    for (let i = 0; i < frames; i++) {",
+        "      let det = 0;",
+        "      for (let c = 0; c < nch; c++) det += inp[c][i];",
+        "      det /= nch;",
+        "      this.lpZ = this.lpZ * hpCoef + det * (1 - hpCoef);",
+        "      const hp = det - this.lpZ;",
+        "      const levelDb = 20 * Math.log10(Math.abs(hp) + 1e-9);",
+        "      const over = levelDb - thr;",
+        "      let grDb;",
+        "      if (over <= -knee / 2) grDb = 0;",
+        "      else if (over >= knee / 2) grDb = over * (1 - 1 / ratio);",
+        "      else { const x = over + knee / 2; grDb = (x * x / (2 * knee)) * (1 - 1 / ratio) }",
+        "      const target = -grDb;",
+        "      if (target < this.env) {",
+        "        this.env = this.env * atkCoef + target * (1 - atkCoef)",
+        "      } else {",
+        "        this.sustain = this.sustain * sustCoef + (-this.env) * (1 - sustCoef);",
+        "        const blend = Math.min(1, this.sustain / 6);",
+        "        const relCoef = relFast * (1 - blend) + relSlow * blend;",
+        "        this.env = this.env * relCoef + target * (1 - relCoef)",
+        "      }",
+        "      if (this.env < this.peakGr) this.peakGr = this.env;",
+        "      const gainLin = Math.pow(10, this.env / 20);",
+        "      for (let c = 0; c < out.length; c++) {",
+        "        const x = inp[Math.min(c, nch - 1)][i];",
+        "        if (out[c]) out[c][i] = x * (1 - mix) + (x * gainLin) * mix",
+        "      }",
+        "      if (++this.n >= 2048) { this.port.postMessage(this.peakGr); this.peakGr = 0; this.n = 0 }",
+        "    }",
+        "    return true } }",
         "registerProcessor('ssp-transient', SspTransient);",
         "registerProcessor('ssp-limiter', SspLimiter);",
-        "registerProcessor('ssp-loudness', SspLoudness);"
+        "registerProcessor('ssp-loudness', SspLoudness);",
+        "registerProcessor('ssp-glue', SspGlue);"
     ].join('\n');
     let WORKLET_URL = null;
     try {
@@ -4875,7 +5004,11 @@
     function makeMax(a) {
         return bypassBlock(a)
     }
+    function makeGlue(a) {
+        return bypassBlock(a)
+    }
     let mxGR = 1;
+    let glueGR = 0;
     let lufsM = -Infinity,
         lufsI = -Infinity;
     function attachWorklets(a, n, live) {
@@ -4893,6 +5026,15 @@
             if (live)
                 n.mx.node.port.onmessage = e => {
                     mxGR = e.data
+                };
+            n.glue.node = new AudioWorkletNode(a, 'ssp-glue', {
+                outputChannelCount: [2]
+            });
+            n.glue.inp.connect(n.glue.node);
+            n.glue.node.connect(n.glue.wet);
+            if (live)
+                n.glue.node.port.onmessage = e => {
+                    glueGR = e.data
                 };
             /* LUFS meter only runs on the live monitoring graph — it's a pure measurement
                tap off the finished master signal, not part of any offline export render. */
@@ -4980,6 +5122,7 @@
         N.codec = makeCodec(a);
         N.mx = makeMax(a);
         N.mb = makeMultiband(a);
+        N.glue = makeGlue(a);
         N.inWet.connect(N.dn.inp);
         N.dn.out.connect(N.tr.inp);
         N.tr.out.connect(N.shaper);
@@ -5018,7 +5161,8 @@
         N.wideOut = a.createGain();
         N.wMerge.connect(N.haas.inp);
         N.haas.out.connect(N.wideOut);
-        N.comp.connect(N.mb.inp);
+        N.comp.connect(N.glue.inp);
+        N.glue.out.connect(N.mb.inp);
         N.mb.out.connect(N.wsplit);
         N.panOut = a.createGain();
         N.roomConv = a.createConvolver();
@@ -5230,8 +5374,8 @@
        their raw control value, then replays them through each control's own
        input handler on restore — same approach as the A/B bypass and reset
        buttons, so this never drifts out of sync with what each slider does. */
-    const SESSION_SLIDERS = ['sDrive', 'sLow', 'sMid', 'sHigh', 'sWide', 'sComp', 'sOut', 'sSur', 'sRoom', 'sDnHiss', 'sDnGate', 'sDnFloor', 'sDeFreq', 'sDeThr', 'sDeRatio', 'sHaasMs', 'sHaasMix', 'sErMix', 'sTrAtk', 'sTrSus', 'sSub', 'sCodec', 'sMxDrive', 'sMxCeil', 'sMxRel', 'sMbLow', 'sMbMid', 'sMbHigh', 'sMbRatio'];
-    const SESSION_TOGGLES = ['tglSpatial', 'tglOrbit', 'tglMatch', 'tglDn', 'tglDe', 'tglMx', 'tglMb', 'boom'];
+    const SESSION_SLIDERS = ['sDrive', 'sLow', 'sMid', 'sHigh', 'sWide', 'sComp', 'sOut', 'sSur', 'sRoom', 'sDnHiss', 'sDnGate', 'sDnFloor', 'sDeFreq', 'sDeThr', 'sDeRatio', 'sHaasMs', 'sHaasMix', 'sErMix', 'sTrAtk', 'sTrSus', 'sSub', 'sCodec', 'sMxDrive', 'sMxCeil', 'sMxRel', 'sMbLow', 'sMbMid', 'sMbHigh', 'sMbRatio', 'sGlueThr', 'sGlueMix'];
+    const SESSION_TOGGLES = ['tglSpatial', 'tglOrbit', 'tglMatch', 'tglDn', 'tglDe', 'tglMx', 'tglMb', 'tglGlue', 'boom'];
     function sessionDB() {
         return new Promise((resolve, reject) => {
             const req = indexedDB.open('mte_session', 1);
@@ -6121,6 +6265,59 @@
         applyStages()
     });
     bindABBypass('abSurreal3', ['sMbLow', 'sMbMid', 'sMbHigh', 'sMbRatio'], ['tglMb']);
+    $('tglGlue').addEventListener('click', () => {
+        P.glueOn = !P.glueOn;
+        $('tglGlue').classList.toggle('on', P.glueOn);
+        ctx();
+        applyStages();
+        toast(P.glueOn ? 'VINTAGE BUS GLUE ENGAGED' : 'VINTAGE BUS GLUE · BYPASSED (CHAIN UNTOUCHED)')
+    });
+    bindSlider('sGlueThr', 'vGlueThr', v => v + ' dB', v => {
+        P.glueThr = v;
+        autoEngage('glueOn', 'tglGlue', 'sGlueThr', v);
+        applyStages()
+    });
+    bindSlider('sGlueMix', 'vGlueMix', v => v + '%', v => {
+        P.glueMix = v;
+        applyStages()
+    });
+    function setGlueRatio(v) {
+        P.glueRatio = v;
+        document.querySelectorAll('#glueRatioRow .tgl').forEach(x => x.classList.toggle('on', +x.dataset.glueratio === v));
+        applyStages()
+    }
+    document.querySelectorAll('#glueRatioRow .tgl').forEach(b => b.addEventListener('click', () => setGlueRatio(+b.dataset.glueratio)));
+    function setGlueAttack(v) {
+        P.glueAttack = v;
+        document.querySelectorAll('#glueAttackRow .tgl').forEach(x => x.classList.toggle('on', +x.dataset.glueattack === v));
+        applyStages()
+    }
+    document.querySelectorAll('#glueAttackRow .tgl').forEach(b => b.addEventListener('click', () => setGlueAttack(+b.dataset.glueattack)));
+    bindABBypass('abSurreal4', ['sGlueThr', 'sGlueMix'], ['tglGlue']);
+    /* Vintage Bus Glue presets — threshold + mix cover the two controls that matter most;
+       ratio/attack are set to the character each preset is going for. */
+    const GLUE_PRESETS = {
+        off: { on: false, thr: 0, mix: 100, ratio: 4, attack: 0.3 },
+        subtle: { on: true, thr: -6, mix: 60, ratio: 2, attack: 3 },
+        classic: { on: true, thr: -10, mix: 100, ratio: 4, attack: 0.3 },
+        squash: { on: true, thr: -18, mix: 100, ratio: 10, attack: 0.1 }
+    };
+    document.querySelectorAll('#gluePresetsRow button').forEach(b => b.addEventListener('click', () => {
+        document.querySelectorAll('#gluePresetsRow button').forEach(x => x.classList.remove('on'));
+        b.classList.add('on');
+        const p = GLUE_PRESETS[b.dataset.gluepre];
+        const map = [['sGlueThr', p.thr], ['sGlueMix', p.mix]];
+        for (const [id, v] of map) {
+            const s = $(id);
+            s.value = v;
+            s.dispatchEvent(new Event('input', { bubbles: true }))
+        }
+        setGlueRatio(p.ratio);
+        setGlueAttack(p.attack);
+        if ($('tglGlue').classList.contains('on') !== p.on)
+            $('tglGlue').click();
+        toast('BUS GLUE PRESET · ' + b.textContent.trim())
+    }));
     /* output telemetry: 4x-oversampled (windowed-sinc) true-peak estimate, RMS, clip count, RTA bars */
     const TP_PH = 4,
         TP_HALF = 6;
@@ -6195,6 +6392,9 @@
             const gr = P.mxOn && mxGR > 0 ? -20 * Math.log10(mxGR) : 0;
             $('tGr').textContent = gr.toFixed(1);
             $('tGr').style.color = gr > 6 ? 'var(--red)' : gr > 2 ? 'var(--amber)' : 'var(--green)';
+            const glueGrAbs = P.glueOn ? -glueGR : 0;
+            $('tGlueGr').textContent = glueGrAbs.toFixed(1);
+            $('tGlueGr').style.color = glueGrAbs > 6 ? 'var(--red)' : glueGrAbs > 2 ? 'var(--amber)' : 'var(--green)';
         }
         if (bins) {
             const w = rtaCv.clientWidth,
@@ -7010,9 +7210,10 @@
             sub: makeSub(oc),
             codec: makeCodec(oc),
             mx: makeMax(oc),
-            mb: makeMultiband(oc)
+            mb: makeMultiband(oc),
+            glue: makeGlue(oc)
         };
-        if (oc.audioWorklet && WORKLET_URL && (P.trAtk || P.trSus || P.mxOn)) {
+        if (oc.audioWorklet && WORKLET_URL && (P.trAtk || P.trSus || P.mxOn || P.glueOn)) {
             try {
                 await oc.audioWorklet.addModule(WORKLET_URL);
                 attachWorklets(oc, off, false)
@@ -7057,7 +7258,8 @@
         off.sub.out.connect(off.codec.inp);
         off.codec.out.connect(off.de.inp);
         off.de.out.connect(cp);
-        cp.connect(off.mb.inp);
+        cp.connect(off.glue.inp);
+        off.glue.out.connect(off.mb.inp);
         const wTot = (P.width || 1) * (v === 'model' ? 1.28 : 1);
         let post = off.mb.out;
         if (Math.abs(wTot - 1) > 0.001) {
