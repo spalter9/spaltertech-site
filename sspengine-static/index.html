@@ -1151,6 +1151,53 @@
         word-break: break-all
     }
 
+    #bounceProgress {
+        display: none;
+        margin-top: 10px
+    }
+
+    #bounceBarTrack {
+        height: 8px;
+        border-radius: 4px;
+        background: rgba(255, 255, 255, .08);
+        overflow: hidden
+    }
+
+    #bounceBarFill {
+        height: 100%;
+        width: 0%;
+        background: var(--green);
+        transition: width .35s ease
+    }
+
+    #bounceStatus {
+        margin-top: 7px;
+        font-family: var(--disp);
+        font-size: 11px;
+        letter-spacing: .14em;
+        color: var(--dim);
+        text-align: center
+    }
+
+    #bounceStatus.done {
+        color: var(--green)
+    }
+
+    @keyframes ledgerFlash {
+        from {
+            background: rgba(60, 220, 140, .22)
+        }
+
+        to {
+            background: transparent
+        }
+    }
+
+    #ledger>div.justSaved {
+        animation: ledgerFlash 2.4s ease-out;
+        border-radius: 6px
+    }
+
     #ledger .t {
         color: var(--bone)
     }/* ---------- SSP ECONOMY ---------- */
@@ -3289,6 +3336,12 @@
                     </button>
                 </div>
                 <button id="mp3Bounce">◉ 3-MP3 BOUNCE · ORIGINAL + SSP MASTER + MONO</button>
+                <div id="bounceProgress">
+                    <div id="bounceBarTrack">
+                        <div id="bounceBarFill"></div>
+                    </div>
+                    <div id="bounceStatus"></div>
+                </div>
                 <button id="srvPrint" style="width:100%;margin-top:10px;border:1px solid var(--green);border-radius:8px;padding:13px;font-family:var(--disp);font-size:11px;letter-spacing:.22em;color:var(--green);background:#101114">▲ SERVER PRINT · SURREAL + LINEAR-PHASE CHAIN</button>
                 <div id="ledger">
                     <span class="sk">FORENSIC LEDGER · SHA-256 PER RENDER</span>
@@ -6871,6 +6924,26 @@
             type: 'audio/mpeg'
         });
     }
+    /* Step-by-step progress for the bounce: a filling bar + plain-language status text that
+       stays on screen (unlike the toast, which fades after ~2.6s) so it's obvious what's
+       happening and when it's truly finished — plus a brief highlight on each new ledger row
+       so the three files you actually need to tap SAVE on are easy to spot. */
+    let bouncePct = 0;
+    function bounceStep(text, pct, done) {
+        bouncePct = pct;
+        $('bounceProgress').style.display = 'block';
+        $('bounceBarFill').style.width = pct + '%';
+        $('bounceStatus').textContent = text;
+        $('bounceStatus').classList.toggle('done', !!done)
+    }
+    function flashLedgerRow() {
+        const rows = $('ledger').children;
+        const row = rows[rows.length - 1];
+        if (!row)
+            return;
+        row.classList.add('justSaved');
+        setTimeout(() => row.classList.remove('justSaved'), 2500)
+    }
     $('mp3Bounce').addEventListener('click', async () => {
         if (!buffer) {
             toast('LOAD AUDIO FIRST');
@@ -6891,18 +6964,24 @@
             toast(canMp3 ? '3-MP3 BOUNCE · 320K · RENDERING' : 'MP3 ENCODER OFFLINE · BOUNCING FLOAT32 WAV SET');
             const bounceSet = [{
                 v: 'original',
-                label: 'ORIGINAL'
+                label: 'ORIGINAL',
+                disp: 'THE ORIGINAL, UNTOUCHED FILE'
             }, {
                 v: 'master',
-                label: 'SSP_MASTER'
+                label: 'SSP_MASTER',
+                disp: 'YOUR SSP MASTER'
             }, {
                 v: 'mono',
-                label: 'MONO'
+                label: 'MONO',
+                disp: 'THE MONO CHECK'
             }];
+            let step = 0;
             for (const {
                 v,
-                label
+                label,
+                disp
             } of bounceSet) {
+                bounceStep('STEP ' + (step + 1) + ' OF ' + bounceSet.length + ' · RENDERING ' + disp + '…', (step / bounceSet.length) * 100);
                 let rb = await renderVariant(v);
                 let blob,
                     ext;
@@ -6918,11 +6997,17 @@
                 rb = null;
                 const hash = await sha256(await blob.arrayBuffer());
                 ledgerSave(new Date().toLocaleTimeString() + ' · ' + label + ' · BOUNCE' + ext.toUpperCase(), hash, blob, (window.__srcName || 'sspengine') + '_' + label + ext);
+                flashLedgerRow();
                 blob = null;
-                await new Promise(r => setTimeout(r, 600));
+                step++;
+                bounceStep(step + ' OF ' + bounceSet.length + ' FILES READY', (step / bounceSet.length) * 100);
+                await new Promise(r => setTimeout(r, 600))
             }
+            bounceStep('✓ ALL 3 FILES READY — TAP ⬇ SAVE BELOW FOR EACH ONE', 100, true);
+            $('ledger').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
             toast('3-BOUNCE COMPLETE · ORIGINAL + SSP MASTER + MONO — TAP SAVE ON EACH IN THE LEDGER');
         } catch (e) {
+            bounceStep('✕ BOUNCE FAILED — TRACK MAY BE TOO LONG FOR THIS DEVICE', bouncePct);
             toast('BOUNCE FAILED — TRACK MAY BE TOO LONG FOR THIS DEVICE')
         }
         finally {
