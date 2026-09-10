@@ -3094,6 +3094,9 @@
                         </div>
                         <input type="range" id="sDrive" min="0" max="100" value="0">
                     </div>
+                    <div class="tglRow">
+                        <button class="tgl" id="tglWarm" title="Asymmetric saturation (even-harmonic bias) plus a low-end swell and high-end rolloff — a warmer, smoother character on the valve stage. Off by default; the plain drive curve is unchanged either way.">VALVE CHARACTER · WARMTH</button>
+                    </div>
                     <div class="ctl">
                         <div class="row">
                             <span>LOW SHELF · 90 Hz</span>
@@ -4481,7 +4484,8 @@
         glueThr: -10,
         glueRatio: 4,
         glueAttack: 0.3,
-        glueMix: 100
+        glueMix: 100,
+        warmChar: false
     };
     let N = {}; // live nodes
 
@@ -4496,15 +4500,38 @@
         return AC;
     }
 
-    function valveCurve(amount) {
+    /* warm=true blends in an asymmetric-bias tanh term: shifting the input before the
+       nonlinearity and subtracting the shifted curve's own DC offset generates real
+       even-harmonic content (2nd harmonic) on top of the odd harmonics plain tanh makes —
+       that even-harmonic asymmetry is the actual mechanism behind transformer-style
+       "warmth", not just a tonal EQ tilt. The tilt (low swell, high rolloff) is a separate
+       stage — see makeWarmth(). */
+    function valveCurve(amount, warm) {
         const n = 2048,
             c = new Float32Array(n),
             k = 1 + amount * 10,
             m = amount * .85,
             tk = Math.tanh(k);
+        /* Asymmetric bias, normalized per side so the curve still hits exactly ±1 at the
+           endpoints (bounded, matches the plain curve's headroom) — only the SHAPE of the
+           bend on the way there differs between the positive and negative halves, which is
+           what actually generates even-harmonic content. Normalizing with one shared
+           denominator (the naive version of this) blows up: at x=-1 the DC-removed value can
+           be several times larger than at x=+1, so dividing both sides by the same small
+           span sent it well past ±1. Per-side normalization fixes that by construction. */
+        const bias = warm ? .14 : 0,
+            mid = Math.tanh(k * bias),
+            posSpan = Math.tanh(k * (1 + bias)) - mid,
+            negSpan = mid - Math.tanh(k * (-1 + bias));
         for (let i = 0; i < n; i++) {
             const x = i / (n - 1) * 2 - 1;
-            c[i] = (1 - m) * x + m * (Math.tanh(k * x) / tk);
+            const symShaped = Math.tanh(k * x) / tk;
+            let shaped = symShaped;
+            if (warm) {
+                const raw = Math.tanh(k * (x + bias)) - mid;
+                shaped = raw >= 0 ? raw / posSpan : raw / negSpan
+            }
+            c[i] = (1 - m) * x + m * shaped;
         }
         return c;
     }
@@ -4764,6 +4791,8 @@
             ramp(n.glue.node.parameters.get('attackMs'), P.glueAttack);
             ramp(n.glue.node.parameters.get('mix'), P.glueMix / 100)
         }
+        ramp(n.warmth.byp.gain, P.warmChar ? 0 : 1);
+        ramp(n.warmth.wet.gain, P.warmChar ? 1 : 0)
     }
     function applyStages() {
         if (AC && N.dn)
@@ -5007,6 +5036,26 @@
     function makeGlue(a) {
         return bypassBlock(a)
     }
+    /* Neve-style warmth tilt: a small low-shelf swell (~80 Hz, transformer-like low-end
+       bloom) and a gentle high-shelf rolloff (~9 kHz, the smoothness transformers add by
+       not being perfectly flat at the top). Fixed, not user-adjustable — this is a
+       character switch, not another EQ. Paired with the asymmetric valveCurve() bias for
+       the even-harmonic half of the effect. */
+    function makeWarmth(a) {
+        const b = bypassBlock(a);
+        b.lo = a.createBiquadFilter();
+        b.lo.type = 'lowshelf';
+        b.lo.frequency.value = 80;
+        b.lo.gain.value = 1.8;
+        b.hi = a.createBiquadFilter();
+        b.hi.type = 'highshelf';
+        b.hi.frequency.value = 9000;
+        b.hi.gain.value = -1.6;
+        b.inp.connect(b.lo);
+        b.lo.connect(b.hi);
+        b.hi.connect(b.wet);
+        return b
+    }
     let mxGR = 1;
     let glueGR = 0;
     let lufsM = -Infinity,
@@ -5070,7 +5119,7 @@
         N.inWet = a.createGain();
         N.inDry = a.createGain();
         N.shaper = a.createWaveShaper();
-        N.shaper.curve = valveCurve(P.drive);
+        N.shaper.curve = valveCurve(P.drive, P.warmChar);
         N.shaper.oversample = '4x';
         N.preTrim = a.createGain();
         N.preTrim.gain.value = 1;
@@ -5123,10 +5172,12 @@
         N.mx = makeMax(a);
         N.mb = makeMultiband(a);
         N.glue = makeGlue(a);
+        N.warmth = makeWarmth(a);
         N.inWet.connect(N.dn.inp);
         N.dn.out.connect(N.tr.inp);
         N.tr.out.connect(N.shaper);
-        N.shaper.connect(N.preTrim);
+        N.shaper.connect(N.warmth.inp);
+        N.warmth.out.connect(N.preTrim);
         N.preTrim.connect(N.low);
         N.low.connect(N.mid);
         N.mid.connect(N.high);
@@ -5375,7 +5426,7 @@
        input handler on restore — same approach as the A/B bypass and reset
        buttons, so this never drifts out of sync with what each slider does. */
     const SESSION_SLIDERS = ['sDrive', 'sLow', 'sMid', 'sHigh', 'sWide', 'sComp', 'sOut', 'sSur', 'sRoom', 'sDnHiss', 'sDnGate', 'sDnFloor', 'sDeFreq', 'sDeThr', 'sDeRatio', 'sHaasMs', 'sHaasMix', 'sErMix', 'sTrAtk', 'sTrSus', 'sSub', 'sCodec', 'sMxDrive', 'sMxCeil', 'sMxRel', 'sMbLow', 'sMbMid', 'sMbHigh', 'sMbRatio', 'sGlueThr', 'sGlueMix'];
-    const SESSION_TOGGLES = ['tglSpatial', 'tglOrbit', 'tglMatch', 'tglDn', 'tglDe', 'tglMx', 'tglMb', 'tglGlue', 'boom'];
+    const SESSION_TOGGLES = ['tglSpatial', 'tglOrbit', 'tglMatch', 'tglDn', 'tglDe', 'tglMx', 'tglMb', 'tglGlue', 'tglWarm', 'boom'];
     function sessionDB() {
         return new Promise((resolve, reject) => {
             const req = indexedDB.open('mte_session', 1);
@@ -5650,9 +5701,17 @@
         if (driveRAF)
             return;
         driveRAF = requestAnimationFrame(() => {
-            N.shaper.curve = valveCurve(P.drive);
+            N.shaper.curve = valveCurve(P.drive, P.warmChar);
             driveRAF = null;
         });
+    });
+    $('tglWarm').addEventListener('click', () => {
+        P.warmChar = !P.warmChar;
+        $('tglWarm').classList.toggle('on', P.warmChar);
+        ctx();
+        N.shaper.curve = valveCurve(P.drive, P.warmChar);
+        applyStages();
+        toast(P.warmChar ? 'VALVE CHARACTER · WARMTH ENGAGED' : 'VALVE CHARACTER · CLEAN (DEFAULT CURVE)')
     });
     bindSlider('sLow', 'vLow', v => (v > 0 ? '+' : '') + v.toFixed(1) + ' dB', v => {
         P.low = v;
@@ -7211,7 +7270,8 @@
             codec: makeCodec(oc),
             mx: makeMax(oc),
             mb: makeMultiband(oc),
-            glue: makeGlue(oc)
+            glue: makeGlue(oc),
+            warmth: makeWarmth(oc)
         };
         if (oc.audioWorklet && WORKLET_URL && (P.trAtk || P.trSus || P.mxOn || P.glueOn)) {
             try {
@@ -7222,7 +7282,7 @@
         setStageParams(off, oc, 0);
         const drive = v === 'mv3' ? Math.min(1, P.drive * 1.3 + .1) : P.drive;
         const sh = oc.createWaveShaper();
-        sh.curve = valveCurve(drive);
+        sh.curve = valveCurve(drive, P.warmChar);
         sh.oversample = '4x';
         const pt = oc.createGain();
         pt.gain.value = .85;
@@ -7250,7 +7310,8 @@
         s.connect(off.dn.inp);
         off.dn.out.connect(off.tr.inp);
         off.tr.out.connect(sh);
-        sh.connect(pt);
+        sh.connect(off.warmth.inp);
+        off.warmth.out.connect(pt);
         pt.connect(lo);
         lo.connect(mi);
         mi.connect(hi);
