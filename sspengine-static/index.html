@@ -2912,10 +2912,14 @@
                     </div>
                     <div class="tag">SURREAL ENGINE · MASTERING GRADE · FLOAT32 FORENSIC PIPELINE</div>
                 </div>
-                <button class="pill" id="voiceTgl">
-                    <span class="led" id="voiceLed"></span>
-                     SPALTY VOICE
-                </button>
+                <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+                    <button class="pill" id="voiceTgl">
+                        <span class="led" id="voiceLed"></span>
+                         SPALTY VOICE
+                    </button>
+                    <button class="pill" id="btnSaveSession" title="Save your loaded track, Valve Pipeline and Surreal Stage settings — recall them anytime, even after closing this tab or restarting your computer.">⤓ SAVE SESSION</button>
+                    <button class="pill" id="btnRestoreSession" style="display:none;border-color:var(--amber);color:var(--amber)" title="Restore your last saved session.">⤒ RESTORE SESSION</button>
+                </div>
             </div>
 
             <!-- INGEST -->
@@ -4896,6 +4900,117 @@
         renderRack();
         toast('TRACK ARMED · ' + t.name.toUpperCase());
     }
+
+    /* ================= SESSION SAVE / RESTORE — survives closing the tab or
+       restarting the computer (stored in this browser's IndexedDB, not on a
+       server). Snapshots every console slider + the key on/off switches by
+       their raw control value, then replays them through each control's own
+       input handler on restore — same approach as the A/B bypass and reset
+       buttons, so this never drifts out of sync with what each slider does. */
+    const SESSION_SLIDERS = ['sDrive', 'sLow', 'sMid', 'sHigh', 'sWide', 'sComp', 'sOut', 'sSur', 'sRoom', 'sDnHiss', 'sDnGate', 'sDnFloor', 'sDeFreq', 'sDeThr', 'sDeRatio', 'sHaasMs', 'sHaasMix', 'sErMix', 'sTrAtk', 'sTrSus', 'sSub', 'sCodec', 'sMxDrive', 'sMxCeil', 'sMxRel'];
+    const SESSION_TOGGLES = ['tglSpatial', 'tglOrbit', 'tglMatch', 'tglDn', 'tglDe', 'tglMx', 'boom'];
+    function sessionDB() {
+        return new Promise((resolve, reject) => {
+            const req = indexedDB.open('mte_session', 1);
+            req.onupgradeneeded = () => req.result.createObjectStore('sessions');
+            req.onsuccess = () => resolve(req.result);
+            req.onerror = () => reject(req.error)
+        })
+    }
+    async function loadSavedSession() {
+        try {
+            const db = await sessionDB();
+            return await new Promise((resolve, reject) => {
+                const tx = db.transaction('sessions', 'readonly');
+                const req = tx.objectStore('sessions').get('current');
+                req.onsuccess = () => resolve(req.result || null);
+                req.onerror = () => reject(req.error)
+            })
+        } catch (e) {
+            return null
+        }
+    }
+    function updateSessionBtn(savedAt) {
+        const b = $('btnRestoreSession');
+        if (!b || !savedAt)
+            return;
+        b.style.display = 'inline-flex';
+        b.title = 'Saved ' + new Date(savedAt).toLocaleString() + ' — click to restore'
+    }
+    async function saveSession() {
+        try {
+            const db = await sessionDB();
+            const active = tracks.find(t => t.id === activeTrackId);
+            const rec = {
+                savedAt: Date.now(),
+                sliders: {},
+                toggles: {},
+                padX: P.padX,
+                padZ: P.padZ,
+                trackName: active ? active.file.name : null,
+                trackFile: active ? active.file : null
+            };
+            SESSION_SLIDERS.forEach(id => {
+                const el = $(id);
+                if (el)
+                    rec.sliders[id] = el.value
+            });
+            SESSION_TOGGLES.forEach(id => {
+                const el = $(id);
+                if (el)
+                    rec.toggles[id] = el.classList.contains('on')
+            });
+            await new Promise((resolve, reject) => {
+                const tx = db.transaction('sessions', 'readwrite');
+                tx.objectStore('sessions').put(rec, 'current');
+                tx.oncomplete = resolve;
+                tx.onerror = () => reject(tx.error)
+            });
+            toast('SESSION SAVED · ' + new Date(rec.savedAt).toLocaleTimeString() + (rec.trackName ? ' · ' + rec.trackName.toUpperCase() : '') + ' — RESTORE IT ANYTIME');
+            updateSessionBtn(rec.savedAt)
+        } catch (e) {
+            toast('SESSION SAVE FAILED — ' + (e && e.message ? e.message : 'STORAGE UNAVAILABLE ON THIS BROWSER'))
+        }
+    }
+    async function restoreSession() {
+        const rec = await loadSavedSession();
+        if (!rec) {
+            toast('NO SAVED SESSION FOUND');
+            return
+        }
+        if (rec.trackFile) {
+            toast('RESTORING · ' + (rec.trackName || rec.trackFile.name).toUpperCase());
+            const before = tracks.length;
+            addTracks([rec.trackFile]);
+            const added = tracks[tracks.length - 1];
+            if (added && tracks.length > before)
+                await selectTrack(added.id)
+        }
+        SESSION_TOGGLES.forEach(id => {
+            const el = $(id);
+            if (el && el.classList.contains('on') !== !!rec.toggles[id])
+                el.click()
+        });
+        SESSION_SLIDERS.forEach(id => {
+            const el = $(id);
+            if (el && rec.sliders[id] != null) {
+                el.value = rec.sliders[id];
+                el.dispatchEvent(new Event('input', { bubbles: true }))
+            }
+        });
+        if (rec.padX != null && rec.padZ != null) {
+            P.padX = rec.padX;
+            P.padZ = rec.padZ;
+            padDot.style.left = ((P.padX + 1) / 2 * 100) + '%';
+            padDot.style.top = ((P.padZ + 1) / 2 * 100) + '%';
+            if (AC)
+                applySpatial()
+        }
+        toast('SESSION RESTORED · SAVED ' + new Date(rec.savedAt).toLocaleString())
+    }
+    $('btnSaveSession').addEventListener('click', saveSession);
+    $('btnRestoreSession').addEventListener('click', restoreSession);
+    loadSavedSession().then(rec => rec && updateSessionBtn(rec.savedAt));
 
     /* ================= TRANSPORT ================= */
     function makeSource() {
