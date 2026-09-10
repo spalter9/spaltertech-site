@@ -7903,26 +7903,33 @@
     }
     let curAudio = null,
         chipKeepAlive = null;
-    /* Ranks the browser's built-in voices and picks the best-sounding one available —
+    /* Ranks the browser's built-in voices and picks the best-sounding MALE one available —
        there is no premium voice backend wired up (no /api/spalty-voice function exists),
-       so this local voice is the only voice Spalty ever actually speaks with. */
+       so this local voice is the only voice Spalty ever actually speaks with. Spalty reads
+       as a man, so a name match on a known male voice dominates the score — a merely
+       higher-quality female voice (many "Natural"/"Neural" voices default to female) must
+       never outrank a lower-quality male one; quality only breaks ties among male voices. */
     function pickBestVoice() {
         const vs = speechSynthesis.getVoices();
         if (!vs.length)
             return null;
+        const MALE = /\b(guy|andrew|daniel|alex|david|christopher|mark|george|fred|ryan|brian|eric|james|william|oliver|thomas|male)\b/;
+        const FEMALE = /\b(aria|zira|samantha|susan|karen|victoria|allison|ava|emma|joanna|salli|kimberly|female|woman|jenny|libby|sonia|amy|olivia|natasha)\b/;
         const score = v => {
             const n = v.name.toLowerCase();
             let s = 0;
             if (!/^en/i.test(v.lang))
-                s -= 100;
+                s -= 1000;
+            if (MALE.test(n))
+                s += 500;
+            else if (FEMALE.test(n))
+                s -= 500;
             if (/online \(natural\)|neural|premium/.test(n))
                 s += 50;
             if (/google/.test(n))
                 s += 30;
             if (/enhanced/.test(n))
                 s += 25;
-            if (/guy|andrew|daniel|alex|david|christopher/.test(n))
-                s += 10;
             if (/en-us|en_us/.test(v.lang.toLowerCase()))
                 s += 5;
             if (v.localService)
