@@ -22,8 +22,8 @@ export function Hero() {
 
       {/* Mockup layout: max-w-6xl, pt-12 pb-20, space-y-12 rhythm */}
       <div className="relative mx-auto max-w-6xl px-6 pt-12 pb-20 space-y-12">
-        {/* Emblem — the crest is lit on pure black, so mix-blend-screen drops
-            the black into the obsidian field and leaves only the gold and glow. */}
+        {/* Emblem — pre-cut to a transparent PNG (source art was on white),
+            so it sits directly on the obsidian field with a soft gold glow behind it. */}
         <motion.div
           initial={{ opacity: 0, scale: 0.94 }}
           animate={{ opacity: 1, scale: 1 }}
@@ -36,9 +36,9 @@ export function Hero() {
             style={{ background: "radial-gradient(circle, rgba(197,160,89,0.28), transparent 65%)" }}
           />
           <img
-            src="/images/mastertrust-emblem.jpg"
+            src="/images/mastertrust-emblem.png"
             alt="The Master Trust emblem"
-            className="relative w-44 md:w-56 mix-blend-screen"
+            className="relative w-44 md:w-56"
           />
         </motion.div>
 
