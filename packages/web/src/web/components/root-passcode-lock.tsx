@@ -159,8 +159,17 @@ export function RootPasscodeLock({ children }: { children: ReactNode }) {
               }}
             >
               <div className="space-y-4">
-                <div className="flex justify-center">
-                  <Crest size={56} />
+                <div className="relative flex justify-center">
+                  <div
+                    className="absolute inset-0 blur-2xl"
+                    aria-hidden="true"
+                    style={{ background: "radial-gradient(circle, rgba(197,160,89,0.3), transparent 65%)" }}
+                  />
+                  <img
+                    src="/images/mastertrust-emblem.png"
+                    alt="The Master Trust emblem"
+                    className="relative w-40"
+                  />
                 </div>
                 <p className="eyebrow">Spalter Entertainment Technologies</p>
                 <h1 className="font-display gold-text text-2xl tracking-tight md:text-3xl">
