@@ -5096,7 +5096,12 @@
             c[i] = Math.tanh(2.2 * x) / tk
         }
         b.sh.curve = c;
-        b.sh.oversample = '2x';
+        /* Same OfflineAudioContext WaveShaper bug as the main valve stage (see renderVariant) —
+           this node is built for every export whether the codec-restore stage is toggled on
+           or not, and a corrupted node here still poisons the mix downstream: its output
+           lands on the "wet" bus that gets summed into the dry signal, and NaN * 0 is still
+           NaN, so a bypassed stage does not actually protect against this on Safari. */
+        b.sh.oversample = 'none';
         b.inp.connect(b.hp);
         b.hp.connect(b.sh);
         b.sh.connect(b.wet);
@@ -7375,7 +7380,15 @@
         const drive = v === 'mv3' ? Math.min(1, P.drive * 1.3 + .1) : P.drive;
         const sh = oc.createWaveShaper();
         sh.curve = valveCurve(drive, P.warmChar, P.warmAmt);
-        sh.oversample = '4x';
+        /* Safari has a long-standing WebKit bug where an oversampled WaveShaperNode
+           inside an OfflineAudioContext renders garbage (full-scale noise) for the rest
+           of the buffer — the same node oversampled fine in the live AudioContext at
+           N.shaper (see makeMax-adjacent code above), so this is specific to offline
+           rendering. Every export (WAV and MP3 bounce) goes through this exact context,
+           which is why "original" (no render at all) stayed clean while every processed
+           export came out as static. 'none' keeps the saturation curve correct, just
+           without the extra alias-suppression the live monitor path still gets. */
+        sh.oversample = 'none';
         const pt = oc.createGain();
         pt.gain.value = .85;
         const lo = oc.createBiquadFilter();
