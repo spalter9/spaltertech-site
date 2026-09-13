@@ -8971,6 +8971,9 @@
         }
     }
     $('spaltySend').addEventListener('click', spSend);
+    $('spaltyText').addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') spSend();
+    });
     /* ---- Spalty voice input (speech-to-text, mouse/touch only: tap to talk) ---- */
     (function() {
         const mic = $('spaltyMic');
