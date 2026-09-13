@@ -8782,7 +8782,10 @@
     try {
         voiceOn = localStorage.getItem('spaltyVoiceOn') === '1'
     } catch (e) {}
-    $('spaltyBtn').addEventListener('click', () => $('spalty').classList.add('open'));
+    $('spaltyBtn').addEventListener('click', () => {
+        $('spalty').classList.add('open');
+        unlockVoice()
+    });
     $('spaltyClose').addEventListener('click', () => $('spalty').classList.remove('open'));
     function syncVoiceLeds() {
         $('voiceLed').classList.toggle('on', voiceOn);
@@ -8801,8 +8804,14 @@
         else
             speak('Voice check. Spalty on the board. Valves are warm, ledger is clean — let\'s make something undeniable.')
     }
-    $('voiceTgl').addEventListener('click', () => setVoice(!voiceOn));
-    $('spaltyVoiceTgl').addEventListener('click', () => setVoice(!voiceOn));
+    $('voiceTgl').addEventListener('click', () => {
+        unlockVoice();
+        setVoice(!voiceOn)
+    });
+    $('spaltyVoiceTgl').addEventListener('click', () => {
+        unlockVoice();
+        setVoice(!voiceOn)
+    });
     function spMsg(txt, who) {
         const d = document.createElement('div');
         d.className = 'msg ' + who;
@@ -8812,7 +8821,35 @@
         return d
     }
     let curAudio = null,
-        chipKeepAlive = null;
+        curAudioUrl = null,
+        chipKeepAlive = null,
+        audioUnlocked = false;
+    /* iOS Safari only grants an <audio> element playback permission when .play() is called
+       synchronously inside a real tap — a permission that does NOT transfer to a fresh
+       `new Audio()`, and is gone by the time an awaited fetch() resolves. So this keeps one
+       element for the widget's lifetime, "unlocks" it with a silent clip on the first tap
+       that could lead to speech, and speak() below only ever swaps that same element's src. */
+    function voiceEl() {
+        if (!curAudio) {
+            curAudio = new Audio();
+            curAudio.preload = 'auto'
+        }
+        return curAudio
+    }
+    function unlockVoice() {
+        if (audioUnlocked) return;
+        const a = voiceEl();
+        a.src = 'data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEARKwAAIhYAQACABAAZGF0YQAAAAA=';
+        a.muted = true;
+        a.play().then(() => {
+            a.pause();
+            a.currentTime = 0;
+            a.muted = false;
+            audioUnlocked = true
+        }).catch(() => {
+            a.muted = false
+        })
+    }
     /* Ranks the browser's built-in voices and picks the best-sounding MALE one available —
        this is the fallback when /api/spalty-voice (the ElevenLabs-backed Function) is
        unreachable or fails for a given line; see speak() below for the real voice path.
@@ -8892,10 +8929,8 @@
     async function speak(t) {
         if (!voiceOn)
             return;
-        if (curAudio) {
-            curAudio.pause();
-            curAudio = null
-        }
+        const a = voiceEl();
+        a.pause();
         /* Try the real ElevenLabs voice fresh on every line — a single bad line (rate
            limit, transient 5xx) must not doom the rest of the session to the robot voice,
            so this never latches a "give up on premium" flag; it just falls back per-call. */
@@ -8911,8 +8946,10 @@
             });
             if (r.ok) {
                 const b = await r.blob();
-                curAudio = new Audio(URL.createObjectURL(b));
-                await curAudio.play();
+                if (curAudioUrl) URL.revokeObjectURL(curAudioUrl);
+                curAudioUrl = URL.createObjectURL(b);
+                a.src = curAudioUrl;
+                await a.play();
                 return
             }
         } catch (e) {}
