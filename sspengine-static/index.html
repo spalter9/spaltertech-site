@@ -8823,12 +8823,16 @@
     let curAudio = null,
         curAudioUrl = null,
         chipKeepAlive = null,
-        audioUnlocked = false;
+        audioUnlocked = false,
+        audioUnlockPromise = null;
     /* iOS Safari only grants an <audio> element playback permission when .play() is called
        synchronously inside a real tap — a permission that does NOT transfer to a fresh
        `new Audio()`, and is gone by the time an awaited fetch() resolves. So this keeps one
        element for the widget's lifetime, "unlocks" it with a silent clip on the first tap
-       that could lead to speech, and speak() below only ever swaps that same element's src. */
+       that could lead to speech, and speak() below only ever swaps that same element's src.
+       unlockVoice()'s own pause/reset runs asynchronously (after its play() promise settles),
+       so speak() must await that same promise before touching the element itself — otherwise
+       the unlock's cleanup can land after real speech has already started and cut it off. */
     function voiceEl() {
         if (!curAudio) {
             curAudio = new Audio();
@@ -8837,18 +8841,20 @@
         return curAudio
     }
     function unlockVoice() {
-        if (audioUnlocked) return;
+        if (audioUnlocked || audioUnlockPromise) return audioUnlockPromise;
         const a = voiceEl();
         a.src = 'data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEARKwAAIhYAQACABAAZGF0YQAAAAA=';
         a.muted = true;
-        a.play().then(() => {
+        audioUnlockPromise = a.play().then(() => {
             a.pause();
             a.currentTime = 0;
             a.muted = false;
             audioUnlocked = true
         }).catch(() => {
-            a.muted = false
-        })
+            a.muted = false;
+            audioUnlocked = true
+        });
+        return audioUnlockPromise
     }
     /* Ranks the browser's built-in voices and picks the best-sounding MALE one available —
        this is the fallback when /api/spalty-voice (the ElevenLabs-backed Function) is
@@ -8929,6 +8935,7 @@
     async function speak(t) {
         if (!voiceOn)
             return;
+        if (audioUnlockPromise) await audioUnlockPromise;
         const a = voiceEl();
         a.pause();
         /* Try the real ElevenLabs voice fresh on every line — a single bad line (rate
