@@ -8814,11 +8814,11 @@
     let curAudio = null,
         chipKeepAlive = null;
     /* Ranks the browser's built-in voices and picks the best-sounding MALE one available —
-       there is no premium voice backend wired up (no /api/spalty-voice function exists),
-       so this local voice is the only voice Spalty ever actually speaks with. Spalty reads
-       as a man, so a name match on a known male voice dominates the score — a merely
-       higher-quality female voice (many "Natural"/"Neural" voices default to female) must
-       never outrank a lower-quality male one; quality only breaks ties among male voices. */
+       this is the fallback when /api/spalty-voice (the ElevenLabs-backed Function) is
+       unreachable or fails for a given line; see speak() below for the real voice path.
+       Spalty reads as a man, so a name match on a known male voice dominates the score — a
+       merely higher-quality female voice (many "Natural"/"Neural" voices default to female)
+       must never outrank a lower-quality male one; quality only breaks ties among male voices. */
     function pickBestVoice() {
         const vs = speechSynthesis.getVoices();
         if (!vs.length)
@@ -8896,6 +8896,26 @@
             curAudio.pause();
             curAudio = null
         }
+        /* Try the real ElevenLabs voice fresh on every line — a single bad line (rate
+           limit, transient 5xx) must not doom the rest of the session to the robot voice,
+           so this never latches a "give up on premium" flag; it just falls back per-call. */
+        try {
+            const r = await fetch('/api/spalty-voice', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    text: t
+                })
+            });
+            if (r.ok) {
+                const b = await r.blob();
+                curAudio = new Audio(URL.createObjectURL(b));
+                await curAudio.play();
+                return
+            }
+        } catch (e) {}
         chipSpeak(t);
     }
     async function spSend() {
