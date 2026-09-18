@@ -1,0 +1,55 @@
+name: Build Surreal Audio Android APK
+
+# Builds an installable debug APK on GitHub's own runners, which have
+# normal internet access to Google's Maven repo — unlike the sandbox this
+# app was developed in, which has that network path blocked. This is the
+# only way to get an actual installable app file out of this branch right
+# now, short of someone opening the project in a real Android Studio.
+
+on:
+  push:
+    branches: [claude/fill-fixed-stuff-code-p35th8]
+    paths:
+      - 'android/SurrealAudio/**'
+      - '.github/workflows/android-build.yml'
+  workflow_dispatch: {}
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: android/SurrealAudio
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+          cache: gradle
+
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Install required SDK components
+        run: |
+          yes | sdkmanager --licenses || true
+          sdkmanager "platform-tools" "platforms;android-35" "build-tools;35.0.0"
+
+      - name: Grant execute permission for gradlew
+        run: chmod +x gradlew
+
+      - name: Verify the DSP engine (pure-JVM, no Android SDK needed)
+        run: ./gradlew :dsp:run --console=plain --stacktrace
+
+      - name: Build debug APK
+        run: ./gradlew :app:assembleDebug --stacktrace
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: surreal-audio-debug-apk
+          path: android/SurrealAudio/app/build/outputs/apk/debug/*.apk
+          if-no-files-found: error
