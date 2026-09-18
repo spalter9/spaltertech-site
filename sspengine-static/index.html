@@ -3230,7 +3230,7 @@
                     </div>
                     <div class="ctl">
                         <div class="row">
-                            <span>STEREO WIDTH · M/S</span>
+                            <span>STEREO WIDTH · M/S · BASS-SAFE BELOW 150 Hz</span>
                             <b id="vWide">100%</b>
                         </div>
                         <input type="range" id="sWide" min="0" max="200" value="100">
@@ -3261,7 +3261,7 @@
                 <!-- SPATIAL + BOOM -->
                 <div class="panel">
                     <h2>IMMERSIVE FIELD</h2>
-                    <div class="sk">HAAS CROSS-FEED + EARLY REFLECTIONS + STEREO WIDTH + ROOM — DIALED IN TOGETHER, ONE TAP. REAL SPACE, NOT A SPINNING POSITION.</div>
+                    <div class="sk">HAAS CROSS-FEED + EARLY REFLECTIONS + BASS-SAFE STEREO WIDTH + ROOM — DIALED IN TOGETHER, ONE TAP. THE LOW END BELOW 150 Hz NEVER WIDENS — ONLY THE HIGHS OPEN UP, SO BASS STAYS CENTERED AND MONO-SAFE NO MATTER HOW WIDE IT GETS.</div>
                     <button id="immersive">
                         ⚡ ENGAGE IMMERSIVE
                         <small>OPENS THE MIX UP · TAP AGAIN TO GO BACK DRY</small>
@@ -5323,7 +5323,23 @@
         N.sub.out.connect(N.codec.inp);
         N.codec.out.connect(N.de.inp);
         N.de.out.connect(N.comp);
-        /* M/S width matrix: mid untouched (mono-safe), side scaled by width */
+        /* Bass-safe crossover: everything below 150 Hz bypasses the width stage
+           entirely and stays exactly as wide (or narrow) as the source already
+           was — no artificial stereo added to it. Widening low end is what
+           causes phase cancellation on mono playback, weak club and vinyl
+           translation, and a hollow low-mid; keeping it out of the M/S matrix
+           and only widening the highpassed band above the crossover is a
+           frequency-split imaging technique standard in high-end mastering
+           chains and absent from this engine (and most free tools) until now. */
+        N.wLow = a.createBiquadFilter();
+        N.wLow.type = 'lowpass';
+        N.wLow.frequency.value = 150;
+        N.wLow.Q.value = .707;
+        N.wHigh = a.createBiquadFilter();
+        N.wHigh.type = 'highpass';
+        N.wHigh.frequency.value = 150;
+        N.wHigh.Q.value = .707;
+        /* M/S width matrix (highpassed band only): mid untouched, side scaled by width */
         N.wsplit = a.createChannelSplitter(2);
         N.mSum = a.createGain();
         N.mSum.gain.value = .5;
@@ -5347,12 +5363,17 @@
         N.mSum.connect(N.wMerge, 0, 1);
         N.sW.connect(N.wMerge, 0, 0);
         N.sWInv.connect(N.wMerge, 0, 1);
+        N.wideSum = a.createGain();
+        N.wLow.connect(N.wideSum);
+        N.wMerge.connect(N.wideSum);
         N.wideOut = a.createGain();
-        N.wMerge.connect(N.haas.inp);
+        N.wideSum.connect(N.haas.inp);
         N.haas.out.connect(N.wideOut);
         N.comp.connect(N.glue.inp);
         N.glue.out.connect(N.mb.inp);
-        N.mb.out.connect(N.wsplit);
+        N.mb.out.connect(N.wLow);
+        N.mb.out.connect(N.wHigh);
+        N.wHigh.connect(N.wsplit);
         N.panOut = a.createGain();
         N.roomConv = a.createConvolver();
         N.roomWet = a.createGain();
@@ -7453,6 +7474,17 @@
         const wTot = (P.width || 1) * (v === 'model' ? 1.28 : 1);
         let post = off.mb.out;
         if (Math.abs(wTot - 1) > 0.001) {
+            /* Same bass-safe crossover as the live chain: below 150 Hz bypasses
+               the M/S width matrix entirely, so a bounce never gains artificial
+               bass width it didn't have live. */
+            const wLow = oc.createBiquadFilter();
+            wLow.type = 'lowpass';
+            wLow.frequency.value = 150;
+            wLow.Q.value = .707;
+            const wHigh = oc.createBiquadFilter();
+            wHigh.type = 'highpass';
+            wHigh.frequency.value = 150;
+            wHigh.Q.value = .707;
             const sp = oc.createChannelSplitter(2);
             const mS = oc.createGain();
             mS.gain.value = .5;
@@ -7476,9 +7508,14 @@
             mS.connect(mg, 0, 1);
             sw.connect(mg, 0, 0);
             swI.connect(mg, 0, 1);
+            const wideSum = oc.createGain();
+            wLow.connect(wideSum);
+            mg.connect(wideSum);
             const wo = oc.createGain();
-            mg.connect(wo);
-            off.mb.out.connect(sp);
+            wideSum.connect(wo);
+            off.mb.out.connect(wLow);
+            off.mb.out.connect(wHigh);
+            wHigh.connect(sp);
             post = wo;
         }
         post.connect(off.haas.inp);
