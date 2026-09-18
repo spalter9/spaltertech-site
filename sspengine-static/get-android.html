@@ -1,0 +1,141 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Surreal Audio — Get the Android App</title>
+<meta name="description" content="Download the Surreal Audio Android test build and install it in under a minute.">
+<link rel="icon" href="media/surreal-audio-icon.png">
+<link rel="apple-touch-icon" href="media/surreal-audio-icon.png">
+<style>
+    :root {
+        --chassis: #030309;
+        --panel: rgba(16, 18, 28, .72);
+        --line: #2b3044;
+        --bone: #e6e3d8;
+        --dim: #8d90a0;
+        --amber: #ffb638;
+        --green: #3ae8a4;
+        --mono: 'IBM Plex Mono', ui-monospace, monospace;
+        --disp: 'Chakra Petch', 'IBM Plex Mono', sans-serif;
+    }
+    * { box-sizing: border-box; }
+    html, body {
+        margin: 0;
+        background: var(--chassis);
+        color: var(--bone);
+        font-family: var(--mono);
+    }
+    body {
+        min-height: 100vh;
+        padding: env(safe-area-inset-top, 0px) 18px calc(env(safe-area-inset-bottom, 0px) + 48px);
+        display: flex;
+        justify-content: center;
+    }
+    main { width: 100%; max-width: 480px; padding-top: 20px; }
+
+    .nav {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 36px;
+        font-size: 11px;
+        letter-spacing: .1em;
+    }
+    .nav a { color: var(--dim); text-decoration: none; border-bottom: 1px dotted var(--line); }
+
+    .hero { text-align: center; margin-bottom: 30px; }
+    .iconWrap { position: relative; width: 84px; height: 84px; margin: 0 auto 18px; }
+    .iconWrap::before {
+        content: '';
+        position: absolute; inset: -26px;
+        border-radius: 50%;
+        background: radial-gradient(circle, rgba(58,232,164,.22), transparent 65%);
+        filter: blur(26px);
+    }
+    .iconWrap img { position: relative; width: 84px; height: 84px; border-radius: 20px; box-shadow: 0 8px 32px rgba(0,0,0,.5); }
+    .kicker { font-family: var(--disp); font-size: 10.5px; letter-spacing: .24em; color: var(--green); margin-bottom: 10px; }
+    h1 { font-family: var(--disp); font-weight: 700; font-size: clamp(24px, 7vw, 32px); margin: 0 0 12px; text-wrap: balance; }
+    .sub { font-size: 13px; line-height: 1.6; color: var(--dim); max-width: 40ch; margin: 0 auto; }
+
+    #dlBtn {
+        display: block;
+        width: 100%;
+        padding: 20px;
+        margin: 26px 0 8px;
+        border-radius: 14px;
+        border: 1px solid rgba(58,232,164,.5);
+        background: radial-gradient(circle at 50% 20%, rgba(58,232,164,.16), #071410 75%);
+        color: var(--green);
+        font-family: var(--disp);
+        font-weight: 700;
+        font-size: 15px;
+        letter-spacing: .1em;
+        text-align: center;
+        text-decoration: none;
+        cursor: pointer;
+    }
+    #dlBtn:active { transform: scale(.98); }
+    #dlBtn small { display: block; font-size: 10px; letter-spacing: .06em; color: var(--dim); font-weight: 400; margin-top: 6px; }
+    .fileNote { text-align: center; font-size: 10.5px; color: var(--dim); margin-bottom: 34px; }
+
+    .sectionKicker { font-family: var(--disp); font-size: 11px; letter-spacing: .2em; color: var(--dim); text-align: center; margin-bottom: 16px; }
+    .steps { list-style: none; margin: 0 0 34px; padding: 0; display: flex; flex-direction: column; gap: 14px; }
+    .steps li { display: flex; gap: 12px; font-size: 13px; line-height: 1.55; color: var(--dim); }
+    .steps b { color: var(--bone); font-weight: 600; }
+    .steps .n {
+        flex: none; width: 24px; height: 24px; border-radius: 50%;
+        border: 1px solid var(--green); color: var(--green);
+        font-family: var(--disp); font-size: 11px;
+        display: flex; align-items: center; justify-content: center;
+    }
+
+    .warn {
+        padding: 12px 14px;
+        border-radius: 10px;
+        border: 1px solid rgba(255,182,56,.3);
+        background: rgba(255,182,56,.05);
+        font-size: 11.5px;
+        line-height: 1.55;
+        color: var(--amber);
+        margin-bottom: 30px;
+    }
+
+    footer { text-align: center; margin-top: 8px; }
+    footer a { color: var(--dim); font-size: 11px; text-decoration: none; border-bottom: 1px dotted var(--line); }
+</style>
+</head>
+<body>
+<main>
+    <div class="nav">
+        <a href="surreal-audio.html">← SURREAL AUDIO</a>
+        <a href="index.html">THE MASTER TRUST</a>
+    </div>
+
+    <div class="hero">
+        <div class="iconWrap"><img src="media/surreal-audio-icon.png" alt="Surreal Audio"></div>
+        <div class="kicker">ANDROID TEST BUILD</div>
+        <h1>Get it on your phone</h1>
+        <p class="sub">This is an early test build, shared directly — not on the Play Store yet. Takes about a minute to install.</p>
+    </div>
+
+    <a id="dlBtn" href="downloads/surreal-audio.apk" download>
+        ⬇ DOWNLOAD FOR ANDROID
+        <small id="dlMeta">.APK FILE</small>
+    </a>
+    <div class="fileNote">Open this page on the Android phone itself before tapping download.</div>
+
+    <div class="sectionKicker">THEN, ON YOUR PHONE</div>
+    <ol class="steps">
+        <li><span class="n">1</span><span>Tap the download button above. It'll show up in your notifications when it's done.</span></li>
+        <li><span class="n">2</span><span>Tap the downloaded file (from the notification, or your <b>Files</b> app &rarr; Downloads).</span></li>
+        <li><span class="n">3</span><span>Android will ask to allow installing from this source. Tap <b>Settings</b>, then the toggle to allow it &mdash; this is a one-time thing for whichever app you downloaded it with (Chrome, Gmail, etc.).</span></li>
+        <li><span class="n">4</span><span>Tap <b>Install</b>, then open <b>Surreal Audio</b>. Tap "My Music" to try it on a song, or "Capture Other Apps" to enhance Spotify.</span></li>
+    </ol>
+
+    <div class="warn">Android shows a warning before installing anything outside the Play Store &mdash; that's normal for a test build like this one, not a sign anything's wrong.</div>
+
+    <footer><a href="surreal-audio.html">&larr; Back to Surreal Audio</a></footer>
+</main>
+</body>
+</html>
