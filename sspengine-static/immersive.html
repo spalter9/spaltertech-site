@@ -196,6 +196,66 @@
     .compat b { color: var(--bone); }
     footer { text-align: center; margin-top: 8px; }
     footer a { color: var(--dim); font-size: 11px; text-decoration: none; border-bottom: 1px dotted var(--line); }
+
+    #vizBtn {
+        width: 100%;
+        margin-top: 14px;
+        padding: 14px;
+        border-radius: 12px;
+        border: 1px solid var(--line);
+        background: rgba(255,255,255,.03);
+        color: var(--bone);
+        font-family: var(--disp);
+        font-weight: 600;
+        font-size: 12px;
+        letter-spacing: .12em;
+        cursor: pointer;
+    }
+    #vizBtn:active { transform: scale(.98); }
+
+    #vizOverlay {
+        position: fixed;
+        inset: 0;
+        background: #030309;
+        z-index: 999;
+        display: none;
+        opacity: 0;
+        transform: scale(.94);
+        transition: opacity .35s ease, transform .4s cubic-bezier(.22,1,.36,1);
+    }
+    #vizOverlay.on { display: block; }
+    #vizOverlay.show { opacity: 1; transform: scale(1); }
+    #viz, #viz3d {
+        position: absolute; inset: 0;
+        width: 100%; height: 100%;
+        display: block;
+    }
+    #viz3d { display: none; cursor: grab; }
+    #vizHud {
+        position: absolute; top: 0; left: 0; right: 0;
+        display: flex; justify-content: space-between; align-items: flex-start;
+        padding: calc(env(safe-area-inset-top, 0px) + 16px) 64px 0 20px;
+        font-family: var(--disp);
+        letter-spacing: .2em;
+        pointer-events: none;
+    }
+    #vizModeName { font-size: 11px; color: rgba(230,227,216,.75); }
+    #vizHint { display: block; font-size: 8.5px; letter-spacing: .1em; color: rgba(230,227,216,.4); margin-top: 4px; }
+    #vizClose {
+        position: absolute;
+        top: calc(env(safe-area-inset-top, 0px) + 12px);
+        right: 16px;
+        width: 34px; height: 34px;
+        border-radius: 50%;
+        border: 1px solid var(--line);
+        background: rgba(3,3,9,.6);
+        color: var(--bone);
+        font-size: 15px;
+        line-height: 1;
+        display: flex; align-items: center; justify-content: center;
+        cursor: pointer;
+        z-index: 2;
+    }
 </style>
 </head>
 <body>
@@ -217,6 +277,7 @@
         <div class="meterLabel"><span>PHASE CORRELATION <span style="font-size:8px">+1 MONO-SAFE · 0 WIDE</span></span><b id="tCorr">+1.00</b></div>
         <canvas id="corrMeter"></canvas>
         <div class="meterNote">This is the same correlation meter from the Master Trust Engine console &mdash; watch the bass stay locked near +1 even with Immersive engaged.</div>
+        <button id="vizBtn">🌌 VISUALIZE · FULL SCREEN</button>
     </div>
 
     <details class="advDisclosure">
@@ -247,6 +308,18 @@
 
     <footer><a href="surreal-audio.html">&larr; Surreal Audio</a></footer>
 </main>
+
+<div id="vizOverlay">
+    <canvas id="viz"></canvas>
+    <canvas id="viz3d"></canvas>
+    <div id="vizHud">
+        <span>
+            <span id="vizModeName">SPECTRAL FIELD</span>
+            <span id="vizHint">TAP ANYWHERE TO CYCLE</span>
+        </span>
+    </div>
+    <button id="vizClose">✕</button>
+</div>
 
 <script>
 (function () {
@@ -398,7 +471,14 @@
         dryGain.connect(corrSplit); wetGain.connect(corrSplit);
         corrSplit.connect(corrL, 0); corrSplit.connect(corrR, 1);
 
-        return { dryGain, wetGain, corrL, corrR };
+        /* Frequency/waveform tap for the full-screen visualizer — same
+           settings as the Master Trust Engine console's own analyser. */
+        const masterAn = ac.createAnalyser();
+        masterAn.fftSize = 1024;
+        masterAn.smoothingTimeConstant = .82;
+        dryGain.connect(masterAn); wetGain.connect(masterAn);
+
+        return { dryGain, wetGain, corrL, corrR, masterAn };
     }
 
     let graph = null, corrBufL = null, corrBufR = null, corrSmooth = 1;
@@ -426,6 +506,7 @@
     function teardown() {
         if (raf) cancelAnimationFrame(raf);
         raf = null;
+        if (vizOpen) closeViz();
         if (stream) stream.getTracks().forEach(t => t.stop());
         if (demoSource) { try { demoSource.stop(); } catch (e) {} demoSource.disconnect(); }
         if (ac) ac.close().catch(() => {});
@@ -520,6 +601,505 @@
         void engageBtn.offsetWidth;
         engageBtn.classList.add('boomed');
     });
+
+    /* ============ FULL-SCREEN VISUALIZER ============
+       Ported from the Master Trust Engine console's own visualizer: ten
+       audio-reactive modes, all driven by one AnalyserNode. Full-screen
+       here instead of a panel — tap the button, the screen takes over;
+       tap anywhere to cycle modes; the X closes it. Same draw math as
+       the console, just sized to the whole screen instead of a fixed
+       340px box. */
+    const vizBtn = $('vizBtn'), vizOverlay = $('vizOverlay'), vizClose = $('vizClose'),
+        viz = $('viz'), vg = viz.getContext('2d'), vizModeName = $('vizModeName');
+
+    const VIZ_ORDER = ['spectral', 'rain', 'warp', 'aurora', 'orbital', 'bloom', 'helix', 'plasma', 'kaleido', 'three'];
+    const VIZNAMES = {
+        spectral: 'SPECTRAL FIELD', rain: 'CRIMSON RAIN', warp: 'WARP TUNNEL',
+        aurora: 'AURORA HORIZON', orbital: 'ORBITAL ARRAY', bloom: 'NEBULA BLOOM',
+        helix: 'DNA HELIX', plasma: 'PLASMA CORE', kaleido: 'KALEIDOSCOPE', three: '3D CORE',
+    };
+    let vizMode = 'spectral', vizOpen = false, vt = 0, vizRaf = null;
+
+    const parts = Array.from({ length: 70 }, () => ({ x: Math.random(), y: Math.random(), v: .2 + Math.random() * .8, r: 1 + Math.random() * 2.2 }));
+    const drops = Array.from({ length: 90 }, () => ({ x: Math.random(), y: Math.random(), v: .4 + Math.random() * .9, l: .03 + Math.random() * .08 }));
+    const stars = Array.from({ length: 110 }, () => ({ x: Math.random() * 2 - 1, y: Math.random() * 2 - 1, z: .1 + Math.random() * .9, pz: 0 }));
+    const bloomP = Array.from({ length: 130 }, (_, i) => ({ a: i / 220 * Math.PI * 2, sp: .5 + Math.random(), sz: 1 + Math.random() * 2 }));
+    let bolts = [];
+
+    /* ---- 3D CORE: lazy-loaded Three.js scene, same as the console ---- */
+    let t3 = null, threeLoading = false;
+    function ensureThree() {
+        if (window.THREE) {
+            if (!t3) init3d();
+            return true;
+        }
+        if (!threeLoading) {
+            threeLoading = true;
+            const s = document.createElement('script');
+            s.src = 'https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js';
+            s.onload = () => { threeLoading = false; init3d(); };
+            s.onerror = () => { threeLoading = false; vizModeName.textContent = '3D CORE — FAILED TO LOAD'; };
+            document.head.appendChild(s);
+        }
+        return false;
+    }
+    function init3d() {
+        const cv = $('viz3d');
+        const renderer = new THREE.WebGLRenderer({ canvas: cv, antialias: true, alpha: true });
+        renderer.setPixelRatio(Math.min(1.5, window.devicePixelRatio || 1));
+        const scene = new THREE.Scene();
+        scene.fog = new THREE.FogExp2(0x030309, .055);
+        const camera = new THREE.PerspectiveCamera(55, 1, .1, 100);
+        camera.position.z = 5.2;
+        const geo = new THREE.TorusKnotGeometry(1.15, .34, 240, 40);
+        const mat = new THREE.MeshStandardMaterial({ color: 0x22e3ee, emissive: 0x0a3d52, emissiveIntensity: .4, metalness: .85, roughness: .22 });
+        const mesh = new THREE.Mesh(geo, mat);
+        const wire = new THREE.Mesh(new THREE.IcosahedronGeometry(2.4, 1), new THREE.MeshBasicMaterial({ color: 0xff3d9a, wireframe: true, transparent: true, opacity: .22 }));
+        const PN = 720, pPos = new Float32Array(PN * 3), pCol = new Float32Array(PN * 3), pBase = new Float32Array(PN * 3);
+        const cA = new THREE.Color(0x38dcff), cB = new THREE.Color(0xffb638), cC = new THREE.Color(0xff3d9a);
+        for (let i = 0; i < PN; i++) {
+            const r = 3.1 + Math.random() * 1.6, th = Math.random() * Math.PI * 2, ph = Math.acos(Math.random() * 2 - 1);
+            const x = r * Math.sin(ph) * Math.cos(th), y = r * Math.sin(ph) * Math.sin(th), z = r * Math.cos(ph);
+            pBase[i * 3] = x; pBase[i * 3 + 1] = y; pBase[i * 3 + 2] = z;
+            const c = Math.random() < .55 ? cA : (Math.random() < .5 ? cB : cC);
+            pCol[i * 3] = c.r; pCol[i * 3 + 1] = c.g; pCol[i * 3 + 2] = c.b;
+        }
+        pPos.set(pBase);
+        const pGeo = new THREE.BufferGeometry();
+        pGeo.setAttribute('position', new THREE.BufferAttribute(pPos, 3));
+        pGeo.setAttribute('color', new THREE.BufferAttribute(pCol, 3));
+        const points = new THREE.Points(pGeo, new THREE.PointsMaterial({ size: .045, vertexColors: true, transparent: true, opacity: .85, blending: THREE.AdditiveBlending, depthWrite: false }));
+        const rings = [];
+        for (let i = 0; i < 6; i++) {
+            const rg = new THREE.Mesh(new THREE.RingGeometry(.96, 1, 96), new THREE.MeshBasicMaterial({ color: 0xffb638, transparent: true, opacity: 0, side: THREE.DoubleSide, blending: THREE.AdditiveBlending, depthWrite: false }));
+            rg.visible = false;
+            rings.push(rg);
+        }
+        scene.add(mesh, wire, points, ...rings, new THREE.AmbientLight(0x223344, 1.6));
+        const l1 = new THREE.PointLight(0x00fff0, 1.6, 40); l1.position.set(4, 3, 5);
+        const l2 = new THREE.PointLight(0xff2bd1, 1.3, 40); l2.position.set(-4, -3, 3);
+        scene.add(l1, l2);
+        t3 = { renderer, scene, camera, mesh, mat, wire, points, pPos, pBase, rings, l1, l2, rot: { x: .2, y: .4 }, vel: { x: 0, y: .0035 }, sLow: 0, sMid: 0, sHigh: 0, lastBass: 0, cool: 0, frame: 0, dragging: false, lx: 0, ly: 0 };
+        const start = (x, y) => { t3.dragging = true; t3.lx = x; t3.ly = y; cv.style.cursor = 'grabbing'; };
+        const move = (x, y) => { if (!t3.dragging) return; t3.vel.y = (x - t3.lx) * .0045; t3.vel.x = (y - t3.ly) * .0045; t3.lx = x; t3.ly = y; };
+        const end = () => { t3.dragging = false; cv.style.cursor = 'grab'; };
+        cv.addEventListener('mousedown', e => start(e.clientX, e.clientY));
+        window.addEventListener('mousemove', e => move(e.clientX, e.clientY));
+        window.addEventListener('mouseup', end);
+        cv.addEventListener('touchstart', e => start(e.touches[0].clientX, e.touches[0].clientY), { passive: true });
+        cv.addEventListener('touchmove', e => move(e.touches[0].clientX, e.touches[0].clientY), { passive: true });
+        cv.addEventListener('touchend', end);
+    }
+    function draw3d(bins, energy, bass) {
+        if (!ensureThree() || !t3) return;
+        const cv = $('viz3d'), w = cv.clientWidth, h = cv.clientHeight;
+        if (cv.width !== Math.floor(w * t3.renderer.getPixelRatio())) {
+            t3.renderer.setSize(w, h, false);
+            t3.camera.aspect = w / h;
+            t3.camera.updateProjectionMatrix();
+        }
+        let mid = 0, hi = 0;
+        if (bins) {
+            for (let i = 10; i < 60; i++) mid += bins[i];
+            mid /= 50 * 255;
+            for (let i = 60; i < 200; i++) hi += bins[i];
+            hi /= 140 * 255;
+        }
+        t3.sLow += (bass - t3.sLow) * .16;
+        t3.sMid += (mid - t3.sMid) * .16;
+        t3.sHigh += (hi - t3.sHigh) * .16;
+        const low = t3.sLow, mids = t3.sMid, highs = t3.sHigh;
+        t3.frame++;
+        if (!t3.dragging) {
+            t3.vel.x *= .94;
+            t3.vel.y += ((.0035 + energy * .012) - t3.vel.y) * .02;
+        }
+        t3.rot.x += t3.vel.x; t3.rot.y += t3.vel.y;
+        t3.mesh.rotation.set(t3.rot.x, t3.rot.y, t3.rot.y * .3);
+        t3.wire.rotation.set(-t3.rot.x * .5, -t3.rot.y * .7, 0);
+        t3.points.rotation.set(t3.rot.x * .15, -t3.rot.y * .25, 0);
+        t3.mesh.scale.setScalar(1 + low * .75);
+        t3.wire.scale.setScalar(1 + highs * .35);
+        t3.mat.emissiveIntensity = .4 + low * 3;
+        t3.mat.color.setHSL(.5 - highs * .35, .9, .45 + low * .2);
+        t3.wire.material.opacity = .14 + highs * .55;
+        t3.l1.intensity = 1.2 + low * 2.6;
+        t3.l2.intensity = .9 + highs * 2.4;
+        const pp = t3.pPos, pb = t3.pBase, breathe = 1 + mids * .5, drift = t3.frame * .004;
+        for (let i = 0; i < pp.length; i += 3) {
+            const k = i / 3;
+            const wob = 1 + .04 * Math.sin(drift * 3 + k * .37);
+            pp[i] = pb[i] * breathe * wob;
+            pp[i + 1] = pb[i + 1] * breathe * wob + Math.sin(drift + k * .11) * .08;
+            pp[i + 2] = pb[i + 2] * breathe * wob;
+        }
+        t3.points.geometry.attributes.position.needsUpdate = true;
+        t3.points.material.size = .035 + mids * .05;
+        t3.points.material.opacity = .55 + highs * .45;
+        if (t3.cool > 0) t3.cool--;
+        if (bass - t3.lastBass > .12 && bass > .45 && t3.cool === 0) {
+            const rg = t3.rings.find(r => !r.visible);
+            if (rg) {
+                rg.visible = true; rg.userData.age = 0; rg.scale.setScalar(1.2); rg.material.opacity = .9;
+                rg.material.color.setHex(Math.random() < .5 ? 0xffb638 : 0x38dcff);
+            }
+            t3.cool = 8;
+        }
+        t3.lastBass += (bass - t3.lastBass) * .5;
+        for (const rg of t3.rings) {
+            if (!rg.visible) continue;
+            rg.userData.age++;
+            const a = rg.userData.age;
+            rg.scale.setScalar(1.2 + a * .16);
+            rg.material.opacity = Math.max(0, .9 - a * .035);
+            rg.lookAt(t3.camera.position);
+            if (rg.material.opacity <= 0) rg.visible = false;
+        }
+        t3.camera.position.x = Math.sin(t3.frame * .006) * (.25 + mids * .4);
+        t3.camera.position.y = Math.cos(t3.frame * .0045) * (.18 + low * .3);
+        t3.camera.lookAt(0, 0, 0);
+        t3.renderer.render(t3.scene, t3.camera);
+    }
+
+    /* ---- the other nine modes: 2D canvas, same math as the console ---- */
+    function drawViz() {
+        vizRaf = requestAnimationFrame(drawViz);
+        try {
+            const w = viz.clientWidth, h = viz.clientHeight, dpr = Math.min(1.25, window.devicePixelRatio || 1);
+            if (viz.width !== w * dpr) { viz.width = w * dpr; viz.height = h * dpr; }
+            vg.setTransform(dpr, 0, 0, dpr, 0, 0);
+            vg.fillStyle = 'rgba(3,3,9,.32)';
+            vg.fillRect(0, 0, w, h);
+
+            let bins = null, energy = 0, bass = 0;
+            const an = graph && graph.masterAn;
+            if (an) {
+                bins = new Uint8Array(an.frequencyBinCount);
+                an.getByteFrequencyData(bins);
+                for (let i = 0; i < bins.length; i++) energy += bins[i];
+                energy /= bins.length * 255;
+                for (let i = 0; i < 10; i++) bass += bins[i];
+                bass /= 10 * 255;
+            }
+            vt += 1;
+
+            if (vizMode === 'three') {
+                draw3d(bins, energy, bass);
+            }
+            else if (vizMode === 'spectral') {
+                if (bins) {
+                    const n = 96, bw2 = w / n;
+                    for (let i = 0; i < n; i++) {
+                        const v = bins[Math.floor(i / n * bins.length * .75)] / 255;
+                        const bh = v * v * (h * .82);
+                        const hue = 28 + v * 22;
+                        vg.fillStyle = `hsla(${hue},90%,${45 + v * 20}%,${.25 + v * .75})`;
+                        vg.shadowColor = `hsla(${hue},100%,60%,${v * .8})`;
+                        vg.shadowBlur = v * 18;
+                        vg.fillRect(i * bw2 + 1, h - bh, bw2 - 2, bh);
+                        vg.shadowBlur = 0;
+                        if (v > .55) {
+                            vg.fillStyle = `hsla(${hue},100%,70%,${v * .5})`;
+                            vg.fillRect(i * bw2 + 1, h - bh - 3, bw2 - 2, 2);
+                        }
+                    }
+                    const td = new Uint8Array(an.fftSize);
+                    an.getByteTimeDomainData(td);
+                    vg.beginPath();
+                    const cxx = w / 2, cyy = h * .42, base = 44 + bass * 46;
+                    for (let i = 0; i <= td.length; i += 4) {
+                        const a = i / td.length * Math.PI * 2;
+                        const r = base + ((td[i % td.length] - 128) / 128) * 30;
+                        const x = cxx + Math.cos(a) * r, y = cyy + Math.sin(a) * r * .8;
+                        i === 0 ? vg.moveTo(x, y) : vg.lineTo(x, y);
+                    }
+                    vg.strokeStyle = `rgba(56,220,255,${.4 + energy * .6})`;
+                    vg.lineWidth = 1.6;
+                    vg.shadowColor = 'rgba(56,220,255,.9)';
+                    vg.shadowBlur = 10 + energy * 24;
+                    vg.stroke();
+                    vg.shadowBlur = 0;
+                }
+                for (const p of parts) {
+                    p.y -= p.v * (.0012 + energy * .006);
+                    if (p.y < 0) { p.y = 1; p.x = Math.random(); }
+                    vg.fillStyle = `rgba(255,140,80,${.08 + energy * .35})`;
+                    vg.beginPath();
+                    vg.arc(p.x * w, p.y * h, p.r * (1 + bass), 0, 7);
+                    vg.fill();
+                }
+            }
+            else if (vizMode === 'rain') {
+                const sky = vg.createLinearGradient(0, 0, 0, h);
+                sky.addColorStop(0, `rgba(60,0,14,${.25 + bass * .5})`);
+                sky.addColorStop(1, 'rgba(8,0,4,.25)');
+                vg.fillStyle = sky;
+                vg.fillRect(0, 0, w, h);
+                for (const d of drops) {
+                    d.y += d.v * (.006 + energy * .05);
+                    if (d.y > 1.05) { d.y = -d.l; d.x = Math.random(); }
+                    const hue = 345 + Math.sin(vt * .01 + d.x * 9) * 12;
+                    vg.strokeStyle = `hsla(${hue},100%,${55 + energy * 25}%,${.35 + energy * .55})`;
+                    vg.lineWidth = 1.4 + bass * 1.6;
+                    vg.shadowColor = `hsla(${hue},100%,60%,.9)`;
+                    vg.shadowBlur = 8 + energy * 16;
+                    vg.beginPath();
+                    vg.moveTo(d.x * w, d.y * h);
+                    vg.lineTo(d.x * w, (d.y + d.l * (1 + energy * 2)) * h);
+                    vg.stroke();
+                }
+                vg.shadowBlur = 0;
+                if (bass > .55 && Math.random() < .2) {
+                    const y = Math.random() * h * .5;
+                    vg.strokeStyle = `rgba(255,90,120,${.4 + bass * .4})`;
+                    vg.lineWidth = 1;
+                    vg.beginPath();
+                    vg.moveTo(0, y);
+                    for (let x = 0; x < w; x += 20) vg.lineTo(x, y + (Math.random() - .5) * 24);
+                    vg.stroke();
+                }
+                if (bins) {
+                    vg.fillStyle = `rgba(255,40,70,${.5 + energy * .4})`;
+                    const n = 64, bw2 = w / n;
+                    for (let i = 0; i < n; i++) {
+                        const v = bins[Math.floor(i / n * bins.length * .6)] / 255;
+                        vg.fillRect(i * bw2 + 1, h - v * v * 40, bw2 - 2, v * v * 40);
+                    }
+                }
+            }
+            else if (vizMode === 'warp') {
+                const cxx = w / 2, cyy = h / 2, sp = .006 + energy * .045;
+                for (const st of stars) {
+                    st.pz = st.z; st.z -= sp;
+                    if (st.z <= .02) { st.x = Math.random() * 2 - 1; st.y = Math.random() * 2 - 1; st.z = 1; st.pz = 1; }
+                    const px = cxx + st.x / st.z * cxx * .9, py = cyy + st.y / st.z * cyy * .9;
+                    const ox = cxx + st.x / st.pz * cxx * .9, oy = cyy + st.y / st.pz * cyy * .9;
+                    const hue = 185 + Math.sin(vt * .005) * 40 + st.z * 40;
+                    vg.strokeStyle = `hsla(${hue},100%,${60 + energy * 25}%,${(1 - st.z) * (.5 + energy * .5)})`;
+                    vg.lineWidth = (1 - st.z) * 3 + bass * 1.5;
+                    vg.beginPath();
+                    vg.moveTo(ox, oy);
+                    vg.lineTo(px, py);
+                    vg.stroke();
+                }
+                vg.fillStyle = `rgba(120,240,255,${.15 + bass * .5})`;
+                vg.shadowColor = 'rgba(120,240,255,.9)';
+                vg.shadowBlur = 20 + bass * 40;
+                vg.beginPath();
+                vg.arc(cxx, cyy, 3 + bass * 14, 0, 7);
+                vg.fill();
+                vg.shadowBlur = 0;
+            }
+            else if (vizMode === 'aurora') {
+                const hor = h * .52, vp = w / 2;
+                for (let r = 0; r < 3; r++) {
+                    vg.beginPath();
+                    for (let x = 0; x <= w; x += 8) {
+                        const y = h * .16 + r * 26 + Math.sin(x * .012 + vt * .02 + r * 2) * 14 * (1 + energy * 2) + Math.sin(x * .03 + vt * .011) * 6;
+                        x === 0 ? vg.moveTo(x, y) : vg.lineTo(x, y);
+                    }
+                    const hue = r === 0 ? 160 : r === 1 ? 200 : 290;
+                    vg.strokeStyle = `hsla(${hue},95%,60%,${.22 + energy * .4})`;
+                    vg.lineWidth = 9;
+                    vg.shadowColor = `hsla(${hue},100%,60%,.8)`;
+                    vg.shadowBlur = 18;
+                    vg.stroke();
+                }
+                vg.shadowBlur = 0;
+                const sun = vg.createRadialGradient(vp, hor, 2, vp, hor, 60 + bass * 50);
+                sun.addColorStop(0, `rgba(255,120,60,${.8 + bass * .2})`);
+                sun.addColorStop(1, 'rgba(255,60,120,0)');
+                vg.fillStyle = sun;
+                vg.beginPath();
+                vg.arc(vp, hor, 60 + bass * 50, 0, 7);
+                vg.fill();
+                vg.strokeStyle = `rgba(56,220,255,${.35 + energy * .4})`;
+                vg.lineWidth = 1;
+                for (let i = -9; i <= 9; i++) {
+                    vg.beginPath();
+                    vg.moveTo(vp + i * w * .055 * 1.2, h);
+                    vg.lineTo(vp + i * w * .012, hor);
+                    vg.stroke();
+                }
+                const sp2 = (vt * (1.5 + energy * 8)) % 22;
+                for (let yy = hor + sp2; yy < h; yy += 22) {
+                    const t2 = (yy - hor) / (h - hor);
+                    vg.strokeStyle = `rgba(255,61,154,${.15 + t2 * .45 + energy * .25})`;
+                    vg.lineWidth = 1 + t2 * 1.5;
+                    vg.beginPath();
+                    vg.moveTo(0, yy);
+                    vg.lineTo(w, yy);
+                    vg.stroke();
+                }
+            }
+            else if (vizMode === 'orbital') {
+                const cxx = w / 2, cyy = h / 2;
+                for (let ring = 0; ring < 4; ring++) {
+                    const rad = (34 + ring * 34) * (1 + bass * .18), segs = 48, dir = ring % 2 ? 1 : -1;
+                    const rot = vt * .008 * dir * (1 + ring * .4) * (1 + energy);
+                    for (let sg = 0; sg < segs; sg++) {
+                        const v = bins ? bins[Math.floor((ring * segs + sg) / (4 * segs) * bins.length * .8)] / 255 : 0;
+                        if (v < .06) continue;
+                        const a0 = rot + sg / segs * Math.PI * 2, a1 = a0 + Math.PI * 2 / segs * .68;
+                        const hue = ring === 0 ? 15 : ring === 1 ? 45 : ring === 2 ? 190 : 300;
+                        vg.strokeStyle = `hsla(${hue},95%,${50 + v * 30}%,${.15 + v * .85})`;
+                        vg.lineWidth = 8 + v * 10;
+                        vg.shadowBlur = 0;
+                        vg.beginPath();
+                        vg.arc(cxx, cyy, rad, a0, a1);
+                        vg.stroke();
+                    }
+                }
+                vg.shadowBlur = 0;
+                vg.fillStyle = `rgba(255,255,255,${.3 + bass * .7})`;
+                vg.shadowColor = 'rgba(255,180,80,1)';
+                vg.shadowBlur = 16 + bass * 30;
+                vg.beginPath();
+                vg.arc(cxx, cyy, 5 + bass * 16, 0, 7);
+                vg.fill();
+                vg.shadowBlur = 0;
+            }
+            else if (vizMode === 'bloom') {
+                const cxx = w / 2, cyy = h / 2, md = Math.min(w, h), petals = 5;
+                for (const p of bloomP) {
+                    p.a += (.002 + energy * .016) * p.sp;
+                    const r = (.22 + .78 * Math.abs(Math.sin(petals * p.a / 2))) * md * .42 * (.62 + bass * .55);
+                    const x = cxx + Math.cos(p.a) * r, y = cyy + Math.sin(p.a) * r * .8;
+                    const hue = (vt * .6 + p.a * 57) % 360;
+                    vg.fillStyle = `hsla(${hue},95%,${55 + energy * 25}%,${.25 + energy * .6})`;
+                    vg.shadowBlur = 0;
+                    vg.beginPath();
+                    vg.arc(x, y, p.sz * (1 + bass * 1.4), 0, 7);
+                    vg.fill();
+                }
+                vg.shadowBlur = 0;
+            }
+            else if (vizMode === 'helix') {
+                const cyy = h / 2, amp = 44 + bass * 52;
+                for (let x = 0; x <= w; x += 6) {
+                    const ph = x * .028 + vt * .05, v = bins ? bins[Math.floor(x / w * bins.length * .7)] / 255 : 0;
+                    const y1 = cyy + Math.sin(ph) * amp, y2 = cyy + Math.sin(ph + Math.PI) * amp;
+                    const depth1 = (Math.cos(ph) + 1) / 2, depth2 = (Math.cos(ph + Math.PI) + 1) / 2;
+                    if (x % 24 === 0) {
+                        vg.strokeStyle = `hsla(${180 + v * 120},90%,60%,${.12 + v * .7})`;
+                        vg.lineWidth = 1.4 + v * 2;
+                        vg.beginPath();
+                        vg.moveTo(x, y1);
+                        vg.lineTo(x, y2);
+                        vg.stroke();
+                    }
+                    vg.fillStyle = `hsla(${190 + Math.sin(vt * .01) * 30},95%,${45 + depth1 * 35}%,${.3 + depth1 * .6})`;
+                    vg.beginPath();
+                    vg.arc(x, y1, 1.6 + depth1 * 2.6 + bass * 1.5, 0, 7);
+                    vg.fill();
+                    vg.fillStyle = `hsla(${320 + Math.sin(vt * .011) * 30},95%,${45 + depth2 * 35}%,${.3 + depth2 * .6})`;
+                    vg.beginPath();
+                    vg.arc(x, y2, 1.6 + depth2 * 2.6 + bass * 1.5, 0, 7);
+                    vg.fill();
+                }
+            }
+            else if (vizMode === 'plasma') {
+                const cxx = w / 2, cyy = h / 2;
+                const core = vg.createRadialGradient(cxx, cyy, 2, cxx, cyy, 30 + bass * 44);
+                core.addColorStop(0, 'rgba(255,255,255,.95)');
+                core.addColorStop(.4, `rgba(120,220,255,${.7 + bass * .3})`);
+                core.addColorStop(1, 'rgba(60,120,255,0)');
+                vg.fillStyle = core;
+                vg.beginPath();
+                vg.arc(cxx, cyy, 30 + bass * 44, 0, 7);
+                vg.fill();
+                for (let ring = 0; ring < 3; ring++) {
+                    vg.setLineDash([34 + ring * 16, 22]);
+                    vg.lineDashOffset = vt * (ring % 2 ? 1.6 : -1.6) * (1 + energy * 2);
+                    vg.strokeStyle = `hsla(${195 + ring * 20},95%,62%,${.3 + energy * .5})`;
+                    vg.lineWidth = 2.4;
+                    vg.shadowColor = 'rgba(120,220,255,.9)';
+                    vg.shadowBlur = 10;
+                    vg.beginPath();
+                    vg.arc(cxx, cyy, 58 + ring * 30 + bass * 14, 0, 7);
+                    vg.stroke();
+                }
+                vg.setLineDash([]);
+                vg.shadowBlur = 0;
+                if (bass > .5 && Math.random() < .35) bolts.push({ ang: Math.random() * Math.PI * 2, life: 1 });
+                bolts = bolts.filter(b => b.life > 0);
+                for (const b of bolts) {
+                    b.life -= .06;
+                    vg.strokeStyle = `rgba(180,240,255,${b.life})`;
+                    vg.lineWidth = 1.6 + b.life * 2;
+                    vg.shadowColor = 'rgba(180,240,255,.9)';
+                    vg.shadowBlur = 14;
+                    vg.beginPath();
+                    let rr = 34, ang = b.ang;
+                    vg.moveTo(cxx + Math.cos(ang) * rr, cyy + Math.sin(ang) * rr);
+                    while (rr < Math.min(w, h) * .48) {
+                        rr += 16;
+                        ang += (Math.random() - .5) * .5;
+                        vg.lineTo(cxx + Math.cos(ang) * rr, cyy + Math.sin(ang) * rr);
+                    }
+                    vg.stroke();
+                }
+                vg.shadowBlur = 0;
+            }
+            else if (vizMode === 'kaleido') {
+                const cxx = w / 2, cyy = h / 2, K = 8;
+                for (let k = 0; k < K; k++) {
+                    vg.save();
+                    vg.translate(cxx, cyy);
+                    vg.rotate(k * Math.PI * 2 / K + vt * .006 * (1 + energy));
+                    if (k % 2) vg.scale(1, -1);
+                    vg.beginPath();
+                    const steps = 40;
+                    for (let i2 = 0; i2 <= steps; i2++) {
+                        const th = i2 / steps * (Math.PI * 2 / K);
+                        const v = bins ? bins[Math.floor(i2 / steps * bins.length * .5)] / 255 : 0;
+                        const r = 26 + v * v * Math.min(w, h) * .46 * (1 + bass * .3);
+                        const x = Math.cos(th) * r, y = Math.sin(th) * r;
+                        i2 === 0 ? vg.moveTo(x, y) : vg.lineTo(x, y);
+                    }
+                    const hue = (vt * .8 + k * 45) % 360;
+                    vg.strokeStyle = `hsla(${hue},95%,60%,${.35 + energy * .55})`;
+                    vg.lineWidth = 1.8 + bass * 2;
+                    vg.shadowBlur = 0;
+                    vg.stroke();
+                    vg.restore();
+                }
+                vg.shadowBlur = 0;
+            }
+        } catch (err) {}
+    }
+
+    function setVizMode(m) {
+        vizMode = m;
+        vizModeName.textContent = VIZNAMES[m];
+        $('viz3d').style.display = m === 'three' ? 'block' : 'none';
+        viz.style.display = m === 'three' ? 'none' : 'block';
+        if (m === 'three') ensureThree();
+    }
+    function cycleVizMode() {
+        const i = VIZ_ORDER.indexOf(vizMode);
+        setVizMode(VIZ_ORDER[(i + 1) % VIZ_ORDER.length]);
+    }
+    function openViz() {
+        if (!graph) return;
+        vizOverlay.classList.add('on');
+        void vizOverlay.offsetWidth;
+        vizOverlay.classList.add('show');
+        vizOpen = true;
+        setVizMode(vizMode);
+        drawViz();
+    }
+    function closeViz() {
+        vizOverlay.classList.remove('show');
+        setTimeout(() => vizOverlay.classList.remove('on'), 350);
+        vizOpen = false;
+        if (vizRaf) cancelAnimationFrame(vizRaf);
+        vizRaf = null;
+    }
+
+    vizBtn.addEventListener('click', openViz);
+    vizClose.addEventListener('click', e => { e.stopPropagation(); closeViz(); });
+    vizOverlay.addEventListener('click', e => { if (e.target !== vizClose) cycleVizMode(); });
 
     window.addEventListener('beforeunload', teardown);
 })();
