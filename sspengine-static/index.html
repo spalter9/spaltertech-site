@@ -3175,6 +3175,13 @@
                     <span style="color:var(--dim)">LUFS-M <b id="tLufsM" style="color:var(--mag)">-inf</b> <span style="font-size:8px">MOMENTARY</span></span>
                     <span style="color:var(--dim)">LUFS-I <b id="tLufsI" style="color:var(--mag)">-inf</b> <span style="font-size:8px">INTEGRATED · ITU-R BS.1770</span></span>
                 </div>
+                <div style="margin-top:10px">
+                    <div style="display:flex;justify-content:space-between;font-size:10px;letter-spacing:.14em;margin-bottom:4px">
+                        <span style="color:var(--dim)">PHASE CORRELATION <span style="font-size:8px">+1 MONO-SAFE · 0 WIDE · −1 OUT OF PHASE</span></span>
+                        <b id="tCorr" style="color:var(--green)">+1.00</b>
+                    </div>
+                    <canvas id="corrMeter" style="display:block;width:100%;height:22px;border:1px solid var(--line);border-radius:6px;background:#06070c"></canvas>
+                </div>
             </div>
 
             <div class="grid2">
@@ -5408,6 +5415,17 @@
         N.anPk = a.createAnalyser();
         N.anPk.fftSize = 2048;
         N.an.connect(N.anPk);
+        /* L/R phase correlation: a single AnalyserNode always reads a mono
+           downmix per spec, so measuring real inter-channel phase needs the
+           two channels split apart first, each into its own analyser. */
+        N.corrSplit = a.createChannelSplitter(2);
+        N.an.connect(N.corrSplit);
+        N.corrL = a.createAnalyser();
+        N.corrL.fftSize = 2048;
+        N.corrR = a.createAnalyser();
+        N.corrR.fftSize = 2048;
+        N.corrSplit.connect(N.corrL, 0);
+        N.corrSplit.connect(N.corrR, 1);
         N.anGate = a.createAnalyser();
         N.anGate.fftSize = 2048;
         N.anGate.smoothingTimeConstant = .5;
@@ -6556,6 +6574,38 @@
         rtaTick = 0;
     const rtaCv = $('rta'),
         rtaG = rtaCv.getContext('2d');
+    /* Phase correlation meter: +1 = perfectly in phase (mono-safe), 0 = fully
+       decorrelated (wide), -1 = out of phase (cancels to silence in mono). */
+    let corrBufL = null,
+        corrBufR = null,
+        corrSmooth = 1;
+    const corrCv = $('corrMeter'),
+        corrG = corrCv.getContext('2d');
+    function drawCorrMeter(v) {
+        const w = corrCv.clientWidth,
+            h = corrCv.clientHeight;
+        if (corrCv.width !== w) corrCv.width = w;
+        if (corrCv.height !== h) corrCv.height = h;
+        corrG.clearRect(0, 0, w, h);
+        const grad = corrG.createLinearGradient(0, 0, w, 0);
+        grad.addColorStop(0, 'rgba(230,70,70,.35)');
+        grad.addColorStop(.5, 'rgba(255,182,56,.28)');
+        grad.addColorStop(1, 'rgba(70,210,120,.35)');
+        corrG.fillStyle = grad;
+        corrG.fillRect(0, 0, w, h);
+        corrG.strokeStyle = 'rgba(255,255,255,.18)';
+        corrG.beginPath();
+        corrG.moveTo(w / 2, 0);
+        corrG.lineTo(w / 2, h);
+        corrG.stroke();
+        const x = ((v + 1) / 2) * w;
+        const needleColor = v > .5 ? '#4ad27a' : v > -.2 ? '#ffb638' : '#e64646';
+        corrG.fillStyle = needleColor;
+        corrG.shadowColor = needleColor;
+        corrG.shadowBlur = 6;
+        corrG.fillRect(Math.max(0, Math.min(w - 2, x - 1)), 0, 2, h);
+        corrG.shadowBlur = 0;
+    }
     function telemetryTick(bins) {
         if (!AC || !N.anPk)
             return;
@@ -6591,6 +6641,23 @@
             pkHold = pk;
             pkHoldAt = now
         }
+        if (N.corrL && N.corrR) {
+            if (!corrBufL) corrBufL = new Float32Array(N.corrL.fftSize);
+            if (!corrBufR) corrBufR = new Float32Array(N.corrR.fftSize);
+            N.corrL.getFloatTimeDomainData(corrBufL);
+            N.corrR.getFloatTimeDomainData(corrBufR);
+            let sumLR = 0, sumLL = 0, sumRR = 0;
+            for (let i = 0; i < corrBufL.length; i++) {
+                const lv = corrBufL[i], rv = corrBufR[i];
+                sumLR += lv * rv;
+                sumLL += lv * lv;
+                sumRR += rv * rv
+            }
+            const denom = Math.sqrt(sumLL * sumRR);
+            const corrRaw = denom > 1e-9 ? Math.max(-1, Math.min(1, sumLR / denom)) : 1;
+            corrSmooth += (corrRaw - corrSmooth) * .25;
+            drawCorrMeter(corrSmooth)
+        }
         if (++rtaTick % 3 === 0) {
             const db = x => x > 1e-6 ? (20 * Math.log10(x)).toFixed(1) : '-inf';
             $('tPeak').textContent = db(pkHold);
@@ -6600,6 +6667,8 @@
             $('tClip').style.color = clipCount ? 'var(--red)' : 'var(--green)';
             $('tLufsM').textContent = isFinite(lufsM) ? lufsM.toFixed(1) : '-inf';
             $('tLufsI').textContent = isFinite(lufsI) ? lufsI.toFixed(1) : '-inf';
+            $('tCorr').textContent = (corrSmooth >= 0 ? '+' : '') + corrSmooth.toFixed(2);
+            $('tCorr').style.color = corrSmooth > .5 ? 'var(--green)' : corrSmooth > -.2 ? 'var(--amber)' : 'var(--red)';
             const gr = P.mxOn && mxGR > 0 ? -20 * Math.log10(mxGR) : 0;
             $('tGr').textContent = gr.toFixed(1);
             $('tGr').style.color = gr > 6 ? 'var(--red)' : gr > 2 ? 'var(--amber)' : 'var(--green)';
