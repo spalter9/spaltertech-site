@@ -1,0 +1,207 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Register Your Song — Spalter Rights Registry</title>
+<meta name="description" content="Scan, fill in three things, and your song is submitted for registration.">
+<link rel="manifest" href="registry/manifest.json">
+<link rel="icon" href="registry/media/icon-192.png">
+<link rel="apple-touch-icon" href="registry/media/icon-180.png">
+<meta name="theme-color" content="#7a3324">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600;9..144,700&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+    :root {
+        --paper: #f6f2e9;
+        --paper-2: #efe9db;
+        --ink: #211c16;
+        --ink-dim: #5b5346;
+        --rule: #d9d0bd;
+        --accent: #7a3324;
+        --accent-2: #9c5a3c;
+        --gold: #a8863a;
+        --live: #2f6b3f;
+        --danger: #a23b2e;
+        --card: #fffdf8;
+        --shadow: 0 1px 2px rgba(33,28,22,.06), 0 8px 24px rgba(33,28,22,.06);
+        color-scheme: light;
+    }
+    * { box-sizing: border-box; }
+    body {
+        margin: 0;
+        background: var(--paper);
+        color: var(--ink);
+        font-family: 'IBM Plex Sans', system-ui, sans-serif;
+        font-size: 15px;
+        line-height: 1.5;
+        min-height: 100vh;
+        padding: env(safe-area-inset-top, 0px) 18px calc(env(safe-area-inset-bottom, 0px) + 40px);
+        display: flex;
+        justify-content: center;
+    }
+    h1, h2 { font-family: 'Fraunces', Georgia, serif; font-weight: 700; letter-spacing: -.01em; margin: 0; }
+    main { width: 100%; max-width: 420px; padding-top: 40px; }
+    .brand { display: flex; align-items: center; gap: 10px; justify-content: center; margin-bottom: 22px; }
+    .seal {
+        width: 36px; height: 36px; border-radius: 50%; flex: none;
+        background: radial-gradient(circle at 32% 28%, var(--gold), var(--accent) 70%);
+        box-shadow: inset 0 0 0 2px rgba(255,255,255,.25);
+    }
+    .brand span { font-size: 13px; letter-spacing: .04em; color: var(--ink-dim); font-weight: 600; }
+
+    .card {
+        background: var(--card);
+        border: 1px solid var(--rule);
+        border-radius: 16px;
+        padding: 26px 22px;
+        box-shadow: var(--shadow);
+    }
+    h1.title { font-size: 26px; text-align: center; margin-bottom: 8px; text-wrap: balance; }
+    .sub { text-align: center; color: var(--ink-dim); font-size: 13.5px; margin-bottom: 24px; }
+
+    label {
+        display: block;
+        font-size: 11.5px;
+        font-weight: 600;
+        color: var(--ink-dim);
+        text-transform: uppercase;
+        letter-spacing: .05em;
+        margin: 16px 0 6px;
+    }
+    label:first-of-type { margin-top: 0; }
+    input {
+        width: 100%;
+        padding: 13px 14px;
+        border: 1px solid var(--rule);
+        border-radius: 10px;
+        background: #fff;
+        font: inherit;
+        font-size: 16px;
+        color: var(--ink);
+    }
+    input:focus { outline: 2px solid var(--accent-2); outline-offset: 1px; }
+
+    button {
+        width: 100%;
+        margin-top: 22px;
+        padding: 15px;
+        border: none;
+        border-radius: 12px;
+        background: var(--accent);
+        color: #fff8ee;
+        font: inherit;
+        font-weight: 700;
+        font-size: 15px;
+        letter-spacing: .01em;
+        cursor: pointer;
+    }
+    button:active { transform: scale(.98); }
+    button:disabled { opacity: .5; cursor: default; }
+
+    .err { color: var(--danger); font-size: 13px; margin-top: 12px; text-align: center; }
+
+    .successCard { text-align: center; }
+    .checkmark {
+        width: 56px; height: 56px; border-radius: 50%;
+        background: rgba(47,107,63,.12);
+        color: var(--live);
+        display: flex; align-items: center; justify-content: center;
+        font-size: 28px;
+        margin: 0 auto 16px;
+    }
+    .successCard h2 { font-size: 22px; margin-bottom: 8px; }
+    .successCard p { color: var(--ink-dim); font-size: 14px; margin: 0 0 18px; }
+    .successCard button.ghost {
+        background: transparent;
+        color: var(--accent);
+        border: 1px solid var(--rule);
+    }
+
+    footer { text-align: center; margin-top: 18px; }
+    footer a { color: var(--ink-dim); font-size: 12px; text-decoration: none; border-bottom: 1px dotted var(--rule); }
+</style>
+</head>
+<body>
+<main>
+    <div class="brand"><div class="seal"></div><span>SPALTER RIGHTS REGISTRY</span></div>
+
+    <div class="card" id="formCard">
+        <h1 class="title">Register your song</h1>
+        <p class="sub">Three things, one tap. That's it.</p>
+
+        <form id="regForm">
+            <label for="fName">Your name</label>
+            <input id="fName" type="text" autocomplete="name" required>
+
+            <label for="fEmail">Your email</label>
+            <input id="fEmail" type="email" autocomplete="email" required>
+
+            <label for="fTitle">Song title</label>
+            <input id="fTitle" type="text" autocomplete="off" required>
+
+            <button type="submit" id="submitBtn">Register My Song</button>
+            <div class="err" id="errMsg" style="display:none"></div>
+        </form>
+    </div>
+
+    <div class="card successCard" id="successCard" style="display:none">
+        <div class="checkmark">✓</div>
+        <h2>You're registered</h2>
+        <p id="successText"></p>
+        <button class="ghost" id="againBtn">Register Another Song</button>
+    </div>
+
+    <footer><a href="registry/">Spalter Rights Registry &rarr;</a></footer>
+</main>
+
+<script>
+(function () {
+    const $ = id => document.getElementById(id);
+    const form = $('regForm'), formCard = $('formCard'), successCard = $('successCard'),
+        successText = $('successText'), errMsg = $('errMsg'), submitBtn = $('submitBtn');
+
+    form.addEventListener('submit', async e => {
+        e.preventDefault();
+        errMsg.style.display = 'none';
+        submitBtn.disabled = true;
+        submitBtn.textContent = 'REGISTERING…';
+
+        const name = $('fName').value.trim(), email = $('fEmail').value.trim(), title = $('fTitle').value.trim();
+
+        try {
+            const res = await fetch('/api/public/quick-register', {
+                method: 'POST',
+                headers: { 'content-type': 'application/json' },
+                body: JSON.stringify({ name, email, title }),
+            });
+            const data = await res.json().catch(() => ({}));
+            if (!res.ok) throw new Error(data.error || 'Something went wrong — try again.');
+
+            successText.textContent = `"${title}" is submitted and in review. We'll be in touch at ${email}.`;
+            formCard.style.display = 'none';
+            successCard.style.display = 'block';
+        } catch (err) {
+            errMsg.textContent = err.message || 'Something went wrong — try again.';
+            errMsg.style.display = 'block';
+        } finally {
+            submitBtn.disabled = false;
+            submitBtn.textContent = 'Register My Song';
+        }
+    });
+
+    $('againBtn').addEventListener('click', () => {
+        form.reset();
+        successCard.style.display = 'none';
+        formCard.style.display = 'block';
+        $('fName').focus();
+    });
+
+    if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.register('registry/sw.js').catch(() => {});
+    }
+})();
+</script>
+</body>
+</html>

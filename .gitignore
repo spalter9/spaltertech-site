@@ -1,6 +1,11 @@
 # dependencies
 node_modules
 
+# Cloudflare Workers/Pages local dev state and secrets
+.wrangler
+.dev.vars
+.dev.vars.*
+
 # output
 out
 dist
