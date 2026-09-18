@@ -1,0 +1,319 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Surreal Audio — The Engine</title>
+<meta name="description" content="The Surreal Audio Engine: bass-safe spatial enhancement for anything you listen to. Same master, same volume — just the space opens up.">
+<link rel="icon" href="media/surreal-audio-icon.png">
+<link rel="apple-touch-icon" href="media/surreal-audio-icon.png">
+<style>
+    :root {
+        --chassis: #030309;
+        --panel: rgba(16, 18, 28, .72);
+        --panel2: rgba(26, 28, 42, .72);
+        --line: #2b3044;
+        --bone: #e6e3d8;
+        --dim: #8d90a0;
+        --amber: #ffb638;
+        --green: #3ae8a4;
+        --red: #ff4d4d;
+        --mono: 'IBM Plex Mono', ui-monospace, monospace;
+        --disp: 'Chakra Petch', 'IBM Plex Mono', sans-serif;
+    }
+    * { box-sizing: border-box; }
+    html, body {
+        margin: 0;
+        background: var(--chassis);
+        color: var(--bone);
+        font-family: var(--mono);
+    }
+    body {
+        min-height: 100vh;
+        padding: env(safe-area-inset-top, 0px) 18px calc(env(safe-area-inset-bottom, 0px) + 48px);
+        display: flex;
+        justify-content: center;
+    }
+    main { width: 100%; max-width: 620px; padding-top: 20px; }
+
+    .nav {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 40px;
+        font-size: 11px;
+        letter-spacing: .14em;
+    }
+    .nav .co { color: var(--dim); }
+    .nav a { color: var(--dim); text-decoration: none; border-bottom: 1px dotted var(--line); }
+    .nav a:hover { color: var(--amber); }
+
+    .hero { text-align: center; margin-bottom: 44px; }
+    .iconWrap { position: relative; width: 92px; height: 92px; margin: 0 auto 22px; }
+    .iconWrap::before {
+        content: '';
+        position: absolute; inset: -30px;
+        border-radius: 50%;
+        background: radial-gradient(circle, rgba(255,182,56,.24), transparent 65%);
+        filter: blur(30px);
+    }
+    .iconWrap img { position: relative; width: 92px; height: 92px; border-radius: 22px; box-shadow: 0 8px 40px rgba(0,0,0,.5); }
+    .kicker {
+        font-family: var(--disp);
+        font-size: 11px;
+        letter-spacing: .3em;
+        color: var(--amber);
+        margin-bottom: 14px;
+    }
+    h1 {
+        font-family: var(--disp);
+        font-weight: 700;
+        font-size: clamp(30px, 8vw, 46px);
+        line-height: 1.08;
+        margin: 0 0 16px;
+        text-wrap: balance;
+    }
+    h1 .amber { color: var(--amber); }
+    .sub {
+        font-size: 14px;
+        line-height: 1.7;
+        color: var(--dim);
+        max-width: 48ch;
+        margin: 0 auto 28px;
+    }
+    .heroCta {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        padding: 16px 28px;
+        border-radius: 12px;
+        border: 1px solid rgba(255,182,56,.5);
+        background: radial-gradient(circle at 50% 20%, rgba(255,182,56,.18), #14110a 75%);
+        color: var(--amber);
+        font-family: var(--disp);
+        font-weight: 700;
+        font-size: 14px;
+        letter-spacing: .12em;
+        text-decoration: none;
+        cursor: pointer;
+    }
+    .heroCta:active { transform: scale(.98); }
+    .heroNote { font-size: 11px; color: var(--dim); margin-top: 12px; letter-spacing: .04em; }
+
+    .section { margin-bottom: 40px; }
+    .sectionKicker {
+        font-family: var(--disp);
+        font-size: 11px;
+        letter-spacing: .2em;
+        color: var(--dim);
+        text-align: center;
+        margin-bottom: 20px;
+    }
+
+    /* Embedded live engine, framed like a phone screen */
+    .phoneFrame {
+        max-width: 400px;
+        margin: 0 auto;
+        border-radius: 32px;
+        border: 1px solid var(--line);
+        padding: 10px;
+        background: linear-gradient(180deg, #0b0d16, #060710);
+        box-shadow: 0 20px 60px rgba(0,0,0,.5), 0 0 0 1px rgba(255,182,56,.08);
+    }
+    .phoneScreen {
+        border-radius: 24px;
+        overflow: hidden;
+        background: var(--chassis);
+        border: 1px solid var(--line);
+    }
+    .phoneScreen iframe {
+        display: block;
+        width: 100%;
+        height: 540px;
+        border: 0;
+        background: var(--chassis);
+    }
+    .phoneOpenLink {
+        display: block;
+        text-align: center;
+        margin-top: 14px;
+        font-size: 11px;
+        color: var(--dim);
+        text-decoration: none;
+        border-bottom: 1px dotted var(--line);
+        width: fit-content;
+        margin-left: auto;
+        margin-right: auto;
+    }
+
+    .whyGrid { display: flex; flex-direction: column; gap: 12px; }
+    .whyCard {
+        background: var(--panel);
+        border: 1px solid var(--line);
+        border-radius: 14px;
+        padding: 18px;
+        backdrop-filter: blur(6px);
+    }
+    .whyCard h3 {
+        font-family: var(--disp);
+        font-size: 14px;
+        color: var(--bone);
+        margin: 0 0 6px;
+        display: flex; align-items: center; gap: 8px;
+    }
+    .whyCard h3 .dot { width: 7px; height: 7px; border-radius: 50%; background: var(--green); box-shadow: 0 0 8px var(--green); flex: none; }
+    .whyCard p { font-size: 12.5px; line-height: 1.6; color: var(--dim); margin: 0; }
+
+    .tierGrid { display: flex; flex-direction: column; gap: 12px; }
+    .tierCard {
+        background: var(--panel);
+        border: 1px solid var(--line);
+        border-radius: 14px;
+        padding: 18px;
+    }
+    .tierCard.active { border-color: rgba(255,182,56,.5); box-shadow: 0 0 24px rgba(255,182,56,.08); }
+    .tierHead { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 6px; }
+    .tierName { font-family: var(--disp); font-weight: 700; font-size: 14px; color: var(--bone); }
+    .tierPrice { font-size: 11px; letter-spacing: .1em; color: var(--amber); }
+    .tierCard p { font-size: 12.5px; line-height: 1.6; color: var(--dim); margin: 0; }
+
+    .platformGrid { display: flex; gap: 12px; }
+    .platformCard {
+        flex: 1;
+        min-width: 0;
+        background: var(--panel);
+        border: 1px solid var(--line);
+        border-radius: 14px;
+        padding: 16px 10px;
+        text-align: center;
+    }
+    a.platformCard.link {
+        display: block;
+        text-decoration: none;
+        color: inherit;
+        border-color: rgba(58,232,164,.35);
+        cursor: pointer;
+    }
+    a.platformCard.link:active { transform: scale(.98); }
+    .platformCard .glyph { font-size: 22px; margin-bottom: 8px; }
+    .platformCard h4 { font-family: var(--disp); font-size: 12.5px; color: var(--bone); margin: 0 0 4px; letter-spacing: .06em; }
+    .platformCard .status {
+        display: inline-block;
+        font-size: 9.5px;
+        letter-spacing: .1em;
+        color: var(--dim);
+        border: 1px solid var(--line);
+        border-radius: 20px;
+        padding: 3px 9px;
+        margin-top: 6px;
+    }
+    .platformCard p { font-size: 11px; line-height: 1.55; color: var(--dim); margin: 8px 0 0; }
+
+    .originNote {
+        text-align: center;
+        font-size: 12px;
+        line-height: 1.7;
+        color: var(--dim);
+        max-width: 50ch;
+        margin: 0 auto;
+    }
+    .originNote a { color: var(--amber); text-decoration: none; border-bottom: 1px dotted rgba(255,182,56,.4); }
+
+    footer { text-align: center; margin-top: 12px; }
+    footer a { color: var(--dim); font-size: 11px; text-decoration: none; border-bottom: 1px dotted var(--line); }
+</style>
+</head>
+<body>
+<main>
+    <div class="nav">
+        <span class="co">SPALTER TECH</span>
+        <a href="index.html">THE MASTER TRUST ↗</a>
+    </div>
+
+    <div class="hero">
+        <div class="iconWrap"><img src="media/surreal-audio-icon.png" alt="Surreal Audio"></div>
+        <div class="kicker">THE SURREAL AUDIO ENGINE</div>
+        <h1>Wider sound.<br><span class="amber">Same bass.</span></h1>
+        <p class="sub">A real-time spatial engine that opens up whatever you're already listening to — without touching the loudness, the compression, or the low end. Bass-safe by design, where most "3D audio" tricks go muddy. Browser today, phone apps next, and the same engine under the hood of the full Master Trust Engine mastering console.</p>
+        <a class="heroCta" href="#try">▶ TRY IT — NO DOWNLOAD</a>
+        <div class="heroNote">One tap. Real music. Fifteen seconds.</div>
+    </div>
+
+    <div class="section" id="try">
+        <div class="sectionKicker">THE ENGINE, RIGHT HERE</div>
+        <div class="phoneFrame">
+            <div class="phoneScreen">
+                <iframe src="immersive.html" title="Surreal Audio live demo" loading="lazy"></iframe>
+            </div>
+        </div>
+        <a class="phoneOpenLink" href="immersive.html">Open full-screen in its own tab ↗</a>
+    </div>
+
+    <div class="section">
+        <div class="sectionKicker">WHY IT'S DIFFERENT</div>
+        <div class="whyGrid">
+            <div class="whyCard">
+                <h3><span class="dot"></span>Bass stays exactly where it was</h3>
+                <p>Most phone "surround" effects widen the whole signal, bass included — which is exactly why they turn hollow or thin on a phone speaker or in mono. Surreal Audio splits below 150&nbsp;Hz and only widens above it, the same move mastering engineers pay for in professional tools, not something built into stock phone effects.</p>
+            </div>
+            <div class="whyCard">
+                <h3><span class="dot"></span>Nothing gets louder or more compressed</h3>
+                <p>This only ever changes the space, never the volume. It doesn't fight the mix the original engineer already balanced.</p>
+            </div>
+            <div class="whyCard">
+                <h3><span class="dot"></span>Proof, not a black box</h3>
+                <p>The same phase-correlation meter from the Master Trust Engine console is right there on the demo — watch the bass stay locked near +1 while the top end opens up, instead of just trusting a toggle.</p>
+            </div>
+        </div>
+    </div>
+
+    <div class="section">
+        <div class="sectionKicker">ONE ENGINE, THREE TIERS</div>
+        <div class="tierGrid">
+            <div class="tierCard active">
+                <div class="tierHead"><span class="tierName">Surreal Audio</span><span class="tierPrice">FREE</span></div>
+                <p>This page, and the coming phone apps. Enhances whatever's already playing — Android reaches system-wide into any app, iOS plays your own imported library.</p>
+            </div>
+            <div class="tierCard">
+                <div class="tierHead"><span class="tierName">Surreal Audio Pro</span><span class="tierPrice">UPGRADE</span></div>
+                <p>Manual control over width, room, and cross-feed instead of one preset. Saved profiles, no limits.</p>
+            </div>
+            <div class="tierCard">
+                <div class="tierHead"><span class="tierName">Master Trust Engine</span><span class="tierPrice">INSTITUTIONAL</span></div>
+                <p>The full mastering console: valve saturation, EQ, the Examiner, forensic export ledger. Where records get made, not just enhanced.</p>
+            </div>
+        </div>
+    </div>
+
+    <div class="section">
+        <div class="sectionKicker">AVAILABLE ON</div>
+        <div class="platformGrid">
+            <div class="platformCard">
+                <div class="glyph">🌐</div>
+                <h4>BROWSER</h4>
+                <span class="status" style="color:var(--green);border-color:rgba(58,232,164,.4)">LIVE NOW</span>
+                <p>Chrome or Edge. Works today — no install.</p>
+            </div>
+            <a class="platformCard link" href="get-android.html">
+                <div class="glyph">🤖</div>
+                <h4>ANDROID</h4>
+                <span class="status" style="color:var(--green);border-color:rgba(58,232,164,.4)">TEST BUILD →</span>
+                <p>Reaches into Spotify and any other app, plus your own library.</p>
+            </a>
+            <div class="platformCard">
+                <div class="glyph">🍎</div>
+                <h4>iOS</h4>
+                <span class="status">IN DEVELOPMENT</span>
+                <p>Your own imported library — Apple doesn't allow app-to-app capture.</p>
+            </div>
+        </div>
+    </div>
+
+    <div class="section">
+        <p class="originNote">Surreal Audio is the consumer side of the same DSP engine that powers <a href="index.html">The Master Trust Engine</a> — the institutional mastering and rights-settlement infrastructure behind it. Different product, different audience, same engine underneath.</p>
+    </div>
+
+    <footer><a href="index.html">&larr; Back to The Master Trust</a></footer>
+</main>
+</body>
+</html>
