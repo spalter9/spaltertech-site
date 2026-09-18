@@ -3108,29 +3108,6 @@
                 <div class="rackNote" id="rackNote" style="display:none">CLICK A TRACK TO ARM IT · YOUR VALVE PIPELINE AND STAGE SETTINGS CARRY OVER BETWEEN TRACKS</div>
             </div>
 
-            <!-- VIZ -->
-            <div id="vizBox">
-                <canvas id="viz">
-                </canvas>
-                <canvas id="viz3d" style="display:none;position:absolute;inset:0;width:100%;height:340px;cursor:grab"></canvas>
-                <div id="vizHud">
-                    <span id="hudViz">SPECTRAL FIELD</span>
-                    <span id="hudMode">STANDBY</span>
-                </div>
-                <div class="vizModes">
-                    <button data-viz="spectral" class="on">SPECTRAL</button>
-                    <button data-viz="rain">CRIMSON RAIN</button>
-                    <button data-viz="warp">WARP</button>
-                    <button data-viz="aurora">AURORA</button>
-                    <button data-viz="orbital">ORBITAL</button>
-                    <button data-viz="bloom">NEBULA BLOOM</button>
-                    <button data-viz="helix">DNA HELIX</button>
-                    <button data-viz="plasma">PLASMA CORE</button>
-                    <button data-viz="kaleido">KALEIDO</button>
-                    <button data-viz="three">3D CORE</button>
-                </div>
-            </div>
-
             <!-- TRANSPORT -->
             <div class="panel transport">
                 <h2>TAPE TRANSPORT</h2>
@@ -3158,6 +3135,22 @@
                     </button>
                 </div>
                 <div class="sk" style="text-align:center">CLICK TO STEP ±5s · HOLD REW / F·FWD TO SHUTTLE</div>
+            </div>
+
+            <!-- MASTER METERS -->
+            <div class="panel">
+                <h2>MASTER METERS</h2>
+                <div class="sk">TELEMETRY · OUTPUT · LIVE WHILE PLAYING</div>
+                <canvas id="rta" style="display:block;width:100%;height:96px;margin-top:8px;border:1px solid var(--line);border-radius:8px;background:#06070c"></canvas>
+                <div style="display:flex;justify-content:space-between;gap:10px;margin-top:8px;font-size:10px;letter-spacing:.14em">
+                    <span style="color:var(--dim)">PEAK <b id="tPeak" style="color:var(--amber)">-inf</b> dBFS <span style="font-size:8px">(4× INTERP. EST.)</span></span>
+                    <span style="color:var(--dim)">RMS <b id="tRms" style="color:var(--blue)">-inf</b> dBFS</span>
+                    <span style="color:var(--dim)">CLIP <b id="tClip" style="color:var(--green)">0</b></span>
+                </div>
+                <div style="display:flex;justify-content:space-between;gap:10px;margin-top:6px;font-size:10px;letter-spacing:.14em">
+                    <span style="color:var(--dim)">LUFS-M <b id="tLufsM" style="color:var(--mag)">-inf</b> <span style="font-size:8px">MOMENTARY</span></span>
+                    <span style="color:var(--dim)">LUFS-I <b id="tLufsI" style="color:var(--mag)">-inf</b> <span style="font-size:8px">INTEGRATED · ITU-R BS.1770</span></span>
+                </div>
             </div>
 
             <div class="grid2">
@@ -3359,17 +3352,6 @@
                             </div>
                             <input type="range" id="sErMix" min="0" max="50" value="0">
                         </div>
-                        <div class="sk" style="margin-top:8px">TELEMETRY · OUTPUT</div>
-                        <canvas id="rta" style="display:block;width:100%;height:96px;margin-top:8px;border:1px solid var(--line);border-radius:8px;background:#06070c"></canvas>
-                        <div style="display:flex;justify-content:space-between;gap:10px;margin-top:8px;font-size:10px;letter-spacing:.14em">
-                            <span style="color:var(--dim)">PEAK <b id="tPeak" style="color:var(--amber)">-inf</b> dBFS <span style="font-size:8px">(4× INTERP. EST.)</span></span>
-                            <span style="color:var(--dim)">RMS <b id="tRms" style="color:var(--blue)">-inf</b> dBFS</span>
-                            <span style="color:var(--dim)">CLIP <b id="tClip" style="color:var(--green)">0</b></span>
-                        </div>
-                        <div style="display:flex;justify-content:space-between;gap:10px;margin-top:6px;font-size:10px;letter-spacing:.14em">
-                            <span style="color:var(--dim)">LUFS-M <b id="tLufsM" style="color:var(--mag)">-inf</b> <span style="font-size:8px">MOMENTARY</span></span>
-                            <span style="color:var(--dim)">LUFS-I <b id="tLufsI" style="color:var(--mag)">-inf</b> <span style="font-size:8px">INTEGRATED · ITU-R BS.1770</span></span>
-                        </div>
                     </div>
                 </div>
             </div>
@@ -3552,6 +3534,29 @@
                     </div>
                     </div>
                 </details>
+            </div>
+
+            <!-- VIZ -->
+            <div id="vizBox">
+                <canvas id="viz">
+                </canvas>
+                <canvas id="viz3d" style="display:none;position:absolute;inset:0;width:100%;height:340px;cursor:grab"></canvas>
+                <div id="vizHud">
+                    <span id="hudViz">SPECTRAL FIELD</span>
+                    <span id="hudMode">STANDBY</span>
+                </div>
+                <div class="vizModes">
+                    <button data-viz="spectral" class="on">SPECTRAL</button>
+                    <button data-viz="rain">CRIMSON RAIN</button>
+                    <button data-viz="warp">WARP</button>
+                    <button data-viz="aurora">AURORA</button>
+                    <button data-viz="orbital">ORBITAL</button>
+                    <button data-viz="bloom">NEBULA BLOOM</button>
+                    <button data-viz="helix">DNA HELIX</button>
+                    <button data-viz="plasma">PLASMA CORE</button>
+                    <button data-viz="kaleido">KALEIDO</button>
+                    <button data-viz="three">3D CORE</button>
+                </div>
             </div>
 
             <!-- PRESETS -->
