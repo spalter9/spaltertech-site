@@ -89,7 +89,7 @@
         line-height: 1.55;
         color: var(--amber);
     }
-    #shareBtn {
+    #shareBtn, #demoBtn {
         width: 100%;
         padding: 18px;
         border-radius: 12px;
@@ -102,8 +102,35 @@
         letter-spacing: .14em;
         cursor: pointer;
     }
-    #shareBtn:active { transform: scale(.98); }
-    #shareBtn:disabled { opacity: .4; cursor: default; }
+    #shareBtn:active, #demoBtn:active { transform: scale(.98); }
+    #shareBtn:disabled, #demoBtn:disabled { opacity: .4; cursor: default; }
+    #demoBtn.playing {
+        border-color: var(--green);
+        background: radial-gradient(circle at 50% 20%, rgba(58,232,164,.14), #0a1410 75%);
+        color: var(--green);
+    }
+    .demoCredit {
+        text-align: center;
+        font-size: 10.5px;
+        letter-spacing: .1em;
+        color: var(--dim);
+        margin-top: 10px;
+    }
+    .demoCredit b { color: var(--bone); }
+    details.advDisclosure { margin-bottom: 16px; }
+    details.advDisclosure summary {
+        list-style: none;
+        cursor: pointer;
+        font-size: 11px;
+        letter-spacing: .12em;
+        color: var(--dim);
+        text-align: center;
+        padding: 4px 0 2px;
+    }
+    details.advDisclosure summary::-webkit-details-marker { display: none; }
+    details.advDisclosure summary:before { content: '▸ '; }
+    details.advDisclosure[open] summary:before { content: '▾ '; }
+    details.advDisclosure .panel { margin-top: 12px; margin-bottom: 0; }
     .liveRow {
         display: none;
         align-items: center;
@@ -175,20 +202,11 @@
 <main>
     <div class="kicker">SURREAL AUDIO · TIER 1 · THE MASTER TRUST</div>
     <h1>Surreal Audio</h1>
-    <p class="sub">Bass-safe spatial enhancement for anything already playing in your browser &mdash; same master, same volume, no compression touched. Just the space opens up. This browser version is the free tier; the same engine ships as phone apps and as the full Master Trust Engine mastering console.</p>
+    <p class="sub">Bass-safe spatial enhancement &mdash; same master, same volume, no compression touched. Just the space opens up. This browser version is the free tier; the same engine ships as phone apps and as the full Master Trust Engine mastering console.</p>
 
-    <div class="panel" id="setupPanel">
-        <ol class="steps">
-            <li><span class="n">1</span><span><b>Mute the tab that's playing your music</b> &mdash; right-click that tab &rarr; Mute Site, or mute it in the player itself. Otherwise you'll hear the original and the enhanced copy at once.</span></li>
-            <li><span class="n">2</span><span>Tap <b>Share Tab Audio</b> below and pick that tab from the list.</span></li>
-            <li><span class="n">3</span><span>In the picker, make sure <b>&ldquo;Also share tab audio&rdquo;</b> is checked before confirming.</span></li>
-        </ol>
-        <div class="warn">Chrome or Edge only for now &mdash; Safari doesn't yet support sharing another tab's audio to a web page. If you're on an iPhone or Safari, this won't have anything to capture.</div>
-        <button id="shareBtn">▣ SHARE TAB AUDIO</button>
-        <div class="liveRow" id="liveRow">
-            <span class="liveLabel"><span class="dot live"></span>LIVE · RECEIVING TAB AUDIO</span>
-            <button id="stopBtn">■ STOP</button>
-        </div>
+    <div class="panel" id="demoPanel">
+        <button id="demoBtn">▶ HEAR THE DEMO</button>
+        <div class="demoCredit">&ldquo;BANGIN&rsquo; ME IN MY HEAD&rdquo; &middot; <b>SPALTER</b></div>
     </div>
 
     <div class="panel engageWrap" id="engagePanel">
@@ -200,6 +218,23 @@
         <canvas id="corrMeter"></canvas>
         <div class="meterNote">This is the same correlation meter from the Master Trust Engine console &mdash; watch the bass stay locked near +1 even with Immersive engaged.</div>
     </div>
+
+    <details class="advDisclosure">
+        <summary>OR ENHANCE SPOTIFY / ANOTHER APP'S AUDIO</summary>
+        <div class="panel" id="setupPanel">
+            <ol class="steps">
+                <li><span class="n">1</span><span><b>Mute the tab that's playing your music</b> &mdash; right-click that tab &rarr; Mute Site, or mute it in the player itself. Otherwise you'll hear the original and the enhanced copy at once.</span></li>
+                <li><span class="n">2</span><span>Tap <b>Share Tab Audio</b> below and pick that tab from the list.</span></li>
+                <li><span class="n">3</span><span>In the picker, make sure <b>&ldquo;Also share tab audio&rdquo;</b> is checked before confirming.</span></li>
+            </ol>
+            <div class="warn">Chrome or Edge only for now &mdash; Safari doesn't yet support sharing another tab's audio to a web page. If you're on an iPhone or Safari, this won't have anything to capture.</div>
+            <button id="shareBtn">▣ SHARE TAB AUDIO</button>
+            <div class="liveRow" id="liveRow">
+                <span class="liveLabel"><span class="dot live"></span>LIVE · RECEIVING TAB AUDIO</span>
+                <button id="stopBtn">■ STOP</button>
+            </div>
+        </div>
+    </details>
 
     <div class="panel">
         <div class="kicker" style="text-align:left;margin-bottom:12px">ONE ENGINE, THREE TIERS</div>
@@ -217,10 +252,12 @@
 (function () {
     const $ = id => document.getElementById(id);
     const shareBtn = $('shareBtn'), stopBtn = $('stopBtn'), liveRow = $('liveRow'),
+        demoBtn = $('demoBtn'),
         engagePanel = $('engagePanel'), engageBtn = $('engage'),
         corrCv = $('corrMeter'), corrG = corrCv.getContext('2d'), tCorr = $('tCorr');
 
     let ac = null, stream = null, src = null, raf = null;
+    let demoSource = null, demoBuffer = null;
     let engaged = false;
 
     function drawCorrMeter(v) {
@@ -249,9 +286,12 @@
     }
     drawCorrMeter(1);
 
-    function buildGraph(mediaStream) {
-        ac = new (window.AudioContext || window.webkitAudioContext)();
-        src = ac.createMediaStreamSource(mediaStream);
+    /* Shared DSP graph — takes any already-connected Web Audio source node,
+       whether that's a captured tab (MediaStreamAudioSourceNode) or the
+       decoded demo track (AudioBufferSourceNode). Everything past "here's
+       a source node" is identical for both entry points. */
+    function buildGraph(sourceNode) {
+        src = sourceNode;
 
         /* Dry path: untouched, straight through. */
         const dry = ac.createGain();
@@ -387,21 +427,56 @@
         if (raf) cancelAnimationFrame(raf);
         raf = null;
         if (stream) stream.getTracks().forEach(t => t.stop());
+        if (demoSource) { try { demoSource.stop(); } catch (e) {} demoSource.disconnect(); }
         if (ac) ac.close().catch(() => {});
-        ac = null; stream = null; src = null; graph = null;
+        ac = null; stream = null; src = null; graph = null; demoSource = null;
         engaged = false;
         engageBtn.classList.remove('on');
         liveRow.classList.remove('on');
         engagePanel.classList.remove('on');
         shareBtn.disabled = false;
         shareBtn.textContent = '▣ SHARE TAB AUDIO';
+        demoBtn.disabled = false;
+        demoBtn.textContent = '▶ HEAR THE DEMO';
+        demoBtn.classList.remove('playing');
     }
+
+    demoBtn.addEventListener('click', async () => {
+        if (demoSource) { teardown(); return; }
+        teardown();
+        demoBtn.disabled = true;
+        demoBtn.textContent = 'LOADING…';
+        try {
+            ac = new (window.AudioContext || window.webkitAudioContext)();
+            if (!demoBuffer) {
+                const res = await fetch('media/surreal-audio-demo.mp3');
+                if (!res.ok) throw new Error('demo track failed to load (' + res.status + ')');
+                const arr = await res.arrayBuffer();
+                demoBuffer = await ac.decodeAudioData(arr);
+            }
+            demoSource = ac.createBufferSource();
+            demoSource.buffer = demoBuffer;
+            demoSource.loop = true;
+            graph = buildGraph(demoSource);
+            demoSource.start();
+            engagePanel.classList.add('on');
+            demoBtn.disabled = false;
+            demoBtn.textContent = '■ STOP DEMO';
+            demoBtn.classList.add('playing');
+            tick();
+        } catch (e) {
+            demoBtn.disabled = false;
+            demoBtn.textContent = '▶ HEAR THE DEMO';
+            alert('Could not load the demo track: ' + (e && e.message ? e.message : e));
+        }
+    });
 
     shareBtn.addEventListener('click', async () => {
         if (!navigator.mediaDevices || !navigator.mediaDevices.getDisplayMedia) {
             alert('This browser can\'t share tab audio to a page. Try Chrome or Edge.');
             return;
         }
+        teardown();
         shareBtn.disabled = true;
         shareBtn.textContent = 'WAITING FOR PICKER…';
         try {
@@ -417,7 +492,8 @@
             }
             stream = new MediaStream(audioTracks);
             stream.getAudioTracks()[0].addEventListener('ended', teardown);
-            graph = buildGraph(stream);
+            ac = new (window.AudioContext || window.webkitAudioContext)();
+            graph = buildGraph(ac.createMediaStreamSource(stream));
             liveRow.classList.add('on');
             engagePanel.classList.add('on');
             shareBtn.textContent = '▣ SHARING';
