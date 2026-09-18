@@ -1554,14 +1554,16 @@
         flex-wrap: wrap
     }
 
-    .siteNav .links button {
+    .siteNav .links button, .siteNav .links a {
         border: 1px solid var(--line);
         border-radius: 8px;
         padding: 9px 13px;
         font-size: 10px;
         letter-spacing: .16em;
         color: var(--dim);
-        background: rgba(10, 12, 24, .6)
+        background: rgba(10, 12, 24, .6);
+        text-decoration: none;
+        display: inline-block
     }
 
     .siteNav .links button.hot {
@@ -2411,7 +2413,7 @@
         color: #c3c7d3
     }
 
-    .siteNav .links button {
+    .siteNav .links button, .siteNav .links a {
         font-size: 11px;
         font-weight: 600;
         color: #c6cad6
@@ -2492,6 +2494,7 @@
             <span class="links">
                 <button id="navFw">THE MASTER TRUST</button>
                 <button id="navDr">DATA ROOM</button>
+                <a href="immersive.html">IMMERSIVE LISTENER</a>
                 <button class="hot" id="navEngine">THE ENGINE</button>
             </span>
         </div>

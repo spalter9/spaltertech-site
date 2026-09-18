@@ -1,0 +1,442 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Immersive Listener — The Master Trust</title>
+<link rel="icon" href="data:,">
+<style>
+    :root {
+        --chassis: #030309;
+        --panel: rgba(16, 18, 28, .72);
+        --panel2: rgba(26, 28, 42, .72);
+        --line: #2b3044;
+        --bone: #e6e3d8;
+        --dim: #8d90a0;
+        --amber: #ffb638;
+        --green: #3ae8a4;
+        --red: #ff4d4d;
+        --mono: 'IBM Plex Mono', ui-monospace, monospace;
+        --disp: 'Chakra Petch', 'IBM Plex Mono', sans-serif;
+    }
+    * { box-sizing: border-box; }
+    html, body {
+        margin: 0;
+        background: var(--chassis);
+        color: var(--bone);
+        font-family: var(--mono);
+    }
+    body {
+        min-height: 100vh;
+        padding: env(safe-area-inset-top, 0px) 18px calc(env(safe-area-inset-bottom, 0px) + 40px);
+        display: flex;
+        justify-content: center;
+    }
+    main { width: 100%; max-width: 560px; padding-top: 32px; }
+    .kicker {
+        font-family: var(--disp);
+        font-size: 11px;
+        letter-spacing: .28em;
+        color: var(--amber);
+        text-align: center;
+        margin-bottom: 8px;
+    }
+    h1 {
+        font-family: var(--disp);
+        font-weight: 700;
+        font-size: clamp(24px, 6vw, 32px);
+        text-align: center;
+        margin: 0 0 10px;
+        text-wrap: balance;
+    }
+    .sub {
+        text-align: center;
+        font-size: 13px;
+        line-height: 1.65;
+        color: var(--dim);
+        max-width: 46ch;
+        margin: 0 auto 30px;
+    }
+    .panel {
+        background: var(--panel);
+        border: 1px solid var(--line);
+        border-radius: 14px;
+        padding: 18px;
+        margin-bottom: 16px;
+        backdrop-filter: blur(6px);
+    }
+    .steps { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 10px; }
+    .steps li { display: flex; gap: 10px; font-size: 12.5px; line-height: 1.55; color: var(--dim); }
+    .steps b { color: var(--bone); font-weight: 600; }
+    .steps .n {
+        flex: none;
+        width: 20px; height: 20px;
+        border-radius: 50%;
+        border: 1px solid var(--amber);
+        color: var(--amber);
+        font-family: var(--disp);
+        font-size: 10px;
+        display: flex; align-items: center; justify-content: center;
+    }
+    .warn {
+        margin-top: 14px;
+        padding: 10px 12px;
+        border-radius: 8px;
+        border: 1px solid rgba(255,182,56,.35);
+        background: rgba(255,182,56,.06);
+        font-size: 11.5px;
+        line-height: 1.55;
+        color: var(--amber);
+    }
+    #shareBtn {
+        width: 100%;
+        padding: 18px;
+        border-radius: 12px;
+        border: 1px solid rgba(255,182,56,.5);
+        background: radial-gradient(circle at 50% 20%, rgba(255,182,56,.16), #14110a 75%);
+        color: var(--amber);
+        font-family: var(--disp);
+        font-weight: 700;
+        font-size: 14px;
+        letter-spacing: .14em;
+        cursor: pointer;
+    }
+    #shareBtn:active { transform: scale(.98); }
+    #shareBtn:disabled { opacity: .4; cursor: default; }
+    .liveRow {
+        display: none;
+        align-items: center;
+        justify-content: space-between;
+        gap: 10px;
+        margin-top: 14px;
+    }
+    .liveRow.on { display: flex; }
+    .dot {
+        width: 8px; height: 8px; border-radius: 50%;
+        background: var(--dim);
+    }
+    .dot.live { background: var(--green); box-shadow: 0 0 8px var(--green); animation: pulse 1.6s ease-in-out infinite; }
+    @keyframes pulse { 50% { opacity: .35 } }
+    .liveLabel { font-size: 11px; letter-spacing: .12em; color: var(--dim); display: flex; align-items: center; gap: 8px; }
+    #stopBtn {
+        border: 1px solid var(--line);
+        color: var(--dim);
+        background: transparent;
+        border-radius: 8px;
+        padding: 8px 14px;
+        font-family: var(--mono);
+        font-size: 11px;
+        cursor: pointer;
+    }
+    .engageWrap { display: none; }
+    .engageWrap.on { display: block; }
+    #engage {
+        width: 100%;
+        margin-top: 4px;
+        padding: 22px 16px;
+        border-radius: 14px;
+        border: 1px solid rgba(255,182,56,.5);
+        background: radial-gradient(circle at 50% 30%, rgba(255,182,56,.16), #14110a 70%);
+        color: var(--amber);
+        font-family: var(--disp);
+        font-weight: 700;
+        font-size: 15px;
+        letter-spacing: .14em;
+        display: flex; flex-direction: column; align-items: center; gap: 6px;
+        box-shadow: 0 0 20px rgba(255,182,56,.12), inset 0 0 30px rgba(255,182,56,.06);
+        cursor: pointer;
+    }
+    #engage small { font-size: 9px; letter-spacing: .1em; color: var(--dim); font-weight: 400; }
+    #engage.on { box-shadow: 0 0 30px rgba(255,182,56,.28), inset 0 0 40px rgba(255,182,56,.14); }
+    #engage.boomed { animation: boom .7s ease-out; }
+    @keyframes boom {
+        0% { box-shadow: 0 0 0 0 rgba(255,182,56,.95), inset 0 0 30px rgba(255,182,56,.06) }
+        40% { box-shadow: 0 0 46px 20px rgba(255,182,56,.4), inset 0 0 46px rgba(255,182,56,.2) }
+        100% { box-shadow: 0 0 20px rgba(255,182,56,.12), inset 0 0 30px rgba(255,182,56,.06) }
+    }
+    .meterLabel {
+        display: flex; justify-content: space-between; font-size: 10px; letter-spacing: .1em;
+        color: var(--dim); margin: 16px 0 5px;
+    }
+    .meterLabel b { color: var(--bone); }
+    #corrMeter {
+        display: block; width: 100%; height: 20px;
+        border: 1px solid var(--line); border-radius: 6px; background: #06070c;
+    }
+    .meterNote { font-size: 10px; color: var(--dim); margin-top: 6px; line-height: 1.5; }
+    .compat { font-size: 11px; color: var(--dim); text-align: center; margin-top: 6px; line-height: 1.6; }
+    .compat b { color: var(--bone); }
+    footer { text-align: center; margin-top: 8px; }
+    footer a { color: var(--dim); font-size: 11px; text-decoration: none; border-bottom: 1px dotted var(--line); }
+</style>
+</head>
+<body>
+<main>
+    <div class="kicker">THE MASTER TRUST</div>
+    <h1>Immersive Listener</h1>
+    <p class="sub">Bass-safe spatial enhancement for anything already playing in your browser &mdash; same master, same volume, no compression touched. Just the space opens up.</p>
+
+    <div class="panel" id="setupPanel">
+        <ol class="steps">
+            <li><span class="n">1</span><span><b>Mute the tab that's playing your music</b> &mdash; right-click that tab &rarr; Mute Site, or mute it in the player itself. Otherwise you'll hear the original and the enhanced copy at once.</span></li>
+            <li><span class="n">2</span><span>Tap <b>Share Tab Audio</b> below and pick that tab from the list.</span></li>
+            <li><span class="n">3</span><span>In the picker, make sure <b>&ldquo;Also share tab audio&rdquo;</b> is checked before confirming.</span></li>
+        </ol>
+        <div class="warn">Chrome or Edge only for now &mdash; Safari doesn't yet support sharing another tab's audio to a web page. If you're on an iPhone or Safari, this won't have anything to capture.</div>
+        <button id="shareBtn">▣ SHARE TAB AUDIO</button>
+        <div class="liveRow" id="liveRow">
+            <span class="liveLabel"><span class="dot live"></span>LIVE · RECEIVING TAB AUDIO</span>
+            <button id="stopBtn">■ STOP</button>
+        </div>
+    </div>
+
+    <div class="panel engageWrap" id="engagePanel">
+        <button id="engage">
+            ⚡ ENGAGE IMMERSIVE
+            <small>BASS STAYS CENTERED · HIGHS OPEN UP · TAP AGAIN FOR DRY</small>
+        </button>
+        <div class="meterLabel"><span>PHASE CORRELATION <span style="font-size:8px">+1 MONO-SAFE · 0 WIDE</span></span><b id="tCorr">+1.00</b></div>
+        <canvas id="corrMeter"></canvas>
+        <div class="meterNote">This is the same correlation meter from the Master Trust Engine console &mdash; watch the bass stay locked near +1 even with Immersive engaged.</div>
+    </div>
+
+    <footer><a href="index.html">&larr; Back to The Master Trust</a></footer>
+</main>
+
+<script>
+(function () {
+    const $ = id => document.getElementById(id);
+    const shareBtn = $('shareBtn'), stopBtn = $('stopBtn'), liveRow = $('liveRow'),
+        engagePanel = $('engagePanel'), engageBtn = $('engage'),
+        corrCv = $('corrMeter'), corrG = corrCv.getContext('2d'), tCorr = $('tCorr');
+
+    let ac = null, stream = null, src = null, raf = null;
+    let engaged = false;
+
+    function drawCorrMeter(v) {
+        const w = corrCv.clientWidth, h = corrCv.clientHeight;
+        if (corrCv.width !== w) corrCv.width = w;
+        if (corrCv.height !== h) corrCv.height = h;
+        corrG.clearRect(0, 0, w, h);
+        const grad = corrG.createLinearGradient(0, 0, w, 0);
+        grad.addColorStop(0, 'rgba(230,70,70,.35)');
+        grad.addColorStop(.5, 'rgba(255,182,56,.28)');
+        grad.addColorStop(1, 'rgba(70,210,120,.35)');
+        corrG.fillStyle = grad;
+        corrG.fillRect(0, 0, w, h);
+        corrG.strokeStyle = 'rgba(255,255,255,.18)';
+        corrG.beginPath();
+        corrG.moveTo(w / 2, 0);
+        corrG.lineTo(w / 2, h);
+        corrG.stroke();
+        const x = ((v + 1) / 2) * w;
+        const needleColor = v > .5 ? '#4ad27a' : v > -.2 ? '#ffb638' : '#e64646';
+        corrG.fillStyle = needleColor;
+        corrG.shadowColor = needleColor;
+        corrG.shadowBlur = 6;
+        corrG.fillRect(Math.max(0, Math.min(w - 2, x - 1)), 0, 2, h);
+        corrG.shadowBlur = 0;
+    }
+    drawCorrMeter(1);
+
+    function buildGraph(mediaStream) {
+        ac = new (window.AudioContext || window.webkitAudioContext)();
+        src = ac.createMediaStreamSource(mediaStream);
+
+        /* Dry path: untouched, straight through. */
+        const dry = ac.createGain();
+        dry.gain.value = 1;
+        src.connect(dry);
+
+        /* Bass-safe crossover: below 150 Hz never widens, so the low end
+           keeps whatever centering the original master already had. */
+        const wLow = ac.createBiquadFilter();
+        wLow.type = 'lowpass'; wLow.frequency.value = 150; wLow.Q.value = .707;
+        const wHigh = ac.createBiquadFilter();
+        wHigh.type = 'highpass'; wHigh.frequency.value = 150; wHigh.Q.value = .707;
+        src.connect(wLow);
+        src.connect(wHigh);
+
+        /* M/S width matrix on the highpassed band only. */
+        const split = ac.createChannelSplitter(2);
+        wHigh.connect(split);
+        const mSum = ac.createGain(); mSum.gain.value = .5;
+        split.connect(mSum, 0); split.connect(mSum, 1);
+        const sInv = ac.createGain(); sInv.gain.value = -1;
+        const sSum = ac.createGain(); sSum.gain.value = .5;
+        split.connect(sSum, 0); split.connect(sInv, 1); sInv.connect(sSum);
+        const sW = ac.createGain(); sW.gain.value = 1.55;
+        sSum.connect(sW);
+        const sWInv = ac.createGain(); sWInv.gain.value = -1;
+        sW.connect(sWInv);
+        const merge = ac.createChannelMerger(2);
+        mSum.connect(merge, 0, 0); mSum.connect(merge, 0, 1);
+        sW.connect(merge, 0, 0); sWInv.connect(merge, 0, 1);
+
+        const wideSum = ac.createGain();
+        wLow.connect(wideSum);
+        merge.connect(wideSum);
+
+        /* Haas cross-feed + early reflections. */
+        const haasSplit = ac.createChannelSplitter(2);
+        const dL = ac.createDelay(.1), dR = ac.createDelay(.1);
+        dL.delayTime.value = .018; dR.delayTime.value = .018;
+        const haasMerge = ac.createChannelMerger(2);
+        wideSum.connect(haasSplit);
+        haasSplit.connect(dL, 0); haasSplit.connect(dR, 1);
+        const haasWet = ac.createGain(); haasWet.gain.value = .42;
+        dL.connect(haasMerge, 0, 1); dR.connect(haasMerge, 0, 0);
+        haasMerge.connect(haasWet);
+
+        const erMerge = ac.createChannelMerger(2);
+        const erWet = ac.createGain(); erWet.gain.value = .34;
+        [[.011, .6, 0], [.023, .42, 1], [.037, .28, 0], [.051, .18, 1]].forEach(([t, g, side]) => {
+            const d = ac.createDelay(.2); d.delayTime.value = t;
+            const gn = ac.createGain(); gn.gain.value = g;
+            wideSum.connect(d); d.connect(gn); gn.connect(erMerge, 0, side);
+        });
+        erMerge.connect(erWet);
+
+        /* Small algorithmic room tail (same generator family as the console). */
+        function mulberry(a) {
+            return function () {
+                a |= 0; a = a + 0x6D2B79F5 | 0;
+                let t = Math.imul(a ^ a >>> 15, 1 | a);
+                t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t;
+                return ((t ^ t >>> 14) >>> 0) / 4294967296
+            }
+        }
+        function makeIR() {
+            const sr = ac.sampleRate, n = Math.floor(.9 * sr);
+            const b = ac.createBuffer(2, n, sr);
+            for (let c = 0; c < 2; c++) {
+                const d = b.getChannelData(c), rnd = mulberry(1234 + c * 777);
+                let lp = 0;
+                for (let i = 0; i < n; i++) {
+                    const t = i / n;
+                    let v = (rnd() * 2 - 1) * Math.pow(1 - t, 2.0);
+                    lp = lp + (v - lp) * .88;
+                    d[i] = lp * .5
+                }
+            }
+            return b;
+        }
+        const roomConv = ac.createConvolver();
+        roomConv.buffer = makeIR();
+        const roomWet = ac.createGain(); roomWet.gain.value = .22;
+        wideSum.connect(roomConv); roomConv.connect(roomWet);
+
+        const wetBus = ac.createGain();
+        haasWet.connect(wetBus);
+        erWet.connect(wetBus);
+        roomWet.connect(wetBus);
+        wideSum.connect(wetBus);
+
+        /* Crossfade between dry and the immersive bus — same overall level
+           either way, this only ever changes the space, never the volume. */
+        const dryGain = ac.createGain(); dryGain.gain.value = 1;
+        const wetGain = ac.createGain(); wetGain.gain.value = 0;
+        dry.connect(dryGain);
+        wetBus.connect(wetGain);
+        dryGain.connect(ac.destination);
+        wetGain.connect(ac.destination);
+
+        /* Correlation taps off the currently-audible bus. */
+        const corrSplit = ac.createChannelSplitter(2);
+        const corrL = ac.createAnalyser(); corrL.fftSize = 2048;
+        const corrR = ac.createAnalyser(); corrR.fftSize = 2048;
+        dryGain.connect(corrSplit); wetGain.connect(corrSplit);
+        corrSplit.connect(corrL, 0); corrSplit.connect(corrR, 1);
+
+        return { dryGain, wetGain, corrL, corrR };
+    }
+
+    let graph = null, corrBufL = null, corrBufR = null, corrSmooth = 1;
+    function tick() {
+        if (graph) {
+            if (!corrBufL) corrBufL = new Float32Array(graph.corrL.fftSize);
+            if (!corrBufR) corrBufR = new Float32Array(graph.corrR.fftSize);
+            graph.corrL.getFloatTimeDomainData(corrBufL);
+            graph.corrR.getFloatTimeDomainData(corrBufR);
+            let sumLR = 0, sumLL = 0, sumRR = 0;
+            for (let i = 0; i < corrBufL.length; i++) {
+                const lv = corrBufL[i], rv = corrBufR[i];
+                sumLR += lv * rv; sumLL += lv * lv; sumRR += rv * rv;
+            }
+            const denom = Math.sqrt(sumLL * sumRR);
+            const raw = denom > 1e-9 ? Math.max(-1, Math.min(1, sumLR / denom)) : 1;
+            corrSmooth += (raw - corrSmooth) * .2;
+            drawCorrMeter(corrSmooth);
+            tCorr.textContent = (corrSmooth >= 0 ? '+' : '') + corrSmooth.toFixed(2);
+            tCorr.style.color = corrSmooth > .5 ? '#3ae8a4' : corrSmooth > -.2 ? '#ffb638' : '#ff4d4d';
+        }
+        raf = requestAnimationFrame(tick);
+    }
+
+    function teardown() {
+        if (raf) cancelAnimationFrame(raf);
+        raf = null;
+        if (stream) stream.getTracks().forEach(t => t.stop());
+        if (ac) ac.close().catch(() => {});
+        ac = null; stream = null; src = null; graph = null;
+        engaged = false;
+        engageBtn.classList.remove('on');
+        liveRow.classList.remove('on');
+        engagePanel.classList.remove('on');
+        shareBtn.disabled = false;
+        shareBtn.textContent = '▣ SHARE TAB AUDIO';
+    }
+
+    shareBtn.addEventListener('click', async () => {
+        if (!navigator.mediaDevices || !navigator.mediaDevices.getDisplayMedia) {
+            alert('This browser can\'t share tab audio to a page. Try Chrome or Edge.');
+            return;
+        }
+        shareBtn.disabled = true;
+        shareBtn.textContent = 'WAITING FOR PICKER…';
+        try {
+            const captured = await navigator.mediaDevices.getDisplayMedia({ video: true, audio: true });
+            captured.getVideoTracks().forEach(t => t.stop());
+            const audioTracks = captured.getAudioTracks();
+            if (!audioTracks.length) {
+                captured.getTracks().forEach(t => t.stop());
+                alert('No audio came through — in the picker, check "Also share tab audio" (or "Share audio") before confirming, then try again.');
+                shareBtn.disabled = false;
+                shareBtn.textContent = '▣ SHARE TAB AUDIO';
+                return;
+            }
+            stream = new MediaStream(audioTracks);
+            stream.getAudioTracks()[0].addEventListener('ended', teardown);
+            graph = buildGraph(stream);
+            liveRow.classList.add('on');
+            engagePanel.classList.add('on');
+            shareBtn.textContent = '▣ SHARING';
+            tick();
+        } catch (e) {
+            shareBtn.disabled = false;
+            shareBtn.textContent = '▣ SHARE TAB AUDIO';
+            if (e && e.name !== 'NotAllowedError') {
+                alert('Could not start capture: ' + (e && e.message ? e.message : e));
+            }
+        }
+    });
+
+    stopBtn.addEventListener('click', teardown);
+
+    engageBtn.addEventListener('click', () => {
+        if (!graph || !ac) return;
+        engaged = !engaged;
+        engageBtn.classList.toggle('on', engaged);
+        const t = ac.currentTime;
+        graph.dryGain.gain.setTargetAtTime(engaged ? 0 : 1, t, .05);
+        graph.wetGain.gain.setTargetAtTime(engaged ? 1 : 0, t, .05);
+        engageBtn.classList.remove('boomed');
+        void engageBtn.offsetWidth;
+        engageBtn.classList.add('boomed');
+    });
+
+    window.addEventListener('beforeunload', teardown);
+})();
+</script>
+</body>
+</html>
