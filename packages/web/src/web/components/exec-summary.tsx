@@ -115,7 +115,9 @@ export function ExecSummaryDoc() {
       <ul className="mt-3 space-y-2">
         <Bullet label="Forensic Stem Extraction &amp; Multi-Track Isolation:">
           The AI automatically picks the audio apart, isolating every individual stem (vocals, drums, bass, keys) and
-          running a deep behavioral scan to identify exactly who played what instrument, when, and where.
+          running a forensic scan on each layer to tell human performance from machine generation. No audio
+          technology can name which individual person played a part &mdash; this measures person versus machine,
+          layer by layer, and discloses exactly that.
         </Bullet>
         <Bullet label="Automated Artifact Removal &amp; Master Restoration:">
           During ingestion, the AI automatically strips out analog hiss, tape noise, clipping, and sonic imperfections,
