@@ -63,9 +63,9 @@ npm-debug.*
 yarn-debug.*
 yarn-error.*
 
-# generated native folders
-ios
-android
+# generated native folders (Expo, under packages/mobile only)
+packages/mobile/ios
+packages/mobile/android
 
 # scripts (local-only provisioning)
 scripts/

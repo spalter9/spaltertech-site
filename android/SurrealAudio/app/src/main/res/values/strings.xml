@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Surreal Audio</string>
+    <string name="capture_notification_channel">Surreal Audio Capture</string>
+    <string name="capture_notification_title">Surreal Audio is running</string>
+    <string name="capture_notification_text">Immersive processing is active</string>
+</resources>

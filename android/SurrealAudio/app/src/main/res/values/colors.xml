@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="chassis">#030309</color>
+    <color name="amber">#FFB638</color>
+    <color name="bone">#E6E3D8</color>
+    <color name="dim">#8D90A0</color>
+    <color name="line">#2B3044</color>
+    <color name="green">#4CD97B</color>
+</resources>
