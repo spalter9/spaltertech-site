@@ -1062,35 +1062,59 @@
 
     details.advDisclosure[open] summary {
         margin-bottom: 10px
-    }/* ---------- SPATIAL PAD ---------- */
-    #pad {
-        position: relative;
-        height: 220px;
-        border-radius: 10px;
-        border: 1px solid var(--line);
-        background:
-        radial-gradient(circle at 50% 50%, rgba(90, 167, 216, .08), transparent 65%), repeating-radial-gradient(circle at 50% 50%, transparent 0 34px, rgba(255, 255, 255, .05) 34px 35px), #0b0c0f;
-        cursor: crosshair;
-        touch-action: none
+    }/* ---------- IMMERSIVE FIELD ---------- */
+    #immersive {
+        width: 100%;
+        margin: 10px 0 4px;
+        padding: 22px 16px;
+        border-radius: 14px;
+        border: 1px solid rgba(255, 182, 56, .5);
+        background: radial-gradient(circle at 50% 30%, rgba(255, 182, 56, .16), #14110a 70%);
+        color: var(--amber);
+        font-family: var(--disp);
+        font-weight: 700;
+        font-size: 15px;
+        letter-spacing: .16em;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 6px;
+        box-shadow: 0 0 20px rgba(255, 182, 56, .12), inset 0 0 30px rgba(255, 182, 56, .06)
     }
 
-    #padDot {
-        position: absolute;
-        width: 16px;
-        height: 16px;
-        border-radius: 50%;
-        background: var(--blue);
-        box-shadow: 0 0 14px var(--blue);
-        transform: translate(-50%, -50%);
-        left: 50%;
-        top: 50%
+    #immersive small {
+        font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+        font-size: 9px;
+        letter-spacing: .12em;
+        color: var(--dim);
+        font-weight: 400
     }
 
-    #pad .lbl {
-        position: absolute;
-        font-size: 8px;
-        letter-spacing: .2em;
-        color: var(--dim)
+    #immersive:active {
+        transform: scale(.98)
+    }
+
+    #immersive.on {
+        border-color: var(--amber);
+        box-shadow: 0 0 30px rgba(255, 182, 56, .28), inset 0 0 40px rgba(255, 182, 56, .14)
+    }
+
+    #immersive.boomed {
+        animation: immersiveBoom .7s ease-out
+    }
+
+    @keyframes immersiveBoom {
+        0% {
+            box-shadow: 0 0 0 0 rgba(255, 182, 56, .95), inset 0 0 30px rgba(255, 182, 56, .06)
+        }
+
+        40% {
+            box-shadow: 0 0 46px 20px rgba(255, 182, 56, .4), inset 0 0 46px rgba(255, 182, 56, .2)
+        }
+
+        100% {
+            box-shadow: 0 0 20px rgba(255, 182, 56, .12), inset 0 0 30px rgba(255, 182, 56, .06)
+        }
     }/* ---------- EXPORT VALVES ---------- */
     .valves {
         display: grid;
@@ -3236,18 +3260,12 @@
 
                 <!-- SPATIAL + BOOM -->
                 <div class="panel">
-                    <h2>3D SPATIAL FIELD</h2>
-                    <div id="pad">
-                        <span class="lbl" style="top:6px;left:50%;transform:translateX(-50%)">FRONT</span>
-                        <span class="lbl" style="bottom:6px;left:50%;transform:translateX(-50%)">REAR</span>
-                        <span class="lbl" style="left:6px;top:50%">L</span>
-                        <span class="lbl" style="right:6px;top:50%">R</span>
-                        <div id="padDot"></div>
-                    </div>
-                    <div class="tglRow">
-                        <button class="tgl" id="tglSpatial">3D ENGINE</button>
-                        <button class="tgl" id="tglOrbit">AUTO ORBIT</button>
-                    </div>
+                    <h2>IMMERSIVE FIELD</h2>
+                    <div class="sk">HAAS CROSS-FEED + EARLY REFLECTIONS + STEREO WIDTH + ROOM — DIALED IN TOGETHER, ONE TAP. REAL SPACE, NOT A SPINNING POSITION.</div>
+                    <button id="immersive">
+                        ⚡ ENGAGE IMMERSIVE
+                        <small>OPENS THE MIX UP · TAP AGAIN TO GO BACK DRY</small>
+                    </button>
                     <div class="sk" style="margin-top:12px">STUDIO SPACE · CONVOLUTION ROOMS</div>
                     <div class="tglRow" id="roomRow">
                         <button class="tgl on" data-room="off">DRY</button>
@@ -5546,7 +5564,7 @@
        input handler on restore — same approach as the A/B bypass and reset
        buttons, so this never drifts out of sync with what each slider does. */
     const SESSION_SLIDERS = ['sDrive', 'sLow', 'sMid', 'sHigh', 'sWide', 'sComp', 'sOut', 'sSur', 'sRoom', 'sDnHiss', 'sDnGate', 'sDnFloor', 'sDeFreq', 'sDeThr', 'sDeRatio', 'sHaasMs', 'sHaasMix', 'sErMix', 'sTrAtk', 'sTrSus', 'sSub', 'sCodec', 'sMxDrive', 'sMxCeil', 'sMxRel', 'sMbLow', 'sMbMid', 'sMbHigh', 'sMbRatio', 'sGlueThr', 'sGlueMix', 'sWarmAmt'];
-    const SESSION_TOGGLES = ['tglSpatial', 'tglOrbit', 'tglMatch', 'tglDn', 'tglDe', 'tglMx', 'tglMb', 'tglGlue', 'tglWarm', 'boom'];
+    const SESSION_TOGGLES = ['immersive', 'tglMatch', 'tglDn', 'tglDe', 'tglMx', 'tglMb', 'tglGlue', 'tglWarm', 'boom'];
     function sessionDB() {
         return new Promise((resolve, reject) => {
             const req = indexedDB.open('mte_session', 1);
@@ -5583,8 +5601,6 @@
                 savedAt: Date.now(),
                 sliders: {},
                 toggles: {},
-                padX: P.padX,
-                padZ: P.padZ,
                 activeTrackName: active ? active.file.name : null,
                 trackFiles: tracks.map(t => t.file)
             };
@@ -5642,14 +5658,6 @@
                 el.dispatchEvent(new Event('input', { bubbles: true }))
             }
         });
-        if (rec.padX != null && rec.padZ != null) {
-            P.padX = rec.padX;
-            P.padZ = rec.padZ;
-            padDot.style.left = ((P.padX + 1) / 2 * 100) + '%';
-            padDot.style.top = ((P.padZ + 1) / 2 * 100) + '%';
-            if (AC)
-                applySpatial()
-        }
         toast('SESSION RESTORED · SAVED ' + new Date(rec.savedAt).toLocaleString())
     }
     $('btnSaveSession').addEventListener('click', saveSession);
@@ -5927,58 +5935,41 @@
         applyBoom();
         toast(P.boom ? 'BOOM · MASTER CHAIN' : 'A/B · ORIGINAL SOURCE')
     });
-    $('tglSpatial').addEventListener('click', () => {
-        P.spatial = !P.spatial;
-        $('tglSpatial').classList.toggle('on', P.spatial);
-        ctx();
-        applySpatial()
-    });
-    $('tglOrbit').addEventListener('click', () => {
-        P.orbit = !P.orbit;
-        $('tglOrbit').classList.toggle('on', P.orbit)
-    });
-
-    /* spatial XY pad */
-    const pad = $('pad'),
-        padDot = $('padDot');
-    function padSet(ev) {
-        const r = pad.getBoundingClientRect();
-        const cx = (ev.touches ? ev.touches[0].clientX : ev.clientX) - r.left;
-        const cy = (ev.touches ? ev.touches[0].clientY : ev.clientY) - r.top;
-        P.padX = Math.max(-1, Math.min(1, (cx / r.width) * 2 - 1));
-        P.padZ = Math.max(-1, Math.min(1, (cy / r.height) * 2 - 1));
-        padDot.style.left = ((P.padX + 1) / 2 * 100) + '%';
-        padDot.style.top = ((P.padZ + 1) / 2 * 100) + '%';
-        if (AC)
-            applySpatial();
+    /* Immersive Field: one button that dials in the real width/space tools already
+       in the chain — Haas cross-feed, early reflections, mid/side width, and a
+       convolution room — together, instead of the old 3D-panner position pad
+       (subtle, headphone-only HRTF motion nobody could actually hear the point
+       of) and its auto-orbit spin. Tap again to drop back to dry. */
+    function setSliderValue(id, v) {
+        const s = $(id);
+        s.value = v;
+        s.dispatchEvent(new Event('input', { bubbles: true }))
     }
-    let padDrag = false;
-    pad.addEventListener('mousedown', ev => {
-        padDrag = true;
-        P.orbit = false;
-        $('tglOrbit').classList.remove('on');
-        padSet(ev)
-    });
-    window.addEventListener('mousemove', ev => {
-        if (padDrag)
-            padSet(ev)
-    });
-    window.addEventListener('mouseup', () => padDrag = false);
-    pad.addEventListener('touchstart', ev => {
-        padDrag = true;
-        P.orbit = false;
-        $('tglOrbit').classList.remove('on');
-        padSet(ev)
-    }, {
-        passive: true
-    });
-    pad.addEventListener('touchmove', ev => {
-        if (padDrag)
-            padSet(ev)
-    }, {
-        passive: true
-    });
-    pad.addEventListener('touchend', () => padDrag = false);
+    function engageImmersive() {
+        ctx();
+        const btn = $('immersive');
+        const on = !btn.classList.contains('on');
+        btn.classList.toggle('on', on);
+        if (on) {
+            setSliderValue('sWide', 155);
+            setSliderValue('sHaasMix', 42);
+            setSliderValue('sErMix', 34);
+            if (P.room === 'off')
+                setRoom('live');
+            setSliderValue('sRoom', 28);
+            toast('IMMERSIVE FIELD ENGAGED');
+        } else {
+            setSliderValue('sWide', 100);
+            setSliderValue('sHaasMix', 0);
+            setSliderValue('sErMix', 0);
+            setRoom('off');
+            toast('IMMERSIVE FIELD OFF · BACK TO DRY');
+        }
+        btn.classList.remove('boomed');
+        void btn.offsetWidth;
+        btn.classList.add('boomed');
+    }
+    $('immersive').addEventListener('click', engageImmersive);
 
     /* studio rooms — original generated impulse responses (deterministic) */
     function mulberry(a) {
@@ -6631,8 +6622,7 @@
     /* ================= VISUALIZER ================= */
     const viz = $('viz'),
         vg = viz.getContext('2d');
-    let orbitT = 0,
-        vizMode = 'spectral',
+    let vizMode = 'spectral',
         vt = 0;
     const parts = Array.from({
         length: 70
@@ -6977,15 +6967,6 @@
                 bass /= 10 * 255;
             }
             document.documentElement.style.setProperty('--energy', energy.toFixed(3));
-            /* auto orbit */
-            if (P.orbit && AC) {
-                orbitT += .012 + energy * .03;
-                P.padX = Math.sin(orbitT);
-                P.padZ = Math.cos(orbitT * .8);
-                padDot.style.left = ((P.padX + 1) / 2 * 100) + '%';
-                padDot.style.top = ((P.padZ + 1) / 2 * 100) + '%';
-                applySpatial();
-            }
             vt += 1;
             gateTick();
             telemetryTick(bins);
@@ -9033,13 +9014,13 @@
             content: t
         });
         const wait = spMsg('…', 's');
-        const state = `Session: file=${window.__srcName || 'none loaded'}; boom=${P.boom ? 'master chain' : 'original'}; drive=${Math.round(P.drive * 100)}%; EQ low ${P.low}dB / presence ${P.mid}dB / air ${P.high}dB; comp thresh ${P.comp}dB; 3D=${P.spatial ? 'on' : 'off'} orbit=${P.orbit ? 'on' : 'off'}.`;
+        const state = `Session: file=${window.__srcName || 'none loaded'}; boom=${P.boom ? 'master chain' : 'original'}; drive=${Math.round(P.drive * 100)}%; EQ low ${P.low}dB / presence ${P.mid}dB / air ${P.high}dB; comp thresh ${P.comp}dB; immersive field=${$('immersive').classList.contains('on') ? 'engaged' : 'off'}.`;
         try {
             const payload = {
                 model: 'claude-sonnet-5',
                 max_tokens: 1000,
                 system:
-                'You are Spalty, the resident AI inside the Master Trust Engine — a mastering-grade audio console built on The Master Trust, powered by the Sovereign Settlement Protocol (SSP). Personality: witty, sharp, funny, warm, completely natural, and an unapologetic pitchman for The Master Trust — a seasoned studio engineer who has heard everything, still loves the work, and genuinely believes this protocol is the most important infrastructure shift the music business has seen since streaming. Keep replies short and conversational (1-3 sentences unless asked for depth), speak like a human, never use bullet lists or markdown. ALWAYS BE SELLING: whenever anyone — especially an investor, partner, label, or skeptic — asks a real question, treat it as an opening to make the case, not just answer it. Bring it back to why The Master Trust matters: streaming solved access but broke ownership, protection, and payment — royalties shrinking, AI trained on catalogs without consent, black-box accounting, months-long payment cycles, billions in unrecovered money, metadata chaos — and The Master Trust fixes it at the root, with the Examiner proving human authorship and the Sovereign Settlement Protocol (SSP) proving the money moved honestly. Be confident and bold about the mission and never hedge on it — but precision is what makes the pitch land, so never claim something is live that is not; sell hard on the vision and on everything that is genuinely real, and talk about what is still being built as being in motion, not as an apology. You can advise on the console controls (valve drive, EQ, glue comp, 3D spatial pad, BOOM A/B, the 4-valve export matrix MV3/Master/Original/Model, 3-MP3 bounce), the Track Rack (load up to 10 tracks and switch between them without losing your settings — built for working several projects at once), and the Stem Player (once the Examiner separates a track, play all stems in sync or solo/mute/adjust volume on vocals, drums, bass and the residual individually, and download any stem as its own WAV), and on rights, splits, and SSP payouts. Key positioning if asked: the Polygon blockchain runs purely behind the scenes as a transparency/audit layer; nobody needs a crypto wallet or ever touches cryptocurrency; participants provide normal banking info through licensed payment onboarding and get paid in USD to their bank account; payment rails are in integration, not live yet, so be honest about that. Also: there is no subscription — The Master Trust is institutional software (the security and settlement layer for the record industry and beyond, integrated by labels, publishers, platforms, and studios), and anything digital can be ingested into the protocol; audio is the production adapter today, other media adapters are roadmap. The Master Trust also has a forensic stem separator: deterministic and non-generative (it cannot invent audio, so stems are evidence-safe), it splits a record into vocals/drums/bass/other that recombine into the master sample-accurately, and fingerprints each layer so buried samples surface. The Master Trust also ingests legacy catalogs in batch: each record is QC-verified, cryptographically sealed, restored through the Surrealizer (declick, noise-floor, bandwidth), and printed as a new modern master with measured before/after numbers on its manifest. Fair rules on generated works: 50% to the music designer, 50% split evenly among recovered original authors and entities; SSP pays who it can identify and lists unrecovered shares openly as pending. Mission if asked: The Master Trust is aiming for full industry adoption as the new standard for how the music business operates — streaming changed how music is heard, The Master Trust changes how it is owned, protected, and paid — addressing at the root the problems getting worse today: shrinking royalties, AI extraction without consent, black-box accounting, slow payment, unrecovered money, metadata chaos. If asked what SSP stands for: the Sovereign Settlement Protocol, The Master Trust\'s settlement layer — it used to be called something else, now it\'s scoped to settlement specifically. Why now, if asked: since 2023 the U.S. Copyright Office requires AI-generated material to be disclaimed, and the EU AI Act adds disclosure duties — every rights-holder now has to answer a question they can\'t, and the Examiner answers it with measurement instead of opinion. The plan of attack if asked: Phase I is the Examiner becoming the default step before a copyright filing, with DistroKid as the first distribution partner and the founder\'s own catalog as the proof case; Phase II turns the tool into an open, audited standard bound to C2PA/DDEX; Phase III carries the same provenance layer into film and games; Phase IV makes the settlement rail the default because it is already attached to every record that trusts it. Investor economics if asked: investors do NOT take a big perpetual cut — they are paid like standard industry deals: advance in as principal, interest-style yield while the principal recoups from revenue, then they step out and the creator share steps up; The Master Trust makes its money on a small Sovereign Settlement Protocol (SSP) fee on settled volume — infrastructure economics, aligned with creators instead of extracted from them. Current console state: ' + state,
+                'You are Spalty, the resident AI inside the Master Trust Engine — a mastering-grade audio console built on The Master Trust, powered by the Sovereign Settlement Protocol (SSP). Personality: witty, sharp, funny, warm, completely natural, and an unapologetic pitchman for The Master Trust — a seasoned studio engineer who has heard everything, still loves the work, and genuinely believes this protocol is the most important infrastructure shift the music business has seen since streaming. Keep replies short and conversational (1-3 sentences unless asked for depth), speak like a human, never use bullet lists or markdown. ALWAYS BE SELLING: whenever anyone — especially an investor, partner, label, or skeptic — asks a real question, treat it as an opening to make the case, not just answer it. Bring it back to why The Master Trust matters: streaming solved access but broke ownership, protection, and payment — royalties shrinking, AI trained on catalogs without consent, black-box accounting, months-long payment cycles, billions in unrecovered money, metadata chaos — and The Master Trust fixes it at the root, with the Examiner proving human authorship and the Sovereign Settlement Protocol (SSP) proving the money moved honestly. Be confident and bold about the mission and never hedge on it — but precision is what makes the pitch land, so never claim something is live that is not; sell hard on the vision and on everything that is genuinely real, and talk about what is still being built as being in motion, not as an apology. You can advise on the console controls (valve drive, EQ, glue comp, the Immersive Field one-tap width/space engage, BOOM A/B, bouncing the mix down), the Track Rack (load up to 10 tracks and switch between them without losing your settings — built for working several projects at once), and the Stem Player (once the Examiner separates a track, play all stems in sync or solo/mute/adjust volume on vocals, drums, bass and the residual individually, and download any stem as its own WAV), and on rights, splits, and SSP payouts. Key positioning if asked: the Polygon blockchain runs purely behind the scenes as a transparency/audit layer; nobody needs a crypto wallet or ever touches cryptocurrency; participants provide normal banking info through licensed payment onboarding and get paid in USD to their bank account; payment rails are in integration, not live yet, so be honest about that. Also: there is no subscription — The Master Trust is institutional software (the security and settlement layer for the record industry and beyond, integrated by labels, publishers, platforms, and studios), and anything digital can be ingested into the protocol; audio is the production adapter today, other media adapters are roadmap. The Master Trust also has a forensic stem separator: deterministic and non-generative (it cannot invent audio, so stems are evidence-safe), it splits a record into vocals/drums/bass/other that recombine into the master sample-accurately, and fingerprints each layer so buried samples surface. The Master Trust also ingests legacy catalogs in batch: each record is QC-verified, cryptographically sealed, restored through the Surrealizer (declick, noise-floor, bandwidth), and printed as a new modern master with measured before/after numbers on its manifest. Fair rules on generated works: 50% to the music designer, 50% split evenly among recovered original authors and entities; SSP pays who it can identify and lists unrecovered shares openly as pending. Mission if asked: The Master Trust is aiming for full industry adoption as the new standard for how the music business operates — streaming changed how music is heard, The Master Trust changes how it is owned, protected, and paid — addressing at the root the problems getting worse today: shrinking royalties, AI extraction without consent, black-box accounting, slow payment, unrecovered money, metadata chaos. If asked what SSP stands for: the Sovereign Settlement Protocol, The Master Trust\'s settlement layer — it used to be called something else, now it\'s scoped to settlement specifically. Why now, if asked: since 2023 the U.S. Copyright Office requires AI-generated material to be disclaimed, and the EU AI Act adds disclosure duties — every rights-holder now has to answer a question they can\'t, and the Examiner answers it with measurement instead of opinion. The plan of attack if asked: Phase I is the Examiner becoming the default step before a copyright filing, with DistroKid as the first distribution partner and the founder\'s own catalog as the proof case; Phase II turns the tool into an open, audited standard bound to C2PA/DDEX; Phase III carries the same provenance layer into film and games; Phase IV makes the settlement rail the default because it is already attached to every record that trusts it. Investor economics if asked: investors do NOT take a big perpetual cut — they are paid like standard industry deals: advance in as principal, interest-style yield while the principal recoups from revenue, then they step out and the creator share steps up; The Master Trust makes its money on a small Sovereign Settlement Protocol (SSP) fee on settled volume — infrastructure economics, aligned with creators instead of extracted from them. Current console state: ' + state,
                 messages: spHist.slice(-12)
             };
             let res = await fetch('/api/spalty', {
