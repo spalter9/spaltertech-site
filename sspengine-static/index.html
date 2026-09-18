@@ -3574,42 +3574,46 @@
                 </div>
             </div>
 
-            <!-- EXPORT MATRIX -->
+            <!-- EXPORT -->
             <div class="panel">
-                <h2>4-VALVE EXPORT MATRIX · FLOAT32 WAV</h2>
-                <div class="valves">
-                    <button class="valve" data-v="mv3">
-                        <div class="tube"></div>
-                        <span class="nm">MV3</span>
-                        <span class="fn">VALVE-FORWARD PRINT</span>
-                    </button>
-                    <button class="valve" data-v="master">
-                        <div class="tube"></div>
-                        <span class="nm">MASTER</span>
-                        <span class="fn">CURRENT CHAIN</span>
-                    </button>
-                    <button class="valve" data-v="original">
-                        <div class="tube"></div>
-                        <span class="nm">ORIGINAL</span>
-                        <span class="fn">UNTOUCHED SOURCE</span>
-                    </button>
-                    <button class="valve" data-v="model">
-                        <div class="tube"></div>
-                        <span class="nm">MODEL</span>
-                        <span class="fn">WIDE FIELD PRINT</span>
-                    </button>
-                </div>
+                <h2>BOUNCE YOUR MIX</h2>
+                <button class="valve" data-v="master" style="width:100%;flex-direction:row;justify-content:center;gap:16px;padding:20px">
+                    <div class="tube"></div>
+                    <span class="nm" style="font-size:15px">⬇ BOUNCE MASTER</span>
+                    <span class="fn">YOUR CURRENT MIX · SAVES AUTOMATICALLY</span>
+                </button>
                 <div id="xpStatus"></div>
-                <button id="mp3Bounce">◉ 3-MP3 BOUNCE · ORIGINAL + SSP MASTER + MONO</button>
+                <button id="mp3Bounce">◉ ALSO WANT THE ORIGINAL + A MONO CHECK? · 3-FILE BOUNCE</button>
                 <div id="bounceProgress">
                     <div id="bounceBarTrack">
                         <div id="bounceBarFill"></div>
                     </div>
                     <div id="bounceStatus"></div>
                 </div>
-                <button id="srvPrint" style="width:100%;margin-top:10px;border:1px solid var(--green);border-radius:8px;padding:13px;font-family:var(--disp);font-size:11px;letter-spacing:.22em;color:var(--green);background:#101114">▲ SERVER PRINT · SURREAL + LINEAR-PHASE CHAIN</button>
+                <details class="advDisclosure">
+                    <summary>MORE EXPORT OPTIONS · FOR ENGINEERS</summary>
+                    <div class="sk" style="margin-bottom:10px">4-VALVE EXPORT MATRIX · FLOAT32 WAV</div>
+                    <div class="valves">
+                        <button class="valve" data-v="mv3">
+                            <div class="tube"></div>
+                            <span class="nm">MV3</span>
+                            <span class="fn">VALVE-FORWARD PRINT</span>
+                        </button>
+                        <button class="valve" data-v="original">
+                            <div class="tube"></div>
+                            <span class="nm">ORIGINAL</span>
+                            <span class="fn">UNTOUCHED SOURCE</span>
+                        </button>
+                        <button class="valve" data-v="model">
+                            <div class="tube"></div>
+                            <span class="nm">MODEL</span>
+                            <span class="fn">WIDE FIELD PRINT</span>
+                        </button>
+                    </div>
+                    <button id="srvPrint" style="width:100%;margin-top:10px;border:1px solid var(--green);border-radius:8px;padding:13px;font-family:var(--disp);font-size:11px;letter-spacing:.22em;color:var(--green);background:#101114">▲ SERVER PRINT · SURREAL + LINEAR-PHASE CHAIN</button>
+                </details>
                 <div id="ledger">
-                    <span class="sk">FORENSIC LEDGER · SHA-256 PER RENDER</span>
+                    <span class="sk">FORENSIC LEDGER · SHA-256 PER RENDER · YOUR BACKUP COPY OF EVERY FILE</span>
                 </div>
             </div>
 
@@ -7639,14 +7643,17 @@
             rb = null;
             const hash = await sha256(ab);
             const name = (window.__srcName || 'sspengine') + '_' + v.toUpperCase() + '_f32.wav';
-            ledgerSave(new Date().toLocaleTimeString() + ' · ' + v.toUpperCase() + ' · FLOAT32 WAV', hash, new Blob([ab], {
-                type: 'audio/wav'
-            }), name);
+            const outBlob = new Blob([ab], { type: 'audio/wav' });
+            ledgerSave(new Date().toLocaleTimeString() + ' · ' + v.toUpperCase() + ' · FLOAT32 WAV', hash, outBlob, name);
             flashLedgerRow();
             ab = null;
-            xpStatus('✓ ' + v.toUpperCase() + ' READY — TAP SAVE IN THE LEDGER', 'done');
-            $('ledger').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-            toast(v.toUpperCase() + ' PRINTED — TAP SAVE IN THE LEDGER');
+            xpStatus('✓ ' + v.toUpperCase() + ' SAVED', 'done');
+            toast(v.toUpperCase() + ' SAVED TO YOUR DEVICE');
+            /* Deliver immediately — the same save-picker/share-sheet/download flow the
+               ledger's own SAVE button already triggers, just without waiting for a
+               second tap. The ledger row stays underneath as the forensic record and
+               a manual re-download if this one gets dismissed or blocked. */
+            await deliver(outBlob, name);
         } catch (e) {
             xpStatus('✕ RENDER FAILED — TRACK MAY BE TOO LONG FOR THIS DEVICE', 'error');
             toast('RENDER FAILED — TRACK MAY BE TOO LONG FOR THIS DEVICE')
@@ -7758,16 +7765,17 @@
                 }
                 rb = null;
                 const hash = await sha256(await blob.arrayBuffer());
-                ledgerSave(new Date().toLocaleTimeString() + ' · ' + label + ' · BOUNCE' + ext.toUpperCase(), hash, blob, (window.__srcName || 'sspengine') + '_' + label + ext);
+                const outName = (window.__srcName || 'sspengine') + '_' + label + ext;
+                ledgerSave(new Date().toLocaleTimeString() + ' · ' + label + ' · BOUNCE' + ext.toUpperCase(), hash, blob, outName);
                 flashLedgerRow();
-                blob = null;
                 step++;
-                bounceStep(step + ' OF ' + bounceSet.length + ' FILES READY', (step / bounceSet.length) * 100);
+                bounceStep(step + ' OF ' + bounceSet.length + ' SAVED', (step / bounceSet.length) * 100);
+                await deliver(blob, outName);
+                blob = null;
                 await new Promise(r => setTimeout(r, 600))
             }
-            bounceStep('✓ ALL 3 FILES READY — TAP ⬇ SAVE BELOW FOR EACH ONE', 100, true);
-            $('ledger').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-            toast('3-BOUNCE COMPLETE · ORIGINAL + SSP MASTER + MONO — TAP SAVE ON EACH IN THE LEDGER');
+            bounceStep('✓ ALL 3 FILES SAVED', 100, true);
+            toast('3-BOUNCE COMPLETE · ORIGINAL + SSP MASTER + MONO — ALL SAVED');
         } catch (e) {
             bounceStep('✕ BOUNCE FAILED — TRACK MAY BE TOO LONG FOR THIS DEVICE', bouncePct);
             toast('BOUNCE FAILED — TRACK MAY BE TOO LONG FOR THIS DEVICE')
