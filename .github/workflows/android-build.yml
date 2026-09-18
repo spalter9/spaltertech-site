@@ -30,13 +30,18 @@ jobs:
           java-version: '17'
           cache: gradle
 
-      - name: Set up Android SDK
-        uses: android-actions/setup-android@v3
-
-      - name: Install required SDK components
+      - name: Install required Android SDK components
+        # ubuntu-latest runners ship with an Android SDK pre-installed
+        # (ANDROID_HOME already set) — no setup action needed. The
+        # android-actions/setup-android action was tried here first and
+        # failed: it tries to install a legacy 'tools' package Google
+        # removed from the SDK repository years ago, and crashes before
+        # reaching any of the actual build steps.
         run: |
-          yes | sdkmanager --licenses || true
-          sdkmanager "platform-tools" "platforms;android-35" "build-tools;35.0.0"
+          SDKMANAGER=$(find "$ANDROID_HOME/cmdline-tools" -maxdepth 2 -name sdkmanager -type f | sort -V | tail -1)
+          echo "Using sdkmanager: $SDKMANAGER"
+          yes | "$SDKMANAGER" --licenses > /dev/null || true
+          "$SDKMANAGER" "platform-tools" "platforms;android-35" "build-tools;35.0.0"
 
       - name: Grant execute permission for gradlew
         run: chmod +x gradlew
