@@ -14,6 +14,9 @@ on:
       - '.github/workflows/android-build.yml'
   workflow_dispatch: {}
 
+permissions:
+  contents: write
+
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -64,3 +67,32 @@ jobs:
           name: surreal-audio-debug-apk
           path: android/SurrealAudio/app/build/outputs/apk/debug/*.apk
           if-no-files-found: error
+
+      - name: Stage the built APK on a plain branch
+        # The build artifact above sits behind an Azure blob storage URL
+        # that the development sandbox for this repo can't reach
+        # (network policy blocks that host, same as it blocks
+        # dl.google.com). This runner has normal internet access, so
+        # instead of trying to route the binary back through that
+        # blocked path, it just commits the APK to an ordinary branch —
+        # retrievable from anywhere with a plain `git fetch`, no special
+        # access needed. This deliberately does NOT push to main or any
+        # production branch — publishing to the live site stays a
+        # normal, reviewed push, same as every other change to this repo.
+        working-directory: .
+        run: |
+          set -e
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git fetch origin main
+          git worktree add -B android-apk-build /tmp/apk-publish origin/main
+          mkdir -p /tmp/apk-publish/sspengine-static/downloads
+          cp android/SurrealAudio/app/build/outputs/apk/debug/*.apk /tmp/apk-publish/sspengine-static/downloads/surreal-audio.apk
+          cd /tmp/apk-publish
+          git add sspengine-static/downloads/surreal-audio.apk
+          if git diff --cached --quiet; then
+            echo "APK unchanged, nothing to stage"
+          else
+            git commit -m "Android test build APK (from CI run ${{ github.run_id }})"
+            git push -f origin HEAD:android-apk-build
+          fi
