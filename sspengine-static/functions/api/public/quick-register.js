@@ -36,5 +36,5 @@ export async function onRequestPost({ request, env }) {
     .bind(trackId, writer.id, cleanTitle, 'Submitted via QR quick-register', 'submitted')
     .run();
 
-  return json({ ok: true });
+  return json({ ok: true, trackId, title: cleanTitle });
 }

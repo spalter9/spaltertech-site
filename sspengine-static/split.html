@@ -3,8 +3,8 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Register Your Song — Spalter Rights Registry</title>
-<meta name="description" content="Scan, fill in three things, and your song is submitted for registration.">
+<title>Add Your Split — Spalter Rights Registry</title>
+<meta name="description" content="Add your percentage to a song's split sheet — one step.">
 <link rel="manifest" href="registry/manifest.json">
 <link rel="icon" href="registry/media/icon-192.png">
 <link rel="apple-touch-icon" href="registry/media/icon-180.png">
@@ -58,8 +58,14 @@
         padding: 26px 22px;
         box-shadow: var(--shadow);
     }
-    h1.title { font-size: 26px; text-align: center; margin-bottom: 8px; text-wrap: balance; }
-    .sub { text-align: center; color: var(--ink-dim); font-size: 13.5px; margin-bottom: 24px; }
+    h1.title { font-size: 24px; text-align: center; margin-bottom: 8px; text-wrap: balance; }
+    .songContext {
+        text-align: center;
+        font-size: 13.5px;
+        color: var(--ink-dim);
+        margin-bottom: 24px;
+    }
+    .songContext b { color: var(--ink); }
 
     label {
         display: block;
@@ -71,7 +77,7 @@
         margin: 16px 0 6px;
     }
     label:first-of-type { margin-top: 0; }
-    input {
+    input, select {
         width: 100%;
         padding: 13px 14px;
         border: 1px solid var(--rule);
@@ -81,9 +87,30 @@
         font-size: 16px;
         color: var(--ink);
     }
-    input:focus { outline: 2px solid var(--accent-2); outline-offset: 1px; }
+    input:focus, select:focus { outline: 2px solid var(--accent-2); outline-offset: 1px; }
+    .pctRow { display: flex; align-items: center; gap: 8px; }
+    .pctRow input { text-align: center; }
+    .pctRow span { font-size: 20px; color: var(--ink-dim); font-weight: 600; }
+    .roleRow { display: flex; gap: 8px; }
+    .roleRow button {
+        flex: 1;
+        padding: 11px;
+        border: 1px solid var(--rule);
+        border-radius: 10px;
+        background: #fff;
+        color: var(--ink-dim);
+        font: inherit;
+        font-weight: 600;
+        font-size: 13px;
+        cursor: pointer;
+    }
+    .roleRow button.on {
+        background: var(--accent);
+        border-color: var(--accent);
+        color: #fff8ee;
+    }
 
-    button {
+    button.submit {
         width: 100%;
         margin-top: 22px;
         padding: 15px;
@@ -97,8 +124,8 @@
         letter-spacing: .01em;
         cursor: pointer;
     }
-    button:active { transform: scale(.98); }
-    button:disabled { opacity: .5; cursor: default; }
+    button.submit:active { transform: scale(.98); }
+    button.submit:disabled { opacity: .5; cursor: default; }
 
     .err { color: var(--danger); font-size: 13px; margin-top: 12px; text-align: center; }
 
@@ -112,48 +139,10 @@
         margin: 0 auto 16px;
     }
     .successCard h2 { font-size: 22px; margin-bottom: 8px; }
-    .successCard p { color: var(--ink-dim); font-size: 14px; margin: 0 0 18px; }
-    .successCard button.ghost {
-        background: transparent;
-        color: var(--accent);
-        border: 1px solid var(--rule);
-    }
+    .successCard p { color: var(--ink-dim); font-size: 14px; margin: 0; }
 
-    .shareBlock {
-        background: var(--paper-2);
-        border: 1px solid var(--rule);
-        border-radius: 12px;
-        padding: 16px;
-        margin-bottom: 18px;
-        text-align: left;
-    }
-    .shareLabel {
-        font-size: 10.5px;
-        font-weight: 600;
-        letter-spacing: .05em;
-        text-transform: uppercase;
-        color: var(--ink-dim);
-        margin-bottom: 10px;
-    }
-    .shareLinkRow { display: flex; gap: 8px; }
-    .shareLinkRow input {
-        flex: 1;
-        min-width: 0;
-        padding: 10px 12px;
-        border: 1px solid var(--rule);
-        border-radius: 8px;
-        background: #fff;
-        font: inherit;
-        font-size: 12.5px;
-        color: var(--ink-dim);
-    }
-    .shareLinkRow button {
-        width: auto;
-        margin-top: 0;
-        padding: 10px 16px;
-        font-size: 13px;
-        flex: none;
-    }
+    .loadingNote, .notFound { text-align: center; color: var(--ink-dim); font-size: 14px; padding: 20px 0; }
+    .notFound b { color: var(--ink); }
 
     footer { text-align: center; margin-top: 18px; }
     footer a { color: var(--ink-dim); font-size: 12px; text-decoration: none; border-bottom: 1px dotted var(--rule); }
@@ -163,39 +152,46 @@
 <main>
     <div class="brand"><div class="seal"></div><span>SPALTER RIGHTS REGISTRY</span></div>
 
-    <div class="card" id="formCard">
-        <h1 class="title">Register your song</h1>
-        <p class="sub">Three things, one tap. That's it.</p>
+    <div class="card" id="loadingCard">
+        <div class="loadingNote">Loading song…</div>
+    </div>
 
-        <form id="regForm">
+    <div class="card" id="notFoundCard" style="display:none">
+        <div class="notFound">This link isn't pointing at a song we know about. Double-check the link, or ask whoever sent it to you.</div>
+    </div>
+
+    <div class="card" id="formCard" style="display:none">
+        <h1 class="title">Add your split</h1>
+        <p class="songContext">For <b id="songTitle"></b><span id="songBy"></span></p>
+
+        <form id="splitForm">
             <label for="fName">Your name</label>
             <input id="fName" type="text" autocomplete="name" required>
 
             <label for="fEmail">Your email</label>
             <input id="fEmail" type="email" autocomplete="email" required>
 
-            <label for="fTitle">Song title</label>
-            <input id="fTitle" type="text" autocomplete="off" required>
+            <label>Your role</label>
+            <div class="roleRow">
+                <button type="button" class="roleBtn on" data-role="writer">Writer</button>
+                <button type="button" class="roleBtn" data-role="publisher">Publisher</button>
+            </div>
 
-            <button type="submit" id="submitBtn">Register My Song</button>
+            <label for="fPct">Your percentage</label>
+            <div class="pctRow">
+                <input id="fPct" type="number" inputmode="decimal" min="0.01" max="100" step="0.01" required>
+                <span>%</span>
+            </div>
+
+            <button type="submit" class="submit" id="submitBtn">Submit My Split</button>
             <div class="err" id="errMsg" style="display:none"></div>
         </form>
     </div>
 
     <div class="card successCard" id="successCard" style="display:none">
         <div class="checkmark">✓</div>
-        <h2>You're registered</h2>
+        <h2>Split submitted</h2>
         <p id="successText"></p>
-
-        <div class="shareBlock">
-            <div class="shareLabel">Have collaborators? Send them this to add their split:</div>
-            <div class="shareLinkRow">
-                <input id="shareLink" type="text" readonly>
-                <button type="button" id="shareBtn">Share</button>
-            </div>
-        </div>
-
-        <button class="ghost" id="againBtn">Register Another Song</button>
     </div>
 
     <footer><a href="registry/">Spalter Rights Registry &rarr;</a></footer>
@@ -204,29 +200,57 @@
 <script>
 (function () {
     const $ = id => document.getElementById(id);
-    const form = $('regForm'), formCard = $('formCard'), successCard = $('successCard'),
-        successText = $('successText'), errMsg = $('errMsg'), submitBtn = $('submitBtn'),
-        shareLink = $('shareLink'), shareBtn = $('shareBtn');
+    const trackId = new URLSearchParams(location.search).get('track');
+    const loadingCard = $('loadingCard'), notFoundCard = $('notFoundCard'), formCard = $('formCard'),
+        successCard = $('successCard'), successText = $('successText'), errMsg = $('errMsg'),
+        submitBtn = $('submitBtn'), form = $('splitForm');
+    let role = 'writer';
+
+    document.querySelectorAll('.roleBtn').forEach(btn => {
+        btn.addEventListener('click', () => {
+            role = btn.dataset.role;
+            document.querySelectorAll('.roleBtn').forEach(b => b.classList.toggle('on', b === btn));
+        });
+    });
+
+    async function init() {
+        if (!trackId) {
+            loadingCard.style.display = 'none';
+            notFoundCard.style.display = 'block';
+            return;
+        }
+        try {
+            const res = await fetch('/api/public/track-info?id=' + encodeURIComponent(trackId));
+            const data = await res.json().catch(() => ({}));
+            if (!res.ok) throw new Error(data.error || 'Not found.');
+            $('songTitle').textContent = data.title;
+            $('songBy').textContent = data.registeredBy ? ` — registered by ${data.registeredBy}` : '';
+            loadingCard.style.display = 'none';
+            formCard.style.display = 'block';
+        } catch (e) {
+            loadingCard.style.display = 'none';
+            notFoundCard.style.display = 'block';
+        }
+    }
 
     form.addEventListener('submit', async e => {
         e.preventDefault();
         errMsg.style.display = 'none';
         submitBtn.disabled = true;
-        submitBtn.textContent = 'REGISTERING…';
+        submitBtn.textContent = 'SUBMITTING…';
 
-        const name = $('fName').value.trim(), email = $('fEmail').value.trim(), title = $('fTitle').value.trim();
+        const name = $('fName').value.trim(), email = $('fEmail').value.trim(), percentage = $('fPct').value;
 
         try {
-            const res = await fetch('/api/public/quick-register', {
+            const res = await fetch('/api/public/quick-split', {
                 method: 'POST',
                 headers: { 'content-type': 'application/json' },
-                body: JSON.stringify({ name, email, title }),
+                body: JSON.stringify({ trackId, name, email, percentage, role }),
             });
             const data = await res.json().catch(() => ({}));
             if (!res.ok) throw new Error(data.error || 'Something went wrong — try again.');
 
-            successText.textContent = `"${title}" is submitted and in review. We'll be in touch at ${email}.`;
-            shareLink.value = `${location.origin}/split.html?track=${encodeURIComponent(data.trackId)}`;
+            successText.textContent = `Your ${percentage}% split on "${$('songTitle').textContent}" is in for review.`;
             formCard.style.display = 'none';
             successCard.style.display = 'block';
         } catch (err) {
@@ -234,36 +258,11 @@
             errMsg.style.display = 'block';
         } finally {
             submitBtn.disabled = false;
-            submitBtn.textContent = 'Register My Song';
+            submitBtn.textContent = 'Submit My Split';
         }
     });
 
-    $('againBtn').addEventListener('click', () => {
-        form.reset();
-        successCard.style.display = 'none';
-        formCard.style.display = 'block';
-        $('fName').focus();
-    });
-
-    shareBtn.addEventListener('click', async () => {
-        if (navigator.share) {
-            try {
-                await navigator.share({ title: 'Add your split', url: shareLink.value });
-                return;
-            } catch (e) { /* user cancelled or share failed — fall through to copy */ }
-        }
-        try {
-            await navigator.clipboard.writeText(shareLink.value);
-            shareBtn.textContent = 'Copied!';
-            setTimeout(() => { shareBtn.textContent = 'Share'; }, 1800);
-        } catch (e) {
-            shareLink.select();
-        }
-    });
-
-    if ('serviceWorker' in navigator) {
-        navigator.serviceWorker.register('registry/sw.js').catch(() => {});
-    }
+    init();
 })();
 </script>
 </body>
