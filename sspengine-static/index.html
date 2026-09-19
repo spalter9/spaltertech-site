@@ -1095,15 +1095,33 @@
     }
 
     #immersive.on {
-        border-color: var(--amber);
-        box-shadow: 0 0 30px rgba(255, 182, 56, .28), inset 0 0 40px rgba(255, 182, 56, .14)
+        border-color: rgba(58, 232, 164, .6);
+        background: radial-gradient(circle at 50% 30%, rgba(58, 232, 164, .22), #071a12 70%);
+        color: var(--green);
+        box-shadow: 0 0 30px rgba(58, 232, 164, .32), inset 0 0 40px rgba(58, 232, 164, .16)
     }
 
     #immersive.boomed {
-        animation: immersiveBoom .7s ease-out
+        animation: immersiveBoomOff .7s ease-out
     }
 
-    @keyframes immersiveBoom {
+    #immersive.on.boomed {
+        animation: immersiveBoomOn .7s ease-out
+    }
+
+    @keyframes immersiveBoomOn {
+        0% {
+            box-shadow: 0 0 0 0 rgba(58, 232, 164, .95), inset 0 0 30px rgba(58, 232, 164, .08)
+        }
+        40% {
+            box-shadow: 0 0 50px 22px rgba(58, 232, 164, .45), inset 0 0 50px rgba(58, 232, 164, .24)
+        }
+        100% {
+            box-shadow: 0 0 30px rgba(58, 232, 164, .32), inset 0 0 40px rgba(58, 232, 164, .16)
+        }
+    }
+
+    @keyframes immersiveBoomOff {
         0% {
             box-shadow: 0 0 0 0 rgba(255, 182, 56, .95), inset 0 0 30px rgba(255, 182, 56, .06)
         }
@@ -3243,7 +3261,7 @@
                             <span>STEREO WIDTH · M/S · BASS-SAFE BELOW 150 Hz</span>
                             <b id="vWide">100%</b>
                         </div>
-                        <input type="range" id="sWide" min="0" max="200" value="100">
+                        <input type="range" id="sWide" min="0" max="250" value="100">
                     </div>
                     <div class="ctl">
                         <div class="row">
@@ -3273,8 +3291,8 @@
                     <h2>IMMERSIVE FIELD</h2>
                     <div class="sk">HAAS CROSS-FEED + EARLY REFLECTIONS + BASS-SAFE STEREO WIDTH + ROOM — DIALED IN TOGETHER, ONE TAP. THE LOW END BELOW 150 Hz NEVER WIDENS — ONLY THE HIGHS OPEN UP, SO BASS STAYS CENTERED AND MONO-SAFE NO MATTER HOW WIDE IT GETS.</div>
                     <button id="immersive">
-                        ⚡ ENGAGE IMMERSIVE
-                        <small>OPENS THE MIX UP · TAP AGAIN TO GO BACK DRY</small>
+                        <span id="immersiveLabel">⚡ ENGAGE IMMERSIVE</span>
+                        <small id="immersiveSub">OPENS THE MIX UP · ONE TAP</small>
                     </button>
                     <div class="sk" style="margin-top:12px">STUDIO SPACE · CONVOLUTION ROOMS</div>
                     <div class="tglRow" id="roomRow">
@@ -3371,14 +3389,14 @@
                                 <span>CROSS-FEED AMOUNT</span>
                                 <b id="vHaasMix">0%</b>
                             </div>
-                            <input type="range" id="sHaasMix" min="0" max="60" value="0">
+                            <input type="range" id="sHaasMix" min="0" max="70" value="0">
                         </div>
                         <div class="ctl">
                             <div class="row">
                                 <span>EARLY REFLECTIONS MIX</span>
                                 <b id="vErMix">0%</b>
                             </div>
-                            <input type="range" id="sErMix" min="0" max="50" value="0">
+                            <input type="range" id="sErMix" min="0" max="60" value="0">
                         </div>
                     </div>
                 </div>
@@ -5992,13 +6010,15 @@
         const btn = $('immersive');
         const on = !btn.classList.contains('on');
         btn.classList.toggle('on', on);
+        $('immersiveLabel').textContent = on ? '⚡ IMMERSIVE ON' : '⚡ ENGAGE IMMERSIVE';
+        $('immersiveSub').textContent = on ? 'TAP AGAIN TO GO BACK DRY' : 'OPENS THE MIX UP · ONE TAP';
         if (on) {
-            setSliderValue('sWide', 155);
-            setSliderValue('sHaasMix', 42);
-            setSliderValue('sErMix', 34);
+            setSliderValue('sWide', 230);
+            setSliderValue('sHaasMix', 65);
+            setSliderValue('sErMix', 55);
             if (P.room === 'off')
                 setRoom('live');
-            setSliderValue('sRoom', 28);
+            setSliderValue('sRoom', 48);
             toast('IMMERSIVE FIELD ENGAGED');
         } else {
             setSliderValue('sWide', 100);
