@@ -6093,8 +6093,10 @@
                comb filtering by itself), so it's raised confidently above
                that original baseline; Haas/ER were the actual density
                culprit behind the artifact, so raised more cautiously,
-               toward but still under their own originals. */
-            setSliderValue('sWide', 150);
+               toward but still under their own originals. Nudged up
+               ~1dB once more after confirming "no difference" was stale
+               browser cache, not an actual level problem. */
+            setSliderValue('sWide', 168);
             setSliderValue('sHaasMix', 36);
             setSliderValue('sErMix', 28);
             if (P.room === 'off')

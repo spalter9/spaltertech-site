@@ -408,8 +408,11 @@
            pre-session default (before any "make it audible" boost was
            ever applied) -- which is exactly why engaged became
            inaudible. 1.75 is a real, audible boost over that original
-           baseline without the 2.3 that caused the wide-hiss complaint. */
-        const sW = ac.createGain(); sW.gain.value = 1.75;
+           baseline without the 2.3 that caused the wide-hiss complaint.
+           Nudged up ~1dB (x1.122) once more after confirming "no
+           difference" was stale browser cache, not an actual level
+           problem. */
+        const sW = ac.createGain(); sW.gain.value = 1.95;
         sSum.connect(sW);
         const sWInv = ac.createGain(); sWInv.gain.value = -1;
         sW.connect(sWInv);
@@ -558,9 +561,11 @@
            and makeup gain here still gives engaging a noticeable lift on
            any speaker — but pushed further than this it stacks with the
            room tail's own top end into an audible hiss rather than
-           "opening up", which is exactly what this was tuned down from. */
+           "opening up", which is exactly what this was tuned down from.
+           Nudged +1dB once the "no difference" report turned out to be
+           stale browser cache, not an actual level problem. */
         const air = ac.createBiquadFilter();
-        air.type = 'highshelf'; air.frequency.value = 10500; air.gain.value = 1;
+        air.type = 'highshelf'; air.frequency.value = 10500; air.gain.value = 2;
         const wetMakeup = ac.createGain(); wetMakeup.gain.value = 1.08;
         wetBus.connect(air);
         air.connect(wetMakeup);
