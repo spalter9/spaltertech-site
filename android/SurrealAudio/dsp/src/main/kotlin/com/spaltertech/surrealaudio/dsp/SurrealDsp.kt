@@ -86,14 +86,20 @@ class SurrealDsp(private val sampleRate: Double) {
             val wideSumL = dryL + (wideL - highLv)
             val wideSumR = dryR + (wideR - highRv)
 
-            haasL.write(wideSumL)
-            haasR.write(wideSumR)
+            // Haas/ER read the widened HIGH band only (wideL/wideR), never
+            // wideSumL/R (which has the untouched bass mixed back in).
+            // Delaying and summing full-band content onto itself at
+            // haasDelayMs/tap times is comb filtering, and it was
+            // cancelling out a kick's own fundamental on engage even
+            // though the crossover was never widening that bass.
+            haasL.write(wideL)
+            haasR.write(wideR)
             // cross-feed: delayed R feeds the L output and vice versa, same as the browser engine
             val haasOutL = haasR.read(haasDelaySamples) * haasMix
             val haasOutR = haasL.read(haasDelaySamples) * haasMix
 
-            erLineL.write(wideSumL)
-            erLineR.write(wideSumR)
+            erLineL.write(wideL)
+            erLineR.write(wideR)
             var erL = 0.0
             var erR = 0.0
             for (tap in erTaps) {

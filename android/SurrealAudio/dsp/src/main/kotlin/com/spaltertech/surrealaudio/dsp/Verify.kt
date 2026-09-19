@@ -79,6 +79,53 @@ private fun verifyCrossoverKeepsBassCentered() {
     check("treble side-energy clearly widened", trebleRatio > 1.3, "ratio=%.3f (target > 1.3)".format(trebleRatio))
 }
 
+/** A mono tone run through the engaged DSP with width=1 (so the M/S matrix
+ *  is a no-op) isolates exactly what the Haas + early-reflections sends add
+ *  on top of the dry signal. Below the crossover that addition should be
+ *  ~0 -- those sends must never see the bass, or delaying and summing it
+ *  back onto itself (comb filtering) kills a kick's punch on engage even
+ *  though nothing here is supposed to be "widening" it. */
+private fun spaceSendResidualAt(freqHz: Double): Double {
+    val n = (SR * 0.5).toInt()
+    val l = FloatArray(n) { (0.3 * sin(2 * PI * freqHz * it / SR)).toFloat() }
+    val r = l.copyOf()
+
+    val dsp = SurrealDsp(SR)
+    dsp.engaged = true
+    dsp.widthAmount = 1.0
+    dsp.haasMix = 0.65
+    dsp.earlyReflectionsMix = 0.55
+    val settle = FloatArray(4000)
+    dsp.processBlock(settle.copyOf(), settle.copyOf())
+
+    val outL = l.copyOf()
+    val outR = r.copyOf()
+    dsp.processBlock(outL, outR)
+
+    val residual = DoubleArray(outL.size) { (outL[it] - l[it]).toDouble() }
+    return rms(residual) / rms(DoubleArray(l.size) { l[it].toDouble() })
+}
+
+private fun verifyHaasAndErAreBassSafe() {
+    val bassResidual = spaceSendResidualAt(60.0)
+    val trebleResidual = spaceSendResidualAt(2000.0)
+
+    // A real second-order crossover isn't a brick wall, so some 60Hz energy
+    // still leaks through the 150Hz highpass into the send buses -- 0.1 is
+    // well above that filter-shape floor (~0.07 measured) but far below
+    // what leaked through before this was fixed (~0.45 measured).
+    check(
+        "Haas/ER add ~nothing below the crossover (punch preserved)",
+        bassResidual < 0.1,
+        "residual ratio=%.4f (target < 0.1)".format(bassResidual)
+    )
+    check(
+        "Haas/ER still clearly active above the crossover",
+        trebleResidual > 0.2,
+        "residual ratio=%.4f (target > 0.2)".format(trebleResidual)
+    )
+}
+
 private fun verifyBypassIsTransparent() {
     val (l, r) = decorrelatedTone(440.0, 0.2, PI / 4)
     val dsp = SurrealDsp(SR)
@@ -109,6 +156,7 @@ private fun verifyCorrelationMeter() {
 fun main() {
     println("Surreal Audio DSP — verification\n")
     verifyCrossoverKeepsBassCentered()
+    verifyHaasAndErAreBassSafe()
     verifyBypassIsTransparent()
     verifyCorrelationMeter()
     println()
