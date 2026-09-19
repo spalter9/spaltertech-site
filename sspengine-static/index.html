@@ -4914,7 +4914,13 @@
             (side === 0 ? b.erLfoDepthL : b.erLfoDepthR).connect(d.delayTime);
             const gn = a.createGain();
             gn.gain.value = g;
-            b.sendInp.connect(d);
+            /* b.split, not b.sendInp directly: when sendInp is fed from
+               N.sideOnly its two channels are an exact +side/-side
+               antiphase pair, so feeding both at once into a single
+               ChannelMergerNode input forces an automatic mono downmix
+               that cancels to exactly zero -- reusing the splitter Haas
+               already built keeps this tap on one isolated mono channel. */
+            b.split.connect(d, side);
             d.connect(gn);
             gn.connect(b.erMerge, 0, side);
         });
@@ -5430,12 +5436,26 @@
         N.wideSum = a.createGain();
         N.wLow.connect(N.wideSum);
         N.wMerge.connect(N.wideSum);
+        /* Side-only bus: just the boosted stereo difference (sW/-sW),
+           with the centered "mid" content (mSum) left out. A dead-center
+           source like a lead vocal has side = 0 by definition -- but
+           N.wMerge is mid+side, so for that vocal N.wMerge reduces to
+           the vocal itself at full strength. Feeding that into
+           delay-based sends duplicates and time-smears the single most
+           exposed, most phase-sensitive element in the mix -- exactly
+           what reads as "distorted"/"hissy"/"over-processed" specifically
+           on vocals. Haas/ER/room should only reflect content that
+           actually has stereo width to begin with. */
+        N.sideOnly = a.createChannelMerger(2);
+        N.sW.connect(N.sideOnly, 0, 0);
+        N.sWInv.connect(N.sideOnly, 0, 1);
         N.wideOut = a.createGain();
         N.wideSum.connect(N.haas.inp);
-        /* Haas/ER sends come from the widened band only (never the bass
-           the crossover just kept untouched) — see the comment in
-           makeHaas for why. */
-        N.wMerge.connect(N.haas.sendInp);
+        /* Haas/ER sends come from N.sideOnly, not N.wMerge (mid+side,
+           would carry a dead-center vocal at full strength) and not the
+           bass N.wLow carries into N.wideSum -- see the comments above
+           and in makeHaas. */
+        N.sideOnly.connect(N.haas.sendInp);
         N.haas.out.connect(N.wideOut);
         N.comp.connect(N.glue.inp);
         N.glue.out.connect(N.mb.inp);
@@ -5453,10 +5473,10 @@
         N.roomTone.type = 'lowpass'; N.roomTone.frequency.value = 3200; N.roomTone.Q.value = .707;
         N.roomWet = a.createGain();
         N.roomWet.gain.value = 0;
-        /* Same reasoning as the Haas send: room reverb built from the
-           bass-included signal was smearing the kick's fundamental into
-           its own tail. Highs only. */
-        N.wMerge.connect(N.roomConv);
+        /* Same reasoning as the Haas send: room reverb built from
+           N.wMerge carries a dead-center vocal at full strength into the
+           reverb tail. Side-only. */
+        N.sideOnly.connect(N.roomConv);
         N.roomConv.connect(N.roomTone);
         N.roomTone.connect(N.roomWet);
         N.roomWet.connect(N.out);
@@ -7681,7 +7701,13 @@
             off.mb.out.connect(wHigh);
             wHigh.connect(sp);
             post = wo;
-            highsForSends = mg;
+            /* Side-only, same reasoning as the live graph's N.sideOnly:
+               mg is mid+side, so a dead-center vocal would otherwise hit
+               the Haas/ER/room sends at full strength in the bounce too. */
+            const sideOnly = oc.createChannelMerger(2);
+            sw.connect(sideOnly, 0, 0);
+            swI.connect(sideOnly, 0, 1);
+            highsForSends = sideOnly;
         } else {
             /* No widening requested, but Haas/ER still must not see the
                bass — same reasoning as makeHaas above. */

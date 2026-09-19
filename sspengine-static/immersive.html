@@ -411,12 +411,31 @@
         wLow.connect(wideSum);
         merge.connect(wideSum);
 
-        /* Haas cross-feed + early reflections. Fed from `merge` (the
-           widened band above the crossover only) — NOT `wideSum`, which
-           still has the untouched bass mixed back in. Delaying and
-           summing the kick's sub-150Hz fundamental back onto itself at
-           18ms/11-51ms is comb filtering, and it was eating the punch
-           even though the crossover was never widening that bass. */
+        /* Side-only bus: JUST the boosted stereo difference (sW/-sW),
+           with the centered "mid" content (mSum) left out entirely. A
+           dead-center source like a lead vocal has side = 0 by
+           definition -- but `merge` is mid+side, so for that vocal
+           `merge` reduces to the vocal itself at full strength. Feeding
+           that into delay-based effects duplicates and time-smears the
+           single most exposed, most phase-sensitive element in the mix,
+           which is exactly what reads as "distorted"/"hissy"/
+           "over-processed" specifically on vocals. Haas/ER/room should
+           only ever be reflecting the parts of the mix that actually
+           have stereo width to begin with (cymbals, natural ambience,
+           backing harmonies) -- never re-processing a mono source that
+           the width matrix was never touching in the first place. */
+        const sideOnly = ac.createChannelMerger(2);
+        sW.connect(sideOnly, 0, 0); sWInv.connect(sideOnly, 0, 1);
+
+        /* Haas cross-feed + early reflections. Fed from `sideOnly`, not
+           `merge` (mid+side, still has the untouched bass mixed in via
+           the wideSum path elsewhere, and would carry a dead-center
+           vocal at full strength -- see above) and not `wideSum` (full
+           band, still has the untouched bass mixed back in). Delaying
+           and summing the kick's sub-150Hz fundamental, or a centered
+           vocal, back onto itself at 18ms/11-51ms is comb filtering, and
+           it was eating the punch / smearing vocals even though the
+           crossover+width matrix was never touching either of them. */
         const haasSplit = ac.createChannelSplitter(2);
         const dL = ac.createDelay(.1), dR = ac.createDelay(.1);
         dL.delayTime.value = .018; dR.delayTime.value = .018;
@@ -438,7 +457,7 @@
         haasLfoR.connect(haasLfoDepthR); haasLfoDepthR.connect(dR.delayTime);
         haasLfoL.start(); haasLfoR.start();
         const haasMerge = ac.createChannelMerger(2);
-        merge.connect(haasSplit);
+        sideOnly.connect(haasSplit);
         haasSplit.connect(dL, 0); haasSplit.connect(dR, 1);
         const haasWet = ac.createGain(); haasWet.gain.value = .5;
         dL.connect(haasMerge, 0, 1); dR.connect(haasMerge, 0, 0);
@@ -460,7 +479,13 @@
             const d = ac.createDelay(.2); d.delayTime.value = t;
             (side === 0 ? erLfoDepthL : erLfoDepthR).connect(d.delayTime);
             const gn = ac.createGain(); gn.gain.value = g;
-            merge.connect(d); d.connect(gn); gn.connect(erMerge, 0, side);
+            /* haasSplit, not sideOnly directly: sideOnly's two channels
+               are an exact +side/-side antiphase pair, so feeding both at
+               once into a single ChannelMergerNode input forces an
+               automatic mono downmix that cancels to exactly zero --
+               reusing the splitter Haas already built keeps this tap on
+               one isolated mono channel. */
+            haasSplit.connect(d, side); d.connect(gn); gn.connect(erMerge, 0, side);
         });
         erMerge.connect(erWet);
 
@@ -506,7 +531,7 @@
         const roomTone = ac.createBiquadFilter();
         roomTone.type = 'lowpass'; roomTone.frequency.value = 3200; roomTone.Q.value = .707;
         const roomWet = ac.createGain(); roomWet.gain.value = .09;
-        merge.connect(roomConv); roomConv.connect(roomTone); roomTone.connect(roomWet);
+        sideOnly.connect(roomConv); roomConv.connect(roomTone); roomTone.connect(roomWet);
 
         const wetBus = ac.createGain();
         haasWet.connect(wetBus);
