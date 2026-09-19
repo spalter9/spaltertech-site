@@ -175,12 +175,23 @@
         cursor: pointer;
     }
     #engage small { font-size: 9px; letter-spacing: .1em; color: var(--dim); font-weight: 400; }
-    #engage.on { box-shadow: 0 0 30px rgba(255,182,56,.28), inset 0 0 40px rgba(255,182,56,.14); }
-    #engage.boomed { animation: boom .7s ease-out; }
-    @keyframes boom {
+    #engage.on {
+        border-color: rgba(58,232,164,.6);
+        background: radial-gradient(circle at 50% 30%, rgba(58,232,164,.22), #071a12 70%);
+        color: var(--green);
+        box-shadow: 0 0 30px rgba(58,232,164,.32), inset 0 0 40px rgba(58,232,164,.16);
+    }
+    #engage.boomed { animation: boomOff .7s ease-out; }
+    #engage.on.boomed { animation: boomOn .7s ease-out; }
+    @keyframes boomOff {
         0% { box-shadow: 0 0 0 0 rgba(255,182,56,.95), inset 0 0 30px rgba(255,182,56,.06) }
         40% { box-shadow: 0 0 46px 20px rgba(255,182,56,.4), inset 0 0 46px rgba(255,182,56,.2) }
         100% { box-shadow: 0 0 20px rgba(255,182,56,.12), inset 0 0 30px rgba(255,182,56,.06) }
+    }
+    @keyframes boomOn {
+        0% { box-shadow: 0 0 0 0 rgba(58,232,164,.95), inset 0 0 30px rgba(58,232,164,.08) }
+        40% { box-shadow: 0 0 50px 22px rgba(58,232,164,.45), inset 0 0 50px rgba(58,232,164,.24) }
+        100% { box-shadow: 0 0 30px rgba(58,232,164,.32), inset 0 0 40px rgba(58,232,164,.16) }
     }
     .meterLabel {
         display: flex; justify-content: space-between; font-size: 10px; letter-spacing: .1em;
@@ -262,7 +273,7 @@
 <main>
     <div class="kicker">SURREAL AUDIO · TIER 1 · THE MASTER TRUST</div>
     <h1>Surreal Audio</h1>
-    <p class="sub">Bass-safe spatial enhancement &mdash; same master, same volume, no compression touched. Just the space opens up. This browser version is the free tier; the same engine ships as phone apps and as the full Master Trust Engine mastering console.</p>
+    <p class="sub">Bass-safe spatial enhancement &mdash; same master, dynamics never touched, no compression added. The space opens up and the top end lifts. This browser version is the free tier; the same engine ships as phone apps and as the full Master Trust Engine mastering console.</p>
 
     <div class="panel" id="demoPanel">
         <button id="demoBtn">▶ HEAR THE DEMO</button>
@@ -271,8 +282,8 @@
 
     <div class="panel engageWrap" id="engagePanel">
         <button id="engage">
-            ⚡ ENGAGE IMMERSIVE
-            <small>BASS STAYS CENTERED · HIGHS OPEN UP · TAP AGAIN FOR DRY</small>
+            <span id="engageLabel">⚡ ENGAGE IMMERSIVE</span>
+            <small id="engageSub">TAP TO OPEN IT UP</small>
         </button>
         <div class="meterLabel"><span>PHASE CORRELATION <span style="font-size:8px">+1 MONO-SAFE · 0 WIDE</span></span><b id="tCorr">+1.00</b></div>
         <canvas id="corrMeter"></canvas>
@@ -388,7 +399,7 @@
         const sInv = ac.createGain(); sInv.gain.value = -1;
         const sSum = ac.createGain(); sSum.gain.value = .5;
         split.connect(sSum, 0); split.connect(sInv, 1); sInv.connect(sSum);
-        const sW = ac.createGain(); sW.gain.value = 1.55;
+        const sW = ac.createGain(); sW.gain.value = 2.3;
         sSum.connect(sW);
         const sWInv = ac.createGain(); sWInv.gain.value = -1;
         sW.connect(sWInv);
@@ -407,12 +418,12 @@
         const haasMerge = ac.createChannelMerger(2);
         wideSum.connect(haasSplit);
         haasSplit.connect(dL, 0); haasSplit.connect(dR, 1);
-        const haasWet = ac.createGain(); haasWet.gain.value = .42;
+        const haasWet = ac.createGain(); haasWet.gain.value = .65;
         dL.connect(haasMerge, 0, 1); dR.connect(haasMerge, 0, 0);
         haasMerge.connect(haasWet);
 
         const erMerge = ac.createChannelMerger(2);
-        const erWet = ac.createGain(); erWet.gain.value = .34;
+        const erWet = ac.createGain(); erWet.gain.value = .55;
         [[.011, .6, 0], [.023, .42, 1], [.037, .28, 0], [.051, .18, 1]].forEach(([t, g, side]) => {
             const d = ac.createDelay(.2); d.delayTime.value = t;
             const gn = ac.createGain(); gn.gain.value = g;
@@ -446,7 +457,7 @@
         }
         const roomConv = ac.createConvolver();
         roomConv.buffer = makeIR();
-        const roomWet = ac.createGain(); roomWet.gain.value = .22;
+        const roomWet = ac.createGain(); roomWet.gain.value = .48;
         wideSum.connect(roomConv); roomConv.connect(roomWet);
 
         const wetBus = ac.createGain();
@@ -455,12 +466,26 @@
         roomWet.connect(wetBus);
         wideSum.connect(wetBus);
 
-        /* Crossfade between dry and the immersive bus — same overall level
-           either way, this only ever changes the space, never the volume. */
+        /* "Air" lift: the stereo widening above is real, but a phone's
+           single mono speaker can't reproduce stereo separation at all —
+           so on the device most people will actually hear this on, width
+           alone is close to silent. This shelf brightens the top end and
+           adds a touch of makeup gain, both of which survive mono
+           fold-down, so engaging reads as an obvious, immediate lift on
+           any speaker, not just something audible on headphones. */
+        const air = ac.createBiquadFilter();
+        air.type = 'highshelf'; air.frequency.value = 6000; air.gain.value = 6;
+        const wetMakeup = ac.createGain(); wetMakeup.gain.value = 1.2;
+        wetBus.connect(air);
+        air.connect(wetMakeup);
+
+        /* Crossfade between dry and the immersive bus. Dynamics/compression
+           are still never touched — this is a level and brightness lift
+           plus the spatial processing, not a limiter or compressor. */
         const dryGain = ac.createGain(); dryGain.gain.value = 1;
         const wetGain = ac.createGain(); wetGain.gain.value = 0;
         dry.connect(dryGain);
-        wetBus.connect(wetGain);
+        wetMakeup.connect(wetGain);
         dryGain.connect(ac.destination);
         wetGain.connect(ac.destination);
 
@@ -513,6 +538,8 @@
         ac = null; stream = null; src = null; graph = null; demoSource = null;
         engaged = false;
         engageBtn.classList.remove('on');
+        engageLabel.textContent = '⚡ ENGAGE IMMERSIVE';
+        engageSub.textContent = 'TAP TO OPEN IT UP';
         liveRow.classList.remove('on');
         engagePanel.classList.remove('on');
         shareBtn.disabled = false;
@@ -590,10 +617,13 @@
 
     stopBtn.addEventListener('click', teardown);
 
+    const engageLabel = $('engageLabel'), engageSub = $('engageSub');
     engageBtn.addEventListener('click', () => {
         if (!graph || !ac) return;
         engaged = !engaged;
         engageBtn.classList.toggle('on', engaged);
+        engageLabel.textContent = engaged ? '⚡ IMMERSIVE ON' : '⚡ ENGAGE IMMERSIVE';
+        engageSub.textContent = engaged ? 'TAP TO GO BACK DRY' : 'TAP TO OPEN IT UP';
         const t = ac.currentTime;
         graph.dryGain.gain.setTargetAtTime(engaged ? 0 : 1, t, .05);
         graph.wetGain.gain.setTargetAtTime(engaged ? 1 : 0, t, .05);
