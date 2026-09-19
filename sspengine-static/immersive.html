@@ -399,7 +399,15 @@
         const sInv = ac.createGain(); sInv.gain.value = -1;
         const sSum = ac.createGain(); sSum.gain.value = .5;
         split.connect(sSum, 0); split.connect(sInv, 1); sInv.connect(sSum);
-        const sW = ac.createGain(); sW.gain.value = 2.3;
+        /* Widening the side channel disproportionately boosts whatever in
+           the mix is already side-heavy AND high-frequency -- cymbals,
+           room ambience, sibilance -- since that's where most mixes carry
+           their stereo content. That's a mechanical side effect of the
+           width amount itself, separate from (and on top of) anything
+           Haas/ER/room ever added. 2.3 (never touched all session, unlike
+           every other lever here) was simply too hot for that reason on
+           its own. */
+        const sW = ac.createGain(); sW.gain.value = 1.6;
         sSum.connect(sW);
         const sWInv = ac.createGain(); sWInv.gain.value = -1;
         sW.connect(sWInv);
