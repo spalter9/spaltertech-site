@@ -457,8 +457,15 @@
         }
         const roomConv = ac.createConvolver();
         roomConv.buffer = makeIR();
-        const roomWet = ac.createGain(); roomWet.gain.value = .48;
-        wideSum.connect(roomConv); roomConv.connect(roomWet);
+        /* The room tail is a synthetic noise-based IR, not a real captured
+           space — pushed too hot or too bright it reads as hiss rather
+           than "room". This lowpass tames that noise character at the
+           source, so the room can sit at a real level without sounding
+           artifacty. */
+        const roomTone = ac.createBiquadFilter();
+        roomTone.type = 'lowpass'; roomTone.frequency.value = 4200; roomTone.Q.value = .707;
+        const roomWet = ac.createGain(); roomWet.gain.value = .28;
+        wideSum.connect(roomConv); roomConv.connect(roomTone); roomTone.connect(roomWet);
 
         const wetBus = ac.createGain();
         haasWet.connect(wetBus);
@@ -466,16 +473,15 @@
         roomWet.connect(wetBus);
         wideSum.connect(wetBus);
 
-        /* "Air" lift: the stereo widening above is real, but a phone's
-           single mono speaker can't reproduce stereo separation at all —
-           so on the device most people will actually hear this on, width
-           alone is close to silent. This shelf brightens the top end and
-           adds a touch of makeup gain, both of which survive mono
-           fold-down, so engaging reads as an obvious, immediate lift on
-           any speaker, not just something audible on headphones. */
+        /* "Air" lift: kept deliberately subtle. A phone's mono speaker
+           can't reproduce stereo width at all, so a touch of brightness
+           and makeup gain here still gives engaging a noticeable lift on
+           any speaker — but pushed further than this it stacks with the
+           room tail's own top end into an audible hiss rather than
+           "opening up", which is exactly what this was tuned down from. */
         const air = ac.createBiquadFilter();
-        air.type = 'highshelf'; air.frequency.value = 6000; air.gain.value = 6;
-        const wetMakeup = ac.createGain(); wetMakeup.gain.value = 1.2;
+        air.type = 'highshelf'; air.frequency.value = 10500; air.gain.value = 1;
+        const wetMakeup = ac.createGain(); wetMakeup.gain.value = 1.08;
         wetBus.connect(air);
         air.connect(wetMakeup);
 

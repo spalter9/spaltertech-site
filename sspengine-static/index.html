@@ -5404,10 +5404,18 @@
         N.wHigh.connect(N.wsplit);
         N.panOut = a.createGain();
         N.roomConv = a.createConvolver();
+        /* The room tail is a synthetic noise-based IR, not a captured
+           space — at the higher blend the Immersive preset now dials in,
+           pushing it unfiltered reads as hiss rather than "room". Tame
+           the noise character at the source instead of just turning the
+           blend back down. */
+        N.roomTone = a.createBiquadFilter();
+        N.roomTone.type = 'lowpass'; N.roomTone.frequency.value = 4200; N.roomTone.Q.value = .707;
         N.roomWet = a.createGain();
         N.roomWet.gain.value = 0;
         N.wideOut.connect(N.roomConv);
-        N.roomConv.connect(N.roomWet);
+        N.roomConv.connect(N.roomTone);
+        N.roomTone.connect(N.roomWet);
         N.roomWet.connect(N.out);
         N.wideOut.connect(N.pan);
         N.pan.connect(N.panOut);
@@ -6018,7 +6026,7 @@
             setSliderValue('sErMix', 55);
             if (P.room === 'off')
                 setRoom('live');
-            setSliderValue('sRoom', 48);
+            setSliderValue('sRoom', 38);
             toast('IMMERSIVE FIELD ENGAGED');
         } else {
             setSliderValue('sWide', 100);
