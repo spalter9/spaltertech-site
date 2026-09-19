@@ -399,18 +399,17 @@
         const sInv = ac.createGain(); sInv.gain.value = -1;
         const sSum = ac.createGain(); sSum.gain.value = .5;
         split.connect(sSum, 0); split.connect(sInv, 1); sInv.connect(sSum);
-        /* Widening the side channel disproportionately boosts whatever in
-           the mix is already side-heavy AND high-frequency -- cymbals,
-           synth pads, piano's stereo mic'd overtones -- since that's
-           where most mixes carry their real stereo content. Confirmed
-           there's no actual digital clipping anywhere in this chain (a
-           full-track peak scan topped out at 0.72 of full scale) -- what
-           reads as "distortion"/"hiss" on rich harmonic material is comb
-           filtering: dense, wide content run through several delay taps
-           produces a much denser, more audible comb pattern than a
-           simple test tone ever does. Cut further this round because
-           1.6 (last round's cut) still wasn't enough for that material. */
-        const sW = ac.createGain(); sW.gain.value = 1.35;
+        /* Width is a static per-sample gain on the side channel -- it
+           can't create delay-based comb filtering by itself (unlike
+           Haas/ER below), so it's the safest lever to raise for
+           audibility without reintroducing the piano/synth artifact.
+           The last two rounds of "cut it back" chasing that artifact
+           had actually driven this BELOW 1.55, this feature's original
+           pre-session default (before any "make it audible" boost was
+           ever applied) -- which is exactly why engaged became
+           inaudible. 1.75 is a real, audible boost over that original
+           baseline without the 2.3 that caused the wide-hiss complaint. */
+        const sW = ac.createGain(); sW.gain.value = 1.75;
         sSum.connect(sW);
         const sWInv = ac.createGain(); sWInv.gain.value = -1;
         sW.connect(sWInv);
@@ -470,12 +469,16 @@
         const haasMerge = ac.createChannelMerger(2);
         sideOnly.connect(haasSplit);
         haasSplit.connect(dL, 0); haasSplit.connect(dR, 1);
-        const haasWet = ac.createGain(); haasWet.gain.value = .3;
+        /* Haas/ER were the actual density culprit behind the piano/synth
+           comb-filter artifact (5 simultaneous delay taps on already-wide
+           content), so raised more cautiously than width -- toward, but
+           still under, .42, this feature's original pre-session default. */
+        const haasWet = ac.createGain(); haasWet.gain.value = .4;
         dL.connect(haasMerge, 0, 1); dR.connect(haasMerge, 0, 0);
         haasMerge.connect(haasWet);
 
         const erMerge = ac.createChannelMerger(2);
-        const erWet = ac.createGain(); erWet.gain.value = .24;
+        const erWet = ac.createGain(); erWet.gain.value = .32;
         /* Same comb-smoothing trick on the early-reflection taps, shared
            per side so the whole L/R reflection pattern drifts together
            rather than each of the four taps wandering independently

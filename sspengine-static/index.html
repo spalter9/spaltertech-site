@@ -6084,21 +6084,19 @@
         $('immersiveLabel').textContent = on ? '⚡ IMMERSIVE ON' : '⚡ ENGAGE IMMERSIVE';
         $('immersiveSub').textContent = on ? 'TAP AGAIN TO GO BACK DRY' : 'OPENS THE MIX UP · ONE TAP';
         if (on) {
-            /* Less aggressive than the phone demo's engage preset on
-               purpose: the "can't hear it on a mono speaker" problem that
-               justified pushing width/haas/er that hard doesn't apply
-               here -- this is heard on real monitors. Cut further this
-               round: confirmed there's no actual clipping anywhere in
-               this chain (full-track peak scan on the demo topped out at
-               0.72 of full scale), so "distortion"/"hiss" on rich
-               harmonic material (piano, synth pads) is comb filtering --
-               wide, dense content run through several delay taps makes a
-               much denser, more audible comb pattern than a simple test
-               tone does. Matches the same proportional cut just made to
-               the demo page. */
-            setSliderValue('sWide', 115);
-            setSliderValue('sHaasMix', 27);
-            setSliderValue('sErMix', 20);
+            /* The last two rounds of cutting this back to fight the
+               piano/synth comb-filter artifact had driven every one of
+               these BELOW 155/42/34 -- this feature's original
+               pre-session defaults, before any "make it audible" boost
+               was ever applied -- which is exactly why engaging became
+               inaudible. Width is a static gain (can't create delay-based
+               comb filtering by itself), so it's raised confidently above
+               that original baseline; Haas/ER were the actual density
+               culprit behind the artifact, so raised more cautiously,
+               toward but still under their own originals. */
+            setSliderValue('sWide', 150);
+            setSliderValue('sHaasMix', 36);
+            setSliderValue('sErMix', 28);
             if (P.room === 'off')
                 setRoom('immersive');
             setSliderValue('sRoom', 12);
