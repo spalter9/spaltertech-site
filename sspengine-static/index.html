@@ -6037,9 +6037,16 @@
         $('immersiveLabel').textContent = on ? '⚡ IMMERSIVE ON' : '⚡ ENGAGE IMMERSIVE';
         $('immersiveSub').textContent = on ? 'TAP AGAIN TO GO BACK DRY' : 'OPENS THE MIX UP · ONE TAP';
         if (on) {
-            setSliderValue('sWide', 230);
-            setSliderValue('sHaasMix', 65);
-            setSliderValue('sErMix', 55);
+            /* Less aggressive than the phone demo's engage preset on
+               purpose: the "can't hear it on a mono speaker" problem that
+               justified pushing width/haas/er that hard doesn't apply
+               here -- this is heard on real monitors, where that much
+               M/S width reads as the mix suddenly turning too bright
+               (the side channel it's boosting is where cymbals/harmonics
+               live) rather than "spacious". */
+            setSliderValue('sWide', 165);
+            setSliderValue('sHaasMix', 45);
+            setSliderValue('sErMix', 36);
             if (P.room === 'off')
                 setRoom('live');
             setSliderValue('sRoom', 19);
