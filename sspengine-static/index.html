@@ -6087,13 +6087,18 @@
             /* Less aggressive than the phone demo's engage preset on
                purpose: the "can't hear it on a mono speaker" problem that
                justified pushing width/haas/er that hard doesn't apply
-               here -- this is heard on real monitors, where that much
-               M/S width reads as the mix suddenly turning too bright
-               (the side channel it's boosting is where cymbals/harmonics
-               live) rather than "spacious". */
-            setSliderValue('sWide', 140);
-            setSliderValue('sHaasMix', 45);
-            setSliderValue('sErMix', 36);
+               here -- this is heard on real monitors. Cut further this
+               round: confirmed there's no actual clipping anywhere in
+               this chain (full-track peak scan on the demo topped out at
+               0.72 of full scale), so "distortion"/"hiss" on rich
+               harmonic material (piano, synth pads) is comb filtering --
+               wide, dense content run through several delay taps makes a
+               much denser, more audible comb pattern than a simple test
+               tone does. Matches the same proportional cut just made to
+               the demo page. */
+            setSliderValue('sWide', 115);
+            setSliderValue('sHaasMix', 27);
+            setSliderValue('sErMix', 20);
             if (P.room === 'off')
                 setRoom('immersive');
             setSliderValue('sRoom', 12);

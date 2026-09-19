@@ -401,13 +401,16 @@
         split.connect(sSum, 0); split.connect(sInv, 1); sInv.connect(sSum);
         /* Widening the side channel disproportionately boosts whatever in
            the mix is already side-heavy AND high-frequency -- cymbals,
-           room ambience, sibilance -- since that's where most mixes carry
-           their stereo content. That's a mechanical side effect of the
-           width amount itself, separate from (and on top of) anything
-           Haas/ER/room ever added. 2.3 (never touched all session, unlike
-           every other lever here) was simply too hot for that reason on
-           its own. */
-        const sW = ac.createGain(); sW.gain.value = 1.6;
+           synth pads, piano's stereo mic'd overtones -- since that's
+           where most mixes carry their real stereo content. Confirmed
+           there's no actual digital clipping anywhere in this chain (a
+           full-track peak scan topped out at 0.72 of full scale) -- what
+           reads as "distortion"/"hiss" on rich harmonic material is comb
+           filtering: dense, wide content run through several delay taps
+           produces a much denser, more audible comb pattern than a
+           simple test tone ever does. Cut further this round because
+           1.6 (last round's cut) still wasn't enough for that material. */
+        const sW = ac.createGain(); sW.gain.value = 1.35;
         sSum.connect(sW);
         const sWInv = ac.createGain(); sWInv.gain.value = -1;
         sW.connect(sWInv);
@@ -467,12 +470,12 @@
         const haasMerge = ac.createChannelMerger(2);
         sideOnly.connect(haasSplit);
         haasSplit.connect(dL, 0); haasSplit.connect(dR, 1);
-        const haasWet = ac.createGain(); haasWet.gain.value = .5;
+        const haasWet = ac.createGain(); haasWet.gain.value = .3;
         dL.connect(haasMerge, 0, 1); dR.connect(haasMerge, 0, 0);
         haasMerge.connect(haasWet);
 
         const erMerge = ac.createChannelMerger(2);
-        const erWet = ac.createGain(); erWet.gain.value = .42;
+        const erWet = ac.createGain(); erWet.gain.value = .24;
         /* Same comb-smoothing trick on the early-reflection taps, shared
            per side so the whole L/R reflection pattern drifts together
            rather than each of the four taps wandering independently
