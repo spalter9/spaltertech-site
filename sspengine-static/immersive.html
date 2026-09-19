@@ -420,6 +420,23 @@
         const haasSplit = ac.createChannelSplitter(2);
         const dL = ac.createDelay(.1), dR = ac.createDelay(.1);
         dL.delayTime.value = .018; dR.delayTime.value = .018;
+        /* A fixed delay summed with the direct signal is a static comb
+           filter -- a fixed set of notches carved into the frequency
+           response that never move. That reads as "rough"/metallic, not
+           smooth, no matter how quiet it's mixed. Sweeping each delay a
+           fraction of a millisecond, slowly and independently per
+           channel, keeps those notches moving instead of frozen in
+           place -- the same trick every chorus/doubler effect uses to
+           turn a comb filter into something that sounds like space. Slow
+           and shallow enough (under 0.2Hz, half a millisecond) to read
+           as smoothness, not pitch wobble. */
+        const haasLfoL = ac.createOscillator(); haasLfoL.frequency.value = .17;
+        const haasLfoR = ac.createOscillator(); haasLfoR.frequency.value = .13;
+        const haasLfoDepthL = ac.createGain(); haasLfoDepthL.gain.value = .0005;
+        const haasLfoDepthR = ac.createGain(); haasLfoDepthR.gain.value = .0005;
+        haasLfoL.connect(haasLfoDepthL); haasLfoDepthL.connect(dL.delayTime);
+        haasLfoR.connect(haasLfoDepthR); haasLfoDepthR.connect(dR.delayTime);
+        haasLfoL.start(); haasLfoR.start();
         const haasMerge = ac.createChannelMerger(2);
         merge.connect(haasSplit);
         haasSplit.connect(dL, 0); haasSplit.connect(dR, 1);
@@ -429,8 +446,19 @@
 
         const erMerge = ac.createChannelMerger(2);
         const erWet = ac.createGain(); erWet.gain.value = .42;
+        /* Same comb-smoothing trick on the early-reflection taps, shared
+           per side so the whole L/R reflection pattern drifts together
+           rather than each of the four taps wandering independently
+           (which would sound like wobble instead of space). */
+        const erLfoL = ac.createOscillator(); erLfoL.frequency.value = .11;
+        const erLfoR = ac.createOscillator(); erLfoR.frequency.value = .09;
+        const erLfoDepthL = ac.createGain(); erLfoDepthL.gain.value = .0003;
+        const erLfoDepthR = ac.createGain(); erLfoDepthR.gain.value = .0003;
+        erLfoL.connect(erLfoDepthL); erLfoR.connect(erLfoDepthR);
+        erLfoL.start(); erLfoR.start();
         [[.011, .6, 0], [.023, .42, 1], [.037, .28, 0], [.051, .18, 1]].forEach(([t, g, side]) => {
             const d = ac.createDelay(.2); d.delayTime.value = t;
+            (side === 0 ? erLfoDepthL : erLfoDepthR).connect(d.delayTime);
             const gn = ac.createGain(); gn.gain.value = g;
             merge.connect(d); d.connect(gn); gn.connect(erMerge, 0, side);
         });
