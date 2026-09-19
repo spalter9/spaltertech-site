@@ -464,7 +464,7 @@
            artifacty. */
         const roomTone = ac.createBiquadFilter();
         roomTone.type = 'lowpass'; roomTone.frequency.value = 4200; roomTone.Q.value = .707;
-        const roomWet = ac.createGain(); roomWet.gain.value = .28;
+        const roomWet = ac.createGain(); roomWet.gain.value = .14;
         wideSum.connect(roomConv); roomConv.connect(roomTone); roomTone.connect(roomWet);
 
         const wetBus = ac.createGain();
