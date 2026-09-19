@@ -423,12 +423,12 @@
         const haasMerge = ac.createChannelMerger(2);
         merge.connect(haasSplit);
         haasSplit.connect(dL, 0); haasSplit.connect(dR, 1);
-        const haasWet = ac.createGain(); haasWet.gain.value = .65;
+        const haasWet = ac.createGain(); haasWet.gain.value = .5;
         dL.connect(haasMerge, 0, 1); dR.connect(haasMerge, 0, 0);
         haasMerge.connect(haasWet);
 
         const erMerge = ac.createChannelMerger(2);
-        const erWet = ac.createGain(); erWet.gain.value = .55;
+        const erWet = ac.createGain(); erWet.gain.value = .42;
         [[.011, .6, 0], [.023, .42, 1], [.037, .28, 0], [.051, .18, 1]].forEach(([t, g, side]) => {
             const d = ac.createDelay(.2); d.delayTime.value = t;
             const gn = ac.createGain(); gn.gain.value = g;
@@ -453,8 +453,16 @@
                 let lp = 0;
                 for (let i = 0; i < n; i++) {
                     const t = i / n;
+                    /* .68 here (was .88): each sample moves 68% of the way
+                       toward the next random value instead of 88% -- more
+                       memory from one sample to the next, i.e. genuinely
+                       smoother noise, not just filtered louder noise. This
+                       is the same smoothing amount as the console's
+                       "immersive" room flavor (dark=.32), not just another
+                       level cut -- the grainy/brittle character was baked
+                       into the source noise itself. */
                     let v = (rnd() * 2 - 1) * Math.pow(1 - t, 2.0);
-                    lp = lp + (v - lp) * .88;
+                    lp = lp + (v - lp) * .68;
                     d[i] = lp * .5
                 }
             }
@@ -468,8 +476,8 @@
            source, so the room can sit at a real level without sounding
            artifacty. */
         const roomTone = ac.createBiquadFilter();
-        roomTone.type = 'lowpass'; roomTone.frequency.value = 4200; roomTone.Q.value = .707;
-        const roomWet = ac.createGain(); roomWet.gain.value = .14;
+        roomTone.type = 'lowpass'; roomTone.frequency.value = 3200; roomTone.Q.value = .707;
+        const roomWet = ac.createGain(); roomWet.gain.value = .09;
         merge.connect(roomConv); roomConv.connect(roomTone); roomTone.connect(roomWet);
 
         const wetBus = ac.createGain();

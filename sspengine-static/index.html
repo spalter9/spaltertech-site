@@ -5423,7 +5423,7 @@
            the noise character at the source instead of just turning the
            blend back down. */
         N.roomTone = a.createBiquadFilter();
-        N.roomTone.type = 'lowpass'; N.roomTone.frequency.value = 4200; N.roomTone.Q.value = .707;
+        N.roomTone.type = 'lowpass'; N.roomTone.frequency.value = 3200; N.roomTone.Q.value = .707;
         N.roomWet = a.createGain();
         N.roomWet.gain.value = 0;
         /* Same reasoning as the Haas send: room reverb built from the
@@ -6048,8 +6048,8 @@
             setSliderValue('sHaasMix', 45);
             setSliderValue('sErMix', 36);
             if (P.room === 'off')
-                setRoom('live');
-            setSliderValue('sRoom', 19);
+                setRoom('immersive');
+            setSliderValue('sRoom', 12);
             toast('IMMERSIVE FIELD ENGAGED');
         } else {
             setSliderValue('sWide', 100);
@@ -6092,6 +6092,19 @@
             pow: 2.2,
             dark: .25,
             slaps: [.09, .18, .27]
+        },
+        /* Same short, tight decay shape as "live" (so Immersive still
+           opens the mix up quickly, not a wash), but darker: "live" is
+           the least-smoothed of the three room flavors by design, which
+           is exactly what reads as "brittle"/"not smooth" when it's the
+           one auto-engaged on every Immersive tap. A dedicated flavor
+           here keeps the manual Live room button (for anyone who wants
+           that brighter, more present character on purpose) untouched. */
+        immersive: {
+            len: 0.9,
+            pow: 2.0,
+            dark: .32,
+            slaps: []
         }
     };
     function makeIR(ac, type) {
