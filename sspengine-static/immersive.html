@@ -411,12 +411,17 @@
         wLow.connect(wideSum);
         merge.connect(wideSum);
 
-        /* Haas cross-feed + early reflections. */
+        /* Haas cross-feed + early reflections. Fed from `merge` (the
+           widened band above the crossover only) — NOT `wideSum`, which
+           still has the untouched bass mixed back in. Delaying and
+           summing the kick's sub-150Hz fundamental back onto itself at
+           18ms/11-51ms is comb filtering, and it was eating the punch
+           even though the crossover was never widening that bass. */
         const haasSplit = ac.createChannelSplitter(2);
         const dL = ac.createDelay(.1), dR = ac.createDelay(.1);
         dL.delayTime.value = .018; dR.delayTime.value = .018;
         const haasMerge = ac.createChannelMerger(2);
-        wideSum.connect(haasSplit);
+        merge.connect(haasSplit);
         haasSplit.connect(dL, 0); haasSplit.connect(dR, 1);
         const haasWet = ac.createGain(); haasWet.gain.value = .65;
         dL.connect(haasMerge, 0, 1); dR.connect(haasMerge, 0, 0);
@@ -427,7 +432,7 @@
         [[.011, .6, 0], [.023, .42, 1], [.037, .28, 0], [.051, .18, 1]].forEach(([t, g, side]) => {
             const d = ac.createDelay(.2); d.delayTime.value = t;
             const gn = ac.createGain(); gn.gain.value = g;
-            wideSum.connect(d); d.connect(gn); gn.connect(erMerge, 0, side);
+            merge.connect(d); d.connect(gn); gn.connect(erMerge, 0, side);
         });
         erMerge.connect(erWet);
 
@@ -465,7 +470,7 @@
         const roomTone = ac.createBiquadFilter();
         roomTone.type = 'lowpass'; roomTone.frequency.value = 4200; roomTone.Q.value = .707;
         const roomWet = ac.createGain(); roomWet.gain.value = .14;
-        wideSum.connect(roomConv); roomConv.connect(roomTone); roomTone.connect(roomWet);
+        merge.connect(roomConv); roomConv.connect(roomTone); roomTone.connect(roomWet);
 
         const wetBus = ac.createGain();
         haasWet.connect(wetBus);

@@ -4860,11 +4860,20 @@
        signal (bypass stays at unity), so 0% mix adds exactly nothing. */
     function makeHaas(a) {
         const b = bypassBlock(a);
+        /* b.inp carries the full-band signal straight through to b.out
+           (byp.gain is always 1) — that's the punch path and it must
+           stay untouched. The Haas cross-feed and early reflections are
+           fed from b.sendInp instead, which the caller wires to the
+           widened band ABOVE the crossover only. Feeding them from
+           b.inp (bass included) delays and sums the kick's own
+           fundamental back onto itself at 18ms/11-51ms — comb filtering
+           that reads as the kick losing its punch when engaged. */
+        b.sendInp = a.createGain();
         b.split = a.createChannelSplitter(2);
         b.dL = a.createDelay(.1);
         b.dR = a.createDelay(.1);
         b.merge = a.createChannelMerger(2);
-        b.inp.connect(b.split);
+        b.sendInp.connect(b.split);
         b.split.connect(b.dL, 0);
         b.split.connect(b.dR, 1);
         b.dL.connect(b.merge, 0, 1);
@@ -4878,7 +4887,7 @@
             d.delayTime.value = t;
             const gn = a.createGain();
             gn.gain.value = g;
-            b.inp.connect(d);
+            b.sendInp.connect(d);
             d.connect(gn);
             gn.connect(b.erMerge, 0, side);
         });
@@ -5396,6 +5405,10 @@
         N.wMerge.connect(N.wideSum);
         N.wideOut = a.createGain();
         N.wideSum.connect(N.haas.inp);
+        /* Haas/ER sends come from the widened band only (never the bass
+           the crossover just kept untouched) — see the comment in
+           makeHaas for why. */
+        N.wMerge.connect(N.haas.sendInp);
         N.haas.out.connect(N.wideOut);
         N.comp.connect(N.glue.inp);
         N.glue.out.connect(N.mb.inp);
@@ -5413,7 +5426,10 @@
         N.roomTone.type = 'lowpass'; N.roomTone.frequency.value = 4200; N.roomTone.Q.value = .707;
         N.roomWet = a.createGain();
         N.roomWet.gain.value = 0;
-        N.wideOut.connect(N.roomConv);
+        /* Same reasoning as the Haas send: room reverb built from the
+           bass-included signal was smearing the kick's fundamental into
+           its own tail. Highs only. */
+        N.wMerge.connect(N.roomConv);
         N.roomConv.connect(N.roomTone);
         N.roomTone.connect(N.roomWet);
         N.roomWet.connect(N.out);
@@ -7573,6 +7589,7 @@
         off.glue.out.connect(off.mb.inp);
         const wTot = (P.width || 1) * (v === 'model' ? 1.28 : 1);
         let post = off.mb.out;
+        let highsForSends;
         if (Math.abs(wTot - 1) > 0.001) {
             /* Same bass-safe crossover as the live chain: below 150 Hz bypasses
                the M/S width matrix entirely, so a bounce never gains artificial
@@ -7617,15 +7634,26 @@
             off.mb.out.connect(wHigh);
             wHigh.connect(sp);
             post = wo;
+            highsForSends = mg;
+        } else {
+            /* No widening requested, but Haas/ER still must not see the
+               bass — same reasoning as makeHaas above. */
+            const hp = oc.createBiquadFilter();
+            hp.type = 'highpass';
+            hp.frequency.value = 150;
+            hp.Q.value = .707;
+            off.mb.out.connect(hp);
+            highsForSends = hp;
         }
         post.connect(off.haas.inp);
+        highsForSends.connect(off.haas.sendInp);
         post = off.haas.out;
         if (P.room && P.room !== 'off') {
             const conv = oc.createConvolver();
             conv.buffer = makeIR(oc, P.room);
             const rw = oc.createGain();
             rw.gain.value = P.roomMix;
-            post.connect(conv);
+            highsForSends.connect(conv);
             conv.connect(rw);
             rw.connect(out)
         }
