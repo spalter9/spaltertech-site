@@ -9296,7 +9296,23 @@
                 },
                 body: JSON.stringify(payload)
             });
-            const data = await res.json();
+            const data = await res.json().catch(() => ({}));
+            if (!res.ok) {
+                /* Same diagnostic pattern as the voice fallback above: report
+                   the actual HTTP status and Anthropic's own error message,
+                   not a guess -- this used to unconditionally fall through
+                   to a hardcoded "I go fully live once we deploy" line that
+                   is simply FALSE on the real deployed site (it was written
+                   for local/no-server testing and never scoped to only that
+                   case), which reads as Spalty itself claiming it isn't live
+                   yet even while running on sspengine.com. */
+                const reason = 'HTTP ' + res.status + ' — ' + ((data.error && data.error.message) || data.error || 'request failed');
+                crashLog('spalty-text', reason);
+                const txt = 'Spalty\'s brain link is down right now (' + reason + ') — that\'s a server-side issue, not a "not deployed yet" thing. Try again in a moment.';
+                wait.textContent = txt;
+                spHist.push({ role: 'assistant', content: txt });
+                return
+            }
             const txt = (data.content || []).filter(b => b.type === 'text').map(b => b.text).join('\n').trim() || 'Static on the line — run that by me again.';
             wait.textContent = txt;
             spHist.push({
@@ -9309,8 +9325,14 @@
                 voiceOffHinted = true
             }
         } catch (e) {
-            wait.textContent = 'Brain link blocked in this preview booth — I go fully live once we deploy to sspengine.com. My voice box works now though: flip SPALTY VOICE up top.';
-            speak('Brain link is blocked in this preview. I go fully live on the real site.')
+            /* A genuine network-level failure (fetch() itself rejecting) --
+               distinct from the res.ok branch above, and also no longer the
+               old "I go fully live once we deploy" line: that claim is false
+               on a real deployment and was actively misleading a real user
+               into thinking Spalty was telling them the site wasn't live. */
+            const reason = 'network error — ' + ((e && e.message) || e);
+            crashLog('spalty-text', reason);
+            wait.textContent = 'Spalty\'s brain link is down right now (' + reason + ') — that\'s a connection issue, not a "not deployed yet" thing. Try again in a moment.';
         }
     }
     $('spaltySend').addEventListener('click', spSend);
