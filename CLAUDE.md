@@ -105,6 +105,21 @@ real secrets there. `.wrangler/` (local D1 state) is also gitignored.
 - **Split sheets don't enforce that percentages sum to 100%** — each
   collaborator proposes their own share independently; reconciliation is
   a manual staff step in the review queue today, not automated.
+- **Spalty (the console's AI chat widget) has never had its server-side
+  keys configured in production** — confirmed live via a screenshot
+  from sspengine.com showing `/api/spalty` return `HTTP 503 — Spalty is
+  not configured`. Someone with Cloudflare dashboard access needs to set
+  `ANTHROPIC_API_KEY` (a real key from console.anthropic.com, separate
+  from whatever powers Claude Code) and, for the cloned ElevenLabs
+  voice, `ELEVENLABS_API_KEY` + `ELEVENLABS_VOICE_ID`, as environment
+  variables on the Pages project (Settings → Environment variables, set
+  for the Production environment, then trigger a fresh deploy — env var
+  changes don't apply to an already-built deployment). Until then, both
+  `/api/spalty` and `/api/spalty-voice` fail this exact way and Spalty
+  degrades to a canned text line / the browser's robot voice — this is
+  now a clear, specific, self-diagnosing message rather than the
+  confusing "I go fully live once we deploy" line it used to show,
+  which read as Spalty falsely claiming the site wasn't live yet.
 
 ## Working style established this session
 
