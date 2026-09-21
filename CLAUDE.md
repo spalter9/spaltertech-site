@@ -120,6 +120,23 @@ real secrets there. `.wrangler/` (local D1 state) is also gitignored.
   now a clear, specific, self-diagnosing message rather than the
   confusing "I go fully live once we deploy" line it used to show,
   which read as Spalty falsely claiming the site wasn't live yet.
+- **Immersive's Haas/ER/room sends now have a second highpass (300Hz)
+  above the 150Hz width-matrix crossover**, on top of the send path
+  only (`N.sendHP` in `index.html`'s live graph and offline bounce,
+  `sendHP` in `immersive.html`). Root cause of Bradley's "the kick's
+  punch/chest is dropping out when Immersive engages" report: the
+  150Hz crossover already zeroes a dead-center source (mono kick,
+  lead vocal) out of the side-only bus those sends are built from, but
+  it does nothing to stop *other* wideband mix content in the
+  150–300Hz "chest" band from riding into Haas/reflections/room and
+  cluttering exactly the band that defines a kick's punch — even
+  though the kick's own level was never touched (confirmed directly:
+  a band-limited 150–300Hz measurement of a real kick pattern showed
+  no level change with Immersive on, 0.1%, before this fix). Verified
+  with a 200Hz decorrelated probe tone that the new send highpass
+  roughly halves that leak (0.021 → 0.011 RMS into the Haas wet bus)
+  without touching the kick's own punch-band level. Pushed to `main`
+  at commit `6deeaf7`.
 
 ## Working style established this session
 
