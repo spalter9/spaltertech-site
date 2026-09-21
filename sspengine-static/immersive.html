@@ -440,7 +440,19 @@
         const sideOnly = ac.createChannelMerger(2);
         sW.connect(sideOnly, 0, 0); sWInv.connect(sideOnly, 0, 1);
 
-        /* Haas cross-feed + early reflections. Fed from `sideOnly`, not
+        /* sideOnly guarantees a dead-center source (vocal, mono kick) is
+           zero up here, but says nothing about OTHER wideband content in
+           the same 150-300 Hz punch/chest region -- bass, other
+           percussion, anything with real stereo spread there rides
+           straight into Haas/ER/room and duplicates itself on top of
+           whatever is trying to punch through that band. A second
+           highpass, above the crossover, keeps that band clear without
+           touching the width matrix itself. */
+        const sendHP = ac.createBiquadFilter();
+        sendHP.type = 'highpass'; sendHP.frequency.value = 300; sendHP.Q.value = .707;
+        sideOnly.connect(sendHP);
+
+        /* Haas cross-feed + early reflections. Fed from `sendHP`, not
            `merge` (mid+side, still has the untouched bass mixed in via
            the wideSum path elsewhere, and would carry a dead-center
            vocal at full strength -- see above) and not `wideSum` (full
@@ -470,7 +482,7 @@
         haasLfoR.connect(haasLfoDepthR); haasLfoDepthR.connect(dR.delayTime);
         haasLfoL.start(); haasLfoR.start();
         const haasMerge = ac.createChannelMerger(2);
-        sideOnly.connect(haasSplit);
+        sendHP.connect(haasSplit);
         haasSplit.connect(dL, 0); haasSplit.connect(dR, 1);
         /* Haas/ER were the actual density culprit behind the piano/synth
            comb-filter artifact (5 simultaneous delay taps on already-wide
@@ -548,7 +560,7 @@
         const roomTone = ac.createBiquadFilter();
         roomTone.type = 'lowpass'; roomTone.frequency.value = 3200; roomTone.Q.value = .707;
         const roomWet = ac.createGain(); roomWet.gain.value = .09;
-        sideOnly.connect(roomConv); roomConv.connect(roomTone); roomTone.connect(roomWet);
+        sendHP.connect(roomConv); roomConv.connect(roomTone); roomTone.connect(roomWet);
 
         const wetBus = ac.createGain();
         haasWet.connect(wetBus);

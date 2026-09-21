@@ -5449,13 +5449,28 @@
         N.sideOnly = a.createChannelMerger(2);
         N.sW.connect(N.sideOnly, 0, 0);
         N.sWInv.connect(N.sideOnly, 0, 1);
+        /* sideOnly still starts at the 150 Hz crossover, which only
+           guarantees a source with zero width up there (a dead-center
+           vocal, a mono kick) contributes nothing. It says nothing about
+           OTHER wideband content sitting in the same 150-300 Hz "chest"/
+           punch region -- bass, other percussion, anything with real
+           stereo spread there rides straight into Haas/ER/room and
+           duplicates itself right on top of whatever is trying to punch
+           through that band. A second highpass, well above the crossover,
+           keeps the punch-defining band clear of that clutter without
+           touching the width matrix itself. */
+        N.sendHP = a.createBiquadFilter();
+        N.sendHP.type = 'highpass';
+        N.sendHP.frequency.value = 300;
+        N.sendHP.Q.value = .707;
+        N.sideOnly.connect(N.sendHP);
         N.wideOut = a.createGain();
         N.wideSum.connect(N.haas.inp);
-        /* Haas/ER sends come from N.sideOnly, not N.wMerge (mid+side,
-           would carry a dead-center vocal at full strength) and not the
-           bass N.wLow carries into N.wideSum -- see the comments above
-           and in makeHaas. */
-        N.sideOnly.connect(N.haas.sendInp);
+        /* Haas/ER sends come from N.sendHP (sideOnly, highpassed further
+           still), not N.wMerge (mid+side, would carry a dead-center vocal
+           at full strength) and not the bass N.wLow carries into
+           N.wideSum -- see the comments above and in makeHaas. */
+        N.sendHP.connect(N.haas.sendInp);
         N.haas.out.connect(N.wideOut);
         N.comp.connect(N.glue.inp);
         N.glue.out.connect(N.mb.inp);
@@ -5475,8 +5490,9 @@
         N.roomWet.gain.value = 0;
         /* Same reasoning as the Haas send: room reverb built from
            N.wMerge carries a dead-center vocal at full strength into the
-           reverb tail. Side-only. */
-        N.sideOnly.connect(N.roomConv);
+           reverb tail. Side-only, and further highpassed via N.sendHP so
+           the reverb tail doesn't clutter the punch band either. */
+        N.sendHP.connect(N.roomConv);
         N.roomConv.connect(N.roomTone);
         N.roomTone.connect(N.roomWet);
         N.roomWet.connect(N.out);
@@ -7712,13 +7728,22 @@
             const sideOnly = oc.createChannelMerger(2);
             sw.connect(sideOnly, 0, 0);
             swI.connect(sideOnly, 0, 1);
-            highsForSends = sideOnly;
+            /* Second highpass above the crossover, same reasoning as the
+               live graph's N.sendHP: keeps other wideband content out of
+               the 150-300 Hz punch band on its way into Haas/ER/room. */
+            const sendHP = oc.createBiquadFilter();
+            sendHP.type = 'highpass';
+            sendHP.frequency.value = 300;
+            sendHP.Q.value = .707;
+            sideOnly.connect(sendHP);
+            highsForSends = sendHP;
         } else {
             /* No widening requested, but Haas/ER still must not see the
-               bass — same reasoning as makeHaas above. */
+               bass or clutter the punch band — same reasoning as makeHaas
+               above. */
             const hp = oc.createBiquadFilter();
             hp.type = 'highpass';
-            hp.frequency.value = 150;
+            hp.frequency.value = 300;
             hp.Q.value = .707;
             off.mb.out.connect(hp);
             highsForSends = hp;
