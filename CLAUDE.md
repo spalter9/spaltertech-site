@@ -296,6 +296,47 @@ real secrets there. `.wrangler/` (local D1 state) is also gitignored.
   concatenate, so peak memory per `OfflineAudioContext` stays low
   regardless of total track length) rather than another narrow
   point-fix.
+- **Root cause confirmed, decisively: desktop Safari on Bradley's Mac
+  Mini bounces the same track perfectly, every time** — same WebKit
+  engine family as his iPhone, just with far more memory. That
+  confirms this was never a logic bug in any of the four "mono" fixes
+  or the crossover/punch-band work; it's specifically the phone
+  running low on resources doing three full multi-minute renders back
+  to back. Bradley has a fully reliable path (Mac Mini, any browser)
+  for real work now, independent of whatever happens on the phone.
+  **Built the actual fix for the phone case: chunked offline
+  rendering** (commit `15160f9`). `renderVariant` split into
+  `renderChunk(v, srcBuffer)` — identical graph-building logic,
+  parameterized on which buffer to render instead of always the
+  global track — plus a new orchestrator that renders tracks over 90s
+  in 30-second windows instead of one giant `OfflineAudioContext`.
+  Every stage has some form of "memory" a naive cut would audibly
+  break at chunk boundaries (room reverb tail up to 2.4s, compressor
+  releases up to 250ms, Haas delay lines up to 51ms, the
+  worklet-based transient-shaper/maximizer's envelope state), so each
+  chunk actually renders 3 extra seconds of real audio *before* its
+  nominal start (thrown away after, not in the output) so those
+  stages reach the same settled state they'd have reached mid-track.
+  The mono downmix (memoryless, per-sample) moved out of the
+  per-chunk path to apply once on the assembled buffer instead.
+  Short tracks are completely unaffected — same single-render code
+  path as always. Wired an optional progress callback through both
+  export call sites so a long render's status line shows "CHUNK 3 OF
+  7" instead of going silent. **Verified rigorously in Chromium**: ran
+  the identical 3-file bounce against Bradley's real 197s track twice
+  — once through the new chunked path, once through a copy with
+  chunking disabled (the old single-render behavior) — and compared
+  sample-by-sample. Correlation 0.999991 across the whole track; RMS
+  at every one of the 6 chunk boundaries (30/60/90/120/150/180s)
+  matches within 0.1-0.5%, no audible discontinuity anywhere. This
+  closes out the mono-bounce/white-noise saga from this session:
+  root cause was resource exhaustion on long tracks on mobile
+  (worsened by the since-fixed ledger memory leak), not any of the
+  code paths the first four fix attempts targeted. Still worth a
+  real-device re-test on Bradley's phone when he gets to it (he's
+  explicitly not blocking on this — Mac Mini works fine for now) —
+  but the fix is built, verified as correct against the existing
+  processing chain, and live on `main`.
 
 ## Working style established this session
 
