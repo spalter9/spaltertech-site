@@ -7616,22 +7616,24 @@
             sr = buffer.sampleRate;
         if (v === 'original')
             return buffer;
-        /* Mono variant renders into a genuinely 1-channel destination
-           instead of building a stereo context and manually downmixing
-           with a splitter -> gain -> merger fan-out afterward. That
-           fan-out (one gain node connected to both merger inputs) is
-           exactly the shape of a known WebKit/Safari offline-rendering
-           bug: on Safari it was producing full-scale, fully decorrelated
-           noise on both channels for the entire render, confirmed
-           directly on a user-submitted bounce (uniform ~0.84 RMS from
-           sample zero, ~0 L/R correlation for the whole track, on a
-           browser where the master/spatial bounce rendered correctly).
-           A 1-channel OfflineAudioContext destination downmixes a
-           stereo signal via the standard spec-defined stereo-to-mono
-           rule (0.5 * (L + R), the same math the removed gain node did)
-           with no custom node graph needed -- simpler and sidesteps the
-           buggy shape entirely. */
-        const oc = new OfflineAudioContext(v === 'mono' ? 1 : Math.max(2, ch), buffer.length, sr);
+        /* The mono variant renders through the exact same stereo graph as
+           'master' (see below) and is downmixed to mono in plain JS
+           afterward -- no Web Audio node graph involved in that step at
+           all. Two earlier attempts at the downmix both used Web Audio
+           nodes and both produced full-scale, fully decorrelated noise
+           for the entire render on Safari specifically (confirmed
+           directly on user-submitted bounces), first with a
+           ChannelSplitter -> single GainNode -> ChannelMerger fan-out,
+           then with a 1-channel OfflineAudioContext destination relying
+           on the browser's implicit stereo-to-mono downmix -- while
+           Chromium rendered both correctly and 'master' (identical
+           graph, no downmix step) was always fine on every browser. That
+           pattern -- fine except for one specific downmix mechanism,
+           on one specific browser -- means the bug is in Safari's
+           handling of *some* multi-channel offline-render path, not in
+           any single node shape; summing two typed arrays with a for
+           loop has no such path to hit. */
+        const oc = new OfflineAudioContext(Math.max(2, ch), buffer.length, sr);
         const s = oc.createBufferSource();
         s.buffer = buffer;
         /* mirror the Surreal stages in the offline print (true bypass when off) */
@@ -7796,12 +7798,20 @@
         post.connect(out);
         out.connect(off.mx.inp);
         const fin = off.mx.out;
-        /* oc's destination is already 1-channel for the mono variant (see
-           above), so this connect alone triggers the standard stereo-to-
-           mono downmix -- no manual split/sum/merge needed. */
         fin.connect(oc.destination);
         s.start();
-        return await oc.startRendering();
+        const rendered = await oc.startRendering();
+        if (v !== 'mono')
+            return rendered;
+        /* Plain-JS downmix, no Web Audio nodes -- see the comment above
+           on why. */
+        const monoBuf = oc.createBuffer(1, rendered.length, rendered.sampleRate);
+        const l = rendered.getChannelData(0),
+            r = rendered.numberOfChannels > 1 ? rendered.getChannelData(1) : l;
+        const m = monoBuf.getChannelData(0);
+        for (let i = 0; i < m.length; i++)
+            m[i] = .5 * (l[i] + r[i]);
+        return monoBuf;
     }
     const pendingSaves = [];
     async function deliver(blob, name) {
