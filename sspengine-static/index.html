@@ -7617,22 +7617,30 @@
         if (v === 'original')
             return buffer;
         /* The mono variant renders through the exact same stereo graph as
-           'master' (see below) and is downmixed to mono in plain JS
-           afterward -- no Web Audio node graph involved in that step at
-           all. Two earlier attempts at the downmix both used Web Audio
-           nodes and both produced full-scale, fully decorrelated noise
-           for the entire render on Safari specifically (confirmed
-           directly on user-submitted bounces), first with a
-           ChannelSplitter -> single GainNode -> ChannelMerger fan-out,
-           then with a 1-channel OfflineAudioContext destination relying
-           on the browser's implicit stereo-to-mono downmix -- while
-           Chromium rendered both correctly and 'master' (identical
-           graph, no downmix step) was always fine on every browser. That
-           pattern -- fine except for one specific downmix mechanism,
-           on one specific browser -- means the bug is in Safari's
-           handling of *some* multi-channel offline-render path, not in
-           any single node shape; summing two typed arrays with a for
-           loop has no such path to hit. */
+           'master' (see below). Three earlier attempts at delivering it
+           as a true single-channel file all produced full-scale, fully
+           decorrelated noise for the entire render on Safari
+           specifically (confirmed directly on user-submitted bounces):
+           a ChannelSplitter -> single GainNode -> ChannelMerger fan-out;
+           a 1-channel OfflineAudioContext destination relying on the
+           implicit stereo-to-mono downmix; and a plain-JS downmix
+           (0.5*(L+R) in a for loop, zero Web Audio nodes) into a
+           genuinely 1-channel AudioBuffer. All three were verified
+           correct in Chromium and all three still came out as noise on
+           the user's real Safari device -- ruling out every node shape
+           AND the manual-arithmetic-into-a-mono-buffer approach, and
+           pointing at lamejs's channels=1 encoder path itself (the one
+           piece common to all three that was never actually exercised
+           by any Chromium test here, since this sandbox can't reach the
+           CDN lamejs loads from and silently falls back to WAV export
+           instead) -- not fixable from here without a Safari environment
+           to debug the library against.
+           So: skip that code path entirely. Deliver "mono" as a
+           genuine mono mixdown carried in a normal 2-channel buffer
+           (both channels identical, 0.5*(L+R)) -- audibly a true
+           mono file, but it goes through the exact same channels=2
+           lamejs path that 'master' already uses correctly on this
+           user's Safari, every time, in the same bounce run. */
         const oc = new OfflineAudioContext(Math.max(2, ch), buffer.length, sr);
         const s = oc.createBufferSource();
         s.buffer = buffer;
@@ -7803,14 +7811,18 @@
         const rendered = await oc.startRendering();
         if (v !== 'mono')
             return rendered;
-        /* Plain-JS downmix, no Web Audio nodes -- see the comment above
-           on why. */
-        const monoBuf = oc.createBuffer(1, rendered.length, rendered.sampleRate);
+        /* Dual-mono-in-stereo downmix -- see the comment above on why
+           this isn't a true 1-channel buffer. */
+        const monoBuf = oc.createBuffer(2, rendered.length, rendered.sampleRate);
         const l = rendered.getChannelData(0),
             r = rendered.numberOfChannels > 1 ? rendered.getChannelData(1) : l;
-        const m = monoBuf.getChannelData(0);
-        for (let i = 0; i < m.length; i++)
-            m[i] = .5 * (l[i] + r[i]);
+        const outL = monoBuf.getChannelData(0),
+            outR = monoBuf.getChannelData(1);
+        for (let i = 0; i < outL.length; i++) {
+            const m = .5 * (l[i] + r[i]);
+            outL[i] = m;
+            outR[i] = m;
+        }
         return monoBuf;
     }
     const pendingSaves = [];
