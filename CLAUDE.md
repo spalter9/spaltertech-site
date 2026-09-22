@@ -137,6 +137,31 @@ real secrets there. `.wrangler/` (local D1 state) is also gitignored.
   roughly halves that leak (0.021 → 0.011 RMS into the Haas wet bus)
   without touching the kick's own punch-band level. Pushed to `main`
   at commit `6deeaf7`.
+- **Found and fixed a real, severe structural bug in the 150Hz width
+  crossover itself** (not just the Haas/ER/room sends above): `wLow`
+  (lowpass) and `wHigh` (an independently-built highpass) were summed
+  back together downstream, and two independently-built biquads don't
+  stay phase-matched at a shared corner frequency. Measured on a
+  steady-tone sweep: a near-total ~85dB null right at 150Hz and steep
+  ~9dB notches at 130/175Hz, present on *every* track any time the
+  processed chain (BOOM/master chain) was engaged — independent of
+  width amount, Immersive, or preset. On a real mix this was a genuine
+  ~3.5dB dip in the 150–400Hz band vs. the dry original — exactly the
+  "mid-lows"/"chest" band, and almost certainly the real explanation
+  behind repeated "sounds no different / worse than the original"
+  reports on both the console and `immersive.html` across sessions
+  (see the width-slider nudge history in `immersive.html` — previous
+  rounds chased this as a level problem, never as the structural one
+  underneath). Fixed by rebuilding `wHigh` via subtraction (signal
+  minus its own lowpassed self) instead of an independent filter — the
+  same phase-coherent technique `makeMultiband` already used and
+  documented nearby, just never applied to this crossover. Verified:
+  the tone sweep went from -85dB/-9dB notches to a flat +1.1 to
+  +1.2dB across 80–700Hz; the real-mix 150–400Hz gap closed from
+  -3.5dB to +0.7dB; Immersive's own width effect is unaffected
+  (+37% side/mid ratio, same as before the fix). Applied in
+  `index.html`'s live graph and offline bounce path, and in
+  `immersive.html`. Pushed to `main` at commit `1be97df`.
 
 ## Working style established this session
 
