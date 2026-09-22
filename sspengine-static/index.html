@@ -5405,10 +5405,21 @@
         N.wLow.type = 'lowpass';
         N.wLow.frequency.value = 150;
         N.wLow.Q.value = .707;
-        N.wHigh = a.createBiquadFilter();
-        N.wHigh.type = 'highpass';
-        N.wHigh.frequency.value = 150;
-        N.wHigh.Q.value = .707;
+        /* wHigh is built by subtraction (mb.out minus wLow), not an
+           independent highpass filter. Two independently-built biquads
+           don't stay phase-matched at the crossover -- measured directly,
+           summing wLow with an independent 150Hz highpass produced a
+           near-total ~85dB null right at 150Hz and steep ~9dB notches at
+           130/175Hz, gutting exactly the "chest"/mid-low band on every
+           track whenever the processed chain (BOOM) is engaged, width or
+           no width. A band defined as (input minus its own lowpassed
+           self) sums back to the original by algebraic identity, not by
+           hoping two filters' phases line up -- the same fix already
+           used in makeMultiband below, applied here to the width
+           crossover. */
+        N.wHigh = a.createGain();
+        N.wHighInv = a.createGain();
+        N.wHighInv.gain.value = -1;
         /* M/S width matrix (highpassed band only): mid untouched, side scaled by width */
         N.wsplit = a.createChannelSplitter(2);
         N.mSum = a.createGain();
@@ -5476,6 +5487,8 @@
         N.glue.out.connect(N.mb.inp);
         N.mb.out.connect(N.wLow);
         N.mb.out.connect(N.wHigh);
+        N.wLow.connect(N.wHighInv);
+        N.wHighInv.connect(N.wHigh);
         N.wHigh.connect(N.wsplit);
         N.panOut = a.createGain();
         N.roomConv = a.createConvolver();
@@ -7686,10 +7699,13 @@
             wLow.type = 'lowpass';
             wLow.frequency.value = 150;
             wLow.Q.value = .707;
-            const wHigh = oc.createBiquadFilter();
-            wHigh.type = 'highpass';
-            wHigh.frequency.value = 150;
-            wHigh.Q.value = .707;
+            /* wHigh by subtraction (mb.out minus wLow), not an independent
+               highpass -- same reasoning as the live graph's N.wHigh: two
+               independent biquads don't stay phase-matched at the
+               crossover and null out the mid-lows on summing. */
+            const wHigh = oc.createGain();
+            const wHighInv = oc.createGain();
+            wHighInv.gain.value = -1;
             const sp = oc.createChannelSplitter(2);
             const mS = oc.createGain();
             mS.gain.value = .5;
@@ -7720,6 +7736,8 @@
             wideSum.connect(wo);
             off.mb.out.connect(wLow);
             off.mb.out.connect(wHigh);
+            wLow.connect(wHighInv);
+            wHighInv.connect(wHigh);
             wHigh.connect(sp);
             post = wo;
             /* Side-only, same reasoning as the live graph's N.sideOnly:

@@ -386,10 +386,23 @@
            keeps whatever centering the original master already had. */
         const wLow = ac.createBiquadFilter();
         wLow.type = 'lowpass'; wLow.frequency.value = 150; wLow.Q.value = .707;
-        const wHigh = ac.createBiquadFilter();
-        wHigh.type = 'highpass'; wHigh.frequency.value = 150; wHigh.Q.value = .707;
+        /* wHigh by subtraction (src minus wLow), not an independent
+           highpass filter. Two independently-built biquads don't stay
+           phase-matched at the crossover -- measured directly, summing
+           wLow with an independent 150Hz highpass produced a near-total
+           ~85dB null right at 150Hz and steep ~9dB notches at 130/175Hz,
+           gutting exactly the "chest"/mid-low band. Very likely the real
+           explanation for the "engaged sounds no different / worse than
+           original" complaints this width slider kept getting nudged up
+           to chase. A band defined as (input minus its own lowpassed
+           self) sums back to the original by algebraic identity. */
+        const wHigh = ac.createGain();
+        const wHighInv = ac.createGain();
+        wHighInv.gain.value = -1;
         src.connect(wLow);
         src.connect(wHigh);
+        wLow.connect(wHighInv);
+        wHighInv.connect(wHigh);
 
         /* M/S width matrix on the highpassed band only. */
         const split = ac.createChannelSplitter(2);
