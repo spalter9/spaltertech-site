@@ -182,10 +182,33 @@ real secrets there. `.wrangler/` (local D1 state) is also gitignored.
   destination downmix handle it (0.5·(L+R), same math, no custom
   node graph) — removes the buggy shape entirely rather than working
   around it. Verified in Chromium against Bradley's actual track
-  (correct 1-channel output, sane level, no NaN); **not yet verified
-  on real Safari** since no such environment exists in any sandbox
-  here — ask Bradley to re-run the 3-file bounce on his end to
-  confirm. Pushed to `main` at commit `b4e39d1`.
+  (correct 1-channel output, sane level, no NaN). Pushed to `main` at
+  commit `b4e39d1`.
+- **That fix (commit `b4e39d1`) did not actually resolve it** —
+  Bradley re-tested on his real Safari device after it was live and
+  the mono file was still pure white noise. Confirmed the push really
+  was live on `main` (not a stale-deploy issue), so the 1-channel-
+  destination approach itself was the wrong theory: Safari mishandles
+  *some* multi-channel offline-render path, not specifically the
+  splitter/gain/merger fan-out shape from the first attempt or the
+  implicit-downmix shape from the second. **Actual fix (commit
+  `eb8b5de`):** stopped guessing at which Web Audio node shape Safari
+  breaks on, and removed Web Audio from the downmix step entirely —
+  the mono variant now renders through the identical stereo graph as
+  `master` (proven correct on every browser including Bradley's
+  Safari, in the same bounce), then downmixes with plain JavaScript
+  (`0.5 * (l[i] + r[i])` in a for loop) on the returned
+  `Float32Array` data, no Web Audio nodes or OfflineAudioContext
+  channel tricks involved at all. Verified in Chromium: MONO output
+  is bit-for-bit identical to `0.5*(masterL + masterR)`. **Still not
+  verified on real Safari** (no such environment in any sandbox
+  here) — this is the second attempt Bradley needs to re-test; if
+  this one still doesn't hold, the bug isn't in the downmix step at
+  all and the search needs to move elsewhere in the render pipeline
+  (e.g. the shared stages every variant renders through, which would
+  also implicate `master`/`original` eventually, or something
+  specific to how Safari's MP3 encoder path or `deliver()` handles a
+  1-channel buffer downstream of the render).
 
 ## Working style established this session
 
