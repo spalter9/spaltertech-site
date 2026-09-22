@@ -242,6 +242,60 @@ real secrets there. `.wrangler/` (local D1 state) is also gitignored.
   itself or iOS memory pressure across three sequential large renders
   in one bounce run, ideally with the user directly in a screen-share
   or remote debugging session rather than another round-trip guess.
+- **That fourth fix (commit `b73bc7a`) also failed to help, and the
+  picture changed completely from a screenshot** — Bradley reported
+  both `master` AND `mono` coming back as noise (not just mono),
+  confirmed by sample inspection (`master`'s code path was never
+  touched by any of the four "mono" fixes, ruling out the downmix
+  theory entirely). A private-browsing test (genuinely fresh session,
+  no restored state) still showed the same corruption — ruling out
+  session/tab carryover too. Then a screenshot of an actual failed
+  attempt showed the real signal the whole time: **`✕ BOUNCE FAILED —
+  TRACK MAY BE TOO LONG FOR THIS DEVICE`** — an error message that
+  already existed in the code, from a genuinely thrown exception on
+  the third render of the bounce (only ORIGINAL and SSP_MASTER made
+  it into the ledger; MONO never completed). That reframed everything:
+  this was never a logic bug in the mono downmix at all — it's mobile
+  Safari running low on resources partway through three full
+  multi-minute `OfflineAudioContext` renders back to back in one
+  session, degrading to either a clean crash or (worse, in earlier
+  attempts) silent data corruption depending on exactly how depleted
+  things were at that moment.
+  **Found a real, concrete, unbounded memory leak that fits this
+  perfectly:** every ledger row's SAVE button (`ledgerSave()` in
+  `index.html`, used by every export path — bounce, valve export,
+  Examiner report, stem Examiner, signed master, server print)
+  closed over its blob directly, keeping the full exported file alive
+  in memory for the rest of the page's life with zero release
+  mechanism. `pendingSaves` looked like an earlier, incomplete attempt
+  at bounding this — it was pushed to but never read anywhere, dead
+  code. Across a long session with repeated exports of a 3+ minute
+  track (exactly what today's testing was), this accumulates with no
+  ceiling. **Fix (commit `c5a9175`):** keep only the most recent 3
+  exported blobs live/re-downloadable; older rows release their blob
+  reference (nulled, garbage-collectable) while keeping their
+  timestamp/hash as the audit record, and their SAVE button now tells
+  the user to re-export instead of silently failing. Also widened the
+  pause between each of the bounce's three renders from 600ms to
+  1500ms to give the browser more real time to reclaim memory before
+  the next multi-minute render starts. Verified in Chromium: ran the
+  bounce twice (6 ledger entries against the cap of 3), confirmed the
+  oldest 3 SAVE buttons correctly report "expired" with no download
+  while the newest 3 still deliver real files.
+  **Still needs Bradley's real-device re-test** — ideally after a
+  genuine full restart (not "restore saved session," which brought
+  back the same accumulated leak every prior time) — to confirm the
+  leak was actually the root cause of today's whole saga, or at least
+  a major contributor to it. If a bounce right after a truly fresh
+  start (private tab or a fully-quit-and-reopened Safari) still fails
+  or comes back as noise on the very first attempt of a session, that
+  rules out accumulated leak/memory pressure specifically and points
+  back at something inherent to rendering this one very long track,
+  in which case the next real lead is chunked offline rendering
+  (render the multi-minute track in shorter windowed segments and
+  concatenate, so peak memory per `OfflineAudioContext` stays low
+  regardless of total track length) rather than another narrow
+  point-fix.
 
 ## Working style established this session
 
