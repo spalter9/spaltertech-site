@@ -162,6 +162,30 @@ real secrets there. `.wrangler/` (local D1 state) is also gitignored.
   (+37% side/mid ratio, same as before the fix). Applied in
   `index.html`'s live graph and offline bounce path, and in
   `immersive.html`. Pushed to `main` at commit `1be97df`.
+- **Fixed a Safari-only full-scale-noise bug on the "mono check" file
+  in the console's 3-file bounce** (`renderVariant('mono')` in
+  `index.html`). The mono variant built a stereo `OfflineAudioContext`
+  and manually downmixed afterward via a ChannelSplitter -> single
+  GainNode -> ChannelMerger fan-out (one gain node connected to both
+  merger inputs). Bradley sent an actual Safari-rendered bounce
+  (Dr. Dre — The Next Episode) where the mono file was confirmed via
+  direct sample analysis to be full-scale noise for the entire 197s
+  (~0.84 RMS vs. ~0.19 on the correctly-rendered master, ~0 L/R
+  correlation for the whole track — should be exactly 1.0 for a true
+  mono file), while master/original in the same bounce were fine, and
+  the identical bounce reproduced cleanly in Chromium — pointing at a
+  WebKit-specific bug in that exact fan-out node shape, the same
+  general class as an already-documented-and-worked-around Safari
+  WaveShaper offline-rendering bug elsewhere in this file. Fix:
+  render the mono variant into a genuinely 1-channel
+  `OfflineAudioContext` and let the browser's standard stereo-to-mono
+  destination downmix handle it (0.5·(L+R), same math, no custom
+  node graph) — removes the buggy shape entirely rather than working
+  around it. Verified in Chromium against Bradley's actual track
+  (correct 1-channel output, sane level, no NaN); **not yet verified
+  on real Safari** since no such environment exists in any sandbox
+  here — ask Bradley to re-run the 3-file bounce on his end to
+  confirm. Pushed to `main` at commit `b4e39d1`.
 
 ## Working style established this session
 
