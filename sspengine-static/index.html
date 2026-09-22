@@ -7825,7 +7825,6 @@
         }
         return monoBuf;
     }
-    const pendingSaves = [];
     async function deliver(blob, name) {
         if (window.showSaveFilePicker) {
             try {
@@ -7877,13 +7876,36 @@
         }, 4000);
         return true;
     }
+    /* Every ledger row's SAVE button used to close over its blob directly,
+       which keeps the full exported file (several MB each, more for a
+       long track) alive in memory for as long as the page stays open --
+       nothing ever released it. A session with several exports of a
+       multi-minute track (exactly what a 3-file bounce run a few times
+       over looks like) accumulates this with no ceiling, and on a
+       memory-constrained mobile browser that's a very plausible
+       contributor to renders later in a session failing or coming back
+       corrupted. Keep only the most recent few blobs re-downloadable;
+       older rows keep their timestamp/hash (the actual audit record)
+       but release the bytes so they can be garbage collected. */
+    const LEDGER_LIVE_BLOBS = 3;
+    const liveLedgerEntries = [];
     function ledgerSave(line, hash, blob, name) {
         const d = document.createElement('div');
         d.innerHTML = '<span class="t">' + line + '</span> ';
         const b = document.createElement('button');
         b.textContent = '⬇ SAVE';
         b.style.cssText = 'border:1px solid var(--green);color:var(--green);border-radius:6px;padding:4px 10px;font-size:9px;letter-spacing:.15em;margin-left:6px';
-        b.addEventListener('click', () => deliver(blob, name));
+        const entry = {
+            blob,
+            name
+        };
+        b.addEventListener('click', () => {
+            if (!entry.blob) {
+                toast('EXPIRED FROM MEMORY — RE-EXPORT TO SAVE AGAIN');
+                return
+            }
+            deliver(entry.blob, entry.name)
+        });
         d.appendChild(b);
         const h = document.createElement('div');
         h.className = 'h';
@@ -7891,11 +7913,9 @@
         d.appendChild(h);
         $('ledger').appendChild(d);
         $('ledger').scrollTop = 1e6;
-        pendingSaves.push({
-            blob
-        });
-        while (pendingSaves.length > 1)
-            pendingSaves.shift();
+        liveLedgerEntries.push(entry);
+        while (liveLedgerEntries.length > LEDGER_LIVE_BLOBS)
+            liveLedgerEntries.shift().blob = null;
     }
     function ledger(line, hash) {
         const d = document.createElement('div');
@@ -8066,7 +8086,14 @@
                 bounceStep(step + ' OF ' + bounceSet.length + ' SAVED', (step / bounceSet.length) * 100);
                 await deliver(blob, outName);
                 blob = null;
-                await new Promise(r => setTimeout(r, 600))
+                /* Give the browser real breathing room to actually reclaim
+                   the buffers/blob just dropped before starting the next
+                   full render -- on a memory-constrained mobile browser,
+                   three multi-minute renders back to back with no gap is
+                   exactly the kind of load that runs a tab low on memory
+                   partway through. Longer than the UI strictly needs, on
+                   purpose. */
+                await new Promise(r => setTimeout(r, 1500))
             }
             bounceStep('✓ ALL 3 FILES SAVED', 100, true);
             toast('3-BOUNCE COMPLETE · ORIGINAL + SSP MASTER + MONO — ALL SAVED');
