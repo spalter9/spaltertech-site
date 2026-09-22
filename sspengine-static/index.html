@@ -7616,7 +7616,22 @@
             sr = buffer.sampleRate;
         if (v === 'original')
             return buffer;
-        const oc = new OfflineAudioContext(Math.max(2, ch), buffer.length, sr);
+        /* Mono variant renders into a genuinely 1-channel destination
+           instead of building a stereo context and manually downmixing
+           with a splitter -> gain -> merger fan-out afterward. That
+           fan-out (one gain node connected to both merger inputs) is
+           exactly the shape of a known WebKit/Safari offline-rendering
+           bug: on Safari it was producing full-scale, fully decorrelated
+           noise on both channels for the entire render, confirmed
+           directly on a user-submitted bounce (uniform ~0.84 RMS from
+           sample zero, ~0 L/R correlation for the whole track, on a
+           browser where the master/spatial bounce rendered correctly).
+           A 1-channel OfflineAudioContext destination downmixes a
+           stereo signal via the standard spec-defined stereo-to-mono
+           rule (0.5 * (L + R), the same math the removed gain node did)
+           with no custom node graph needed -- simpler and sidesteps the
+           buggy shape entirely. */
+        const oc = new OfflineAudioContext(v === 'mono' ? 1 : Math.max(2, ch), buffer.length, sr);
         const s = oc.createBufferSource();
         s.buffer = buffer;
         /* mirror the Surreal stages in the offline print (true bypass when off) */
@@ -7781,20 +7796,10 @@
         post.connect(out);
         out.connect(off.mx.inp);
         const fin = off.mx.out;
-        if (v === 'mono') {
-            const monoSplit = oc.createChannelSplitter(2);
-            const monoSum = oc.createGain();
-            monoSum.gain.value = .5;
-            const monoMerge = oc.createChannelMerger(2);
-            fin.connect(monoSplit);
-            monoSplit.connect(monoSum, 0);
-            monoSplit.connect(monoSum, 1);
-            monoSum.connect(monoMerge, 0, 0);
-            monoSum.connect(monoMerge, 0, 1);
-            monoMerge.connect(oc.destination);
-        } else {
-            fin.connect(oc.destination);
-        }
+        /* oc's destination is already 1-channel for the mono variant (see
+           above), so this connect alone triggers the standard stereo-to-
+           mono downmix -- no manual split/sum/merge needed. */
+        fin.connect(oc.destination);
         s.start();
         return await oc.startRendering();
     }
