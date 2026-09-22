@@ -7611,39 +7611,44 @@
             }
         return ab;
     }
-    async function renderVariant(v) {
-        const ch = buffer.numberOfChannels,
-            sr = buffer.sampleRate;
-        if (v === 'original')
-            return buffer;
-        /* The mono variant renders through the exact same stereo graph as
-           'master' (see below). Three earlier attempts at delivering it
-           as a true single-channel file all produced full-scale, fully
-           decorrelated noise for the entire render on Safari
-           specifically (confirmed directly on user-submitted bounces):
-           a ChannelSplitter -> single GainNode -> ChannelMerger fan-out;
-           a 1-channel OfflineAudioContext destination relying on the
-           implicit stereo-to-mono downmix; and a plain-JS downmix
-           (0.5*(L+R) in a for loop, zero Web Audio nodes) into a
-           genuinely 1-channel AudioBuffer. All three were verified
-           correct in Chromium and all three still came out as noise on
-           the user's real Safari device -- ruling out every node shape
-           AND the manual-arithmetic-into-a-mono-buffer approach, and
-           pointing at lamejs's channels=1 encoder path itself (the one
-           piece common to all three that was never actually exercised
-           by any Chromium test here, since this sandbox can't reach the
-           CDN lamejs loads from and silently falls back to WAV export
-           instead) -- not fixable from here without a Safari environment
-           to debug the library against.
-           So: skip that code path entirely. Deliver "mono" as a
-           genuine mono mixdown carried in a normal 2-channel buffer
-           (both channels identical, 0.5*(L+R)) -- audibly a true
-           mono file, but it goes through the exact same channels=2
-           lamejs path that 'master' already uses correctly on this
-           user's Safari, every time, in the same bounce run. */
-        const oc = new OfflineAudioContext(Math.max(2, ch), buffer.length, sr);
+    /* Renders one buffer (a full track, or one padded chunk of a longer
+       one -- see renderVariant below) through the complete offline
+       processing graph. Always returns the raw processed stereo signal;
+       the mono downmix is a separate, later step (see monoDownmix) since
+       it's a simple memoryless per-sample operation that's just as
+       correct applied once to an assembled full-length buffer as it is
+       applied per-chunk. */
+    async function renderChunk(v, srcBuffer) {
+        const ch = srcBuffer.numberOfChannels,
+            sr = srcBuffer.sampleRate;
+        /* The mono variant renders through this exact same stereo graph as
+           'master'. Three earlier attempts at delivering it as a true
+           single-channel file all produced full-scale, fully decorrelated
+           noise for the entire render on Safari specifically (confirmed
+           directly on user-submitted bounces): a ChannelSplitter -> single
+           GainNode -> ChannelMerger fan-out; a 1-channel
+           OfflineAudioContext destination relying on the implicit
+           stereo-to-mono downmix; and a plain-JS downmix (0.5*(L+R) in a
+           for loop, zero Web Audio nodes) into a genuinely 1-channel
+           AudioBuffer. All three were verified correct in Chromium and
+           all three still came out as noise on the user's real Safari
+           device -- ruling out every node shape AND the
+           manual-arithmetic-into-a-mono-buffer approach, and pointing at
+           lamejs's channels=1 encoder path itself (the one piece common
+           to all three that was never actually exercised by any Chromium
+           test here, since this sandbox can't reach the CDN lamejs loads
+           from and silently falls back to WAV export instead) -- not
+           fixable from here without a Safari environment to debug the
+           library against.
+           So: skip that code path entirely. Deliver "mono" as a genuine
+           mono mixdown carried in a normal 2-channel buffer (both
+           channels identical, 0.5*(L+R)) -- audibly a true mono file, but
+           it goes through the exact same channels=2 lamejs path 'master'
+           already uses correctly on this user's Safari, every time, in
+           the same bounce run. */
+        const oc = new OfflineAudioContext(Math.max(2, ch), srcBuffer.length, sr);
         const s = oc.createBufferSource();
-        s.buffer = buffer;
+        s.buffer = srcBuffer;
         /* mirror the Surreal stages in the offline print (true bypass when off) */
         const off = {
             dn: makeDenoise(oc),
@@ -7808,12 +7813,19 @@
         const fin = off.mx.out;
         fin.connect(oc.destination);
         s.start();
-        const rendered = await oc.startRendering();
-        if (v !== 'mono')
-            return rendered;
-        /* Dual-mono-in-stereo downmix -- see the comment above on why
-           this isn't a true 1-channel buffer. */
-        const monoBuf = oc.createBuffer(2, rendered.length, rendered.sampleRate);
+        return await oc.startRendering();
+    }
+    /* Dual-mono-in-stereo downmix -- see the comment in renderChunk on
+       why this isn't a true 1-channel buffer. Memoryless per-sample
+       operation, so applying it once to an already-assembled full-length
+       render is exactly equivalent to applying it to each chunk before
+       assembly. */
+    function monoDownmix(rendered) {
+        const monoBuf = new AudioBuffer({
+            numberOfChannels: 2,
+            length: rendered.length,
+            sampleRate: rendered.sampleRate
+        });
         const l = rendered.getChannelData(0),
             r = rendered.numberOfChannels > 1 ? rendered.getChannelData(1) : l;
         const outL = monoBuf.getChannelData(0),
@@ -7824,6 +7836,95 @@
             outR[i] = m;
         }
         return monoBuf;
+    }
+    /* Copies [startSample, endSample) out of src into a new, standalone
+       AudioBuffer. Used to build each padded chunk window below. */
+    function sliceBuffer(src, startSample, endSample) {
+        const out = new AudioBuffer({
+            numberOfChannels: src.numberOfChannels,
+            length: endSample - startSample,
+            sampleRate: src.sampleRate
+        });
+        for (let c = 0; c < src.numberOfChannels; c++)
+            out.getChannelData(c).set(src.getChannelData(c).subarray(startSample, endSample));
+        return out;
+    }
+    /* Renders a track long enough to matter (see CHUNK_THRESHOLD_SECONDS
+       in renderVariant) in windowed segments instead of one single
+       multi-minute OfflineAudioContext render. Confirmed directly: a
+       phone running this engine's full processing chain (Haas, room
+       reverb, multiband, the maximizer/transient-shaper worklets, valve
+       saturation) across a 3+ minute track, three times in a row for a
+       bounce, ran the browser low enough on memory to either crash
+       outright ("track may be too long for this device", an error this
+       app already had a message for) or -- worse -- silently hand back
+       corrupted audio instead of throwing. Splitting the render into
+       shorter windows keeps each individual OfflineAudioContext's own
+       internal footprint bounded to one chunk's worth of audio,
+       regardless of how long the whole track is.
+       Every stage in this chain has some form of "memory" that a naive
+       cut would audibly break at each chunk boundary -- the room
+       reverb's decay tail (up to 2.4s for the longest room), compressor
+       release times (up to 250ms), the Haas cross-feed's delay lines
+       (up to 51ms), the transient-shaper/maximizer worklets' internal
+       envelope state. So each chunk is actually rendered wider than it
+       needs to be: PRE_ROLL_SECONDS of real audio *before* the chunk
+       start goes into the graph too, giving every one of those stages
+       time to reach the same state it would have reached mid-track, and
+       only the chunk's own [start, end) window is kept from the result
+       -- the pre-roll itself is rendered and then thrown away. */
+    const CHUNK_SECONDS = 30,
+        PRE_ROLL_SECONDS = 3;
+    async function renderChunked(v, onProgress) {
+        const sr = buffer.sampleRate,
+            ch = buffer.numberOfChannels,
+            totalLen = buffer.length,
+            chunkLenSamples = Math.floor(CHUNK_SECONDS * sr),
+            preRollSamples = Math.floor(PRE_ROLL_SECONDS * sr),
+            outChannels = Math.max(2, ch),
+            totalChunks = Math.ceil(totalLen / chunkLenSamples);
+        const out = new AudioBuffer({
+            numberOfChannels: outChannels,
+            length: totalLen,
+            sampleRate: sr
+        });
+        let pos = 0,
+            chunkIndex = 0;
+        while (pos < totalLen) {
+            chunkIndex++;
+            const chunkEnd = Math.min(totalLen, pos + chunkLenSamples),
+                preRollStart = Math.max(0, pos - preRollSamples),
+                actualPreRoll = pos - preRollStart,
+                coreLen = chunkEnd - pos;
+            if (onProgress)
+                onProgress(chunkIndex, totalChunks);
+            const window = sliceBuffer(buffer, preRollStart, chunkEnd);
+            const rendered = await renderChunk(v, window);
+            for (let c = 0; c < outChannels; c++) {
+                const srcData = rendered.getChannelData(Math.min(c, rendered.numberOfChannels - 1));
+                out.getChannelData(c).set(srcData.subarray(actualPreRoll, actualPreRoll + coreLen), pos);
+            }
+            pos = chunkEnd;
+            /* Real breathing room for the browser to reclaim this
+               chunk's OfflineAudioContext and window buffer before the
+               next one -- same reasoning as the pause between bounce
+               steps. */
+            await new Promise(r => setTimeout(r, 250));
+        }
+        return out;
+    }
+    /* Tracks at or under this render as a single OfflineAudioContext, same
+       as always -- chunking only kicks in where it's actually needed, so
+       normal-length material (the overwhelming majority of real usage)
+       is completely unaffected. */
+    const CHUNK_THRESHOLD_SECONDS = 90;
+    async function renderVariant(v, onProgress) {
+        if (v === 'original')
+            return buffer;
+        const rendered = buffer.duration > CHUNK_THRESHOLD_SECONDS ?
+            await renderChunked(v, onProgress) :
+            await renderChunk(v, buffer);
+        return v === 'mono' ? monoDownmix(rendered) : rendered;
     }
     async function deliver(blob, name) {
         if (window.showSaveFilePicker) {
@@ -7952,7 +8053,10 @@
         xpStatus('RENDERING ' + v.toUpperCase() + '…');
         toast('VALVE HEATING · RENDERING ' + v.toUpperCase());
         try {
-            let rb = await renderVariant(v);
+            let rb = await renderVariant(v, (chunk, total) => {
+                if (total > 1)
+                    xpStatus('RENDERING ' + v.toUpperCase() + ' · CHUNK ' + chunk + ' OF ' + total + '…')
+            });
             let ab = wavFloat32(rb);
             rb = null;
             const hash = await sha256(ab);
@@ -8065,7 +8169,10 @@
                 disp
             } of bounceSet) {
                 bounceStep('STEP ' + (step + 1) + ' OF ' + bounceSet.length + ' · RENDERING ' + disp + '…', (step / bounceSet.length) * 100);
-                let rb = await renderVariant(v);
+                let rb = await renderVariant(v, (chunk, total) => {
+                    if (total > 1)
+                        bounceStep('STEP ' + (step + 1) + ' OF ' + bounceSet.length + ' · RENDERING ' + disp + ' · CHUNK ' + chunk + ' OF ' + total + '…', (step / bounceSet.length) * 100)
+                });
                 let blob,
                     ext;
                 if (canMp3) {
