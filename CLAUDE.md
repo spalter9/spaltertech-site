@@ -209,6 +209,39 @@ real secrets there. `.wrangler/` (local D1 state) is also gitignored.
   also implicate `master`/`original` eventually, or something
   specific to how Safari's MP3 encoder path or `deliver()` handles a
   1-channel buffer downstream of the render).
+- **That second fix (commit `eb8b5de`) ALSO did not resolve it** —
+  Bradley re-tested again on real Safari, still white noise, same
+  signature (uniform ~0.84 RMS, ~0 L/R correlation, whole track).
+  He also reported the `original` file as noise this round, but
+  direct inspection of the actual uploaded files showed `original`
+  was fine (clean, RMS ~0.19, correct) — that report was very likely
+  a mix-up on his end (non-technical user, and the repeated re-upload
+  workflow produces filenames like `..._ORIGINAL_ORIGINAL_4.mp3` that
+  are genuinely easy to confuse in a downloads folder). Only `mono`
+  was actually still broken. Root-caused the real gap in every prior
+  verification here: this sandbox can't reach the CDN `lamejs` loads
+  from, so `canMp3` was always false in testing and every previous
+  "verified in Chromium" fix silently exercised the WAV fallback
+  (`wavFloat32`), never lamejs's `channels=1` MP3 encoder path
+  (`new Mp3Encoder(1, sr, 320)` + single-argument `encodeBuffer`) —
+  the one thing common to all three failed attempts and the one thing
+  never actually tested. Pulled the real `lamejs` 1.2.0 from npm and
+  served it locally in Playwright to close that gap. **Actual fix
+  (commit `b73bc7a`):** stopped trying to fix the mono-specific
+  encoder path and sidestepped it — `renderVariant('mono')` still
+  computes a true mono mixdown (0.5·(L+R)) but delivers it in a
+  normal 2-channel buffer with both channels identical, so it goes
+  through the exact same `channels=2` lamejs path `master` has used
+  correctly on Bradley's Safari every time. Verified end-to-end for
+  the first time with the real MP3 encoder (not the WAV fallback)
+  against Bradley's actual track: decodes to RMS 0.18 (matches
+  master), L/R correlation exactly 1.0000 for the full 197s, no NaN.
+  **Still needs Bradley's real-Safari re-test to confirm** — this is
+  the fourth attempt; if it still doesn't hold, the MP3-encoder-path
+  theory is wrong too and the next thing to check is `deliver()`
+  itself or iOS memory pressure across three sequential large renders
+  in one bounce run, ideally with the user directly in a screen-share
+  or remote debugging session rather than another round-trip guess.
 
 ## Working style established this session
 
