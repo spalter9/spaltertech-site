@@ -5312,7 +5312,9 @@
                 sink.gain.value = 0;
                 n.lufsTap.connect(n.lufs.node);
                 n.lufs.node.connect(sink);
-                sink.connect(a.destination);
+                n.lufsSink = sink;
+                if (wetLinked)
+                    sink.connect(a.destination);
                 n.lufs.node.port.onmessage = e => {
                     lufsM = e.data.m;
                     lufsI = e.data.i
@@ -5335,7 +5337,10 @@
         N.inDry = a.createGain();
         N.shaper = a.createWaveShaper();
         N.shaper.curve = valveCurve(P.drive, P.warmChar, P.warmAmt);
-        N.shaper.oversample = '4x';
+        /* 'none', same as every export: WebKit's oversampled WaveShaper can
+           start emitting garbage and stay that way (see renderChunk). It also
+           means the monitor now matches exactly what gets printed. */
+        N.shaper.oversample = 'none';
         N.preTrim = a.createGain();
         N.preTrim.gain.value = 1;
         N.low = a.createBiquadFilter();
@@ -5563,10 +5568,35 @@
         applyStages();
     }
     let matchF = 1;
+    /* A gain of 0 does not silence NaN (NaN * 0 is NaN), so on Safari a
+       glitching stage anywhere in the master chain would poison the ORIGINAL
+       too if the chain merely sat at zero volume. With BOOM off the master
+       chain's two routes to the speakers (the wet bus and the LUFS meter's
+       silent sink) are physically disconnected once the fade-out is done. */
+    let wetLinked = true,
+        wetUnlinkT = null;
+    function linkWet(on) {
+        clearTimeout(wetUnlinkT);
+        if (on) {
+            if (!wetLinked) {
+                N.wet.connect(N.an);
+                if (N.lufsSink)
+                    N.lufsSink.connect(AC.destination);
+                wetLinked = true
+            }
+        } else if (wetLinked)
+            wetUnlinkT = setTimeout(() => {
+                N.wet.disconnect(N.an);
+                if (N.lufsSink)
+                    N.lufsSink.disconnect();
+                wetLinked = false
+            }, 250);
+    }
     function applyBoom() {
         if (!AC)
             return;
         const t = AC.currentTime;
+        linkWet(P.boom);
         N.wet.gain.setTargetAtTime(P.boom ? (P.match ? matchF : 1) : 0, t, .02);
         N.dry.gain.setTargetAtTime(P.boom ? 0 : 1, t, .02);
         $('boom').classList.toggle('on', P.boom);
