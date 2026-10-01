@@ -337,6 +337,20 @@ real secrets there. `.wrangler/` (local D1 state) is also gitignored.
   explicitly not blocking on this — Mac Mini works fine for now) —
   but the fix is built, verified as correct against the existing
   processing chain, and live on `main`.
+- **Added "AUTO A/B" to the console** (`index.html`, next to the
+  existing BOOM button) for a specific upcoming use case: playing a
+  mix to someone (an artist, a label) who should just sit back, close
+  their eyes, and compare master vs. original without anyone touching
+  a button mid-listen. Starts a timer that flips BOOM on a fixed 20s
+  interval by itself, with a live countdown on screen for whoever's
+  running the session (not meant for the listener to see). Ticks
+  every 250ms against a wall-clock deadline rather than one
+  `setTimeout` per flip, so the countdown stays accurate even through
+  a backgrounded tab. A manual BOOM click always cancels Auto A/B
+  first, so taking over by hand never fights the timer. Verified in
+  Playwright: countdown decrements exactly on schedule, BOOM flips
+  precisely at the 20s mark, manual override correctly cancels and
+  resets the button/status. Pushed to `main` at commit `56f74c1`.
 
 ## Working style established this session
 
