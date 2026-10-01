@@ -3321,6 +3321,10 @@
                         <button class="tgl" id="autoAB">▶ AUTO A/B · HANDS-FREE</button>
                     </div>
                     <div class="sk" id="autoABStatus" style="text-align:center;min-height:14px"></div>
+                    <div class="tglRow" style="justify-content:center">
+                        <button class="tgl" id="audioCheck">AUDIO CHECK · STATIC TROUBLESHOOTER</button>
+                    </div>
+                    <div class="sk" id="audioCheckOut" style="display:none;margin:8px 0 12px;text-align:left;white-space:pre-wrap;line-height:1.55;user-select:text"></div>
                     <div class="sk" style="text-align:center">LIT = MASTERED CHAIN · DARK = ORIGINAL SOURCE</div>
                 </div>
             </div>
@@ -6178,6 +6182,128 @@
             stopAutoAB();
         else
             startAutoAB()
+    });
+    /* Temporary troubleshooter for device-only static (iPhone Safari) that
+       can't be reproduced in a desktop test browser. One tap answers the
+       questions that otherwise take several round trips: is this device
+       running the latest page, is the loaded file itself noise, and does
+       audio play clean with zero processing on this device. */
+    const AUDIO_CHECK_BUILD = '2026-10-01 · check 1';
+    function srcBufferStats(b) {
+        const L = b.getChannelData(0),
+            R = b.getChannelData(b.numberOfChannels > 1 ? 1 : 0),
+            step = Math.max(1, Math.floor(L.length / 400000));
+        let n = 0, bad = 0, sl = 0, sr = 0, slr = 0, pk = 0;
+        for (let i = 0; i < L.length; i += step) {
+            const l = L[i], r = R[i];
+            if (!Number.isFinite(l) || !Number.isFinite(r)) {
+                bad++;
+                continue
+            }
+            sl += l * l;
+            sr += r * r;
+            slr += l * r;
+            n++;
+            pk = Math.max(pk, Math.abs(l), Math.abs(r))
+        }
+        return {
+            rms: Math.sqrt((sl + sr) / (2 * Math.max(1, n))),
+            corr: sl && sr ? slr / Math.sqrt(sl * sr) : 1,
+            peak: pk,
+            bad
+        }
+    }
+    function countBad(an) {
+        const td = new Float32Array(an.fftSize);
+        an.getFloatTimeDomainData(td);
+        let bad = 0;
+        for (const x of td)
+            if (!Number.isFinite(x))
+                bad++;
+        return bad
+    }
+    const acWait = ms => new Promise(r => setTimeout(r, ms));
+    $('audioCheck').addEventListener('click', async () => {
+        const btn = $('audioCheck'),
+            out = $('audioCheckOut');
+        if (btn.disabled)
+            return;
+        btn.disabled = true;
+        stopAutoAB();
+        stopAll();
+        // both contexts are created inside the tap so iOS lets them make sound
+        const main = ctx(),
+            test = new (window.AudioContext || window.webkitAudioContext)();
+        test.resume();
+        const ua = navigator.userAgent,
+            device = /iPhone/.test(ua) ? 'iPhone' : /iPad/.test(ua) ? 'iPad' : /Macintosh/.test(ua) ? (navigator.maxTouchPoints > 1 ? 'iPad' : 'Mac') : /Android/.test(ua) ? 'Android' : 'Other',
+            browser = /CriOS|Chrome/.test(ua) ? 'Chrome' : /FxiOS|Firefox/.test(ua) ? 'Firefox' : /Safari/.test(ua) ? 'Safari' : 'Other';
+        const lines = ['AUDIO CHECK · ' + AUDIO_CHECK_BUILD,
+            'DEVICE  ' + device + ' · ' + browser + ' · engine ' + main.sampleRate + ' Hz (' + main.state + ') · test ' + test.sampleRate + ' Hz'];
+        const show = extra => {
+            out.style.display = 'block';
+            out.textContent = lines.concat(extra ? ['', extra] : []).join('\n')
+        };
+        try {
+            if (buffer) {
+                const s = srcBufferStats(buffer);
+                lines.push('FILE    ' + ($('fName').textContent || 'loaded track') + ' · ' + fmtT(buffer.duration) + ' · ' + buffer.sampleRate + ' Hz · ' + buffer.numberOfChannels + 'ch');
+                lines.push('        level ' + s.rms.toFixed(2) + ' · stereo link ' + s.corr.toFixed(2) + ' · peak ' + s.peak.toFixed(2) + ' · bad samples ' + s.bad);
+                lines.push('        → ' + (s.bad ? 'FILE IS CORRUPT (contains invalid samples)' : s.rms > .5 && Math.abs(s.corr) < .15 ? 'THE FILE ITSELF IS STATIC — load the original song instead' : 'looks like normal music'))
+            } else
+                lines.push('FILE    none loaded — load the original song first for the full check');
+
+            show('▶ 1 OF 3 · PLAYING A TEST BEEP…');
+            const osc = test.createOscillator(),
+                g = test.createGain();
+            osc.frequency.value = 440;
+            g.gain.setValueAtTime(0, test.currentTime);
+            g.gain.linearRampToValueAtTime(.2, test.currentTime + .02);
+            g.gain.setValueAtTime(.2, test.currentTime + .95);
+            g.gain.linearRampToValueAtTime(0, test.currentTime + 1);
+            osc.connect(g);
+            g.connect(test.destination);
+            osc.start();
+            osc.stop(test.currentTime + 1.05);
+            await acWait(1600);
+
+            if (buffer) {
+                show('▶ 2 OF 3 · PLAYING THE TRACK WITH ZERO PROCESSING…');
+                const raw = test.createBufferSource();
+                raw.buffer = buffer;
+                raw.connect(test.destination);
+                raw.start(0, Math.min(30, Math.max(0, buffer.duration - 5)));
+                await acWait(4000);
+                raw.stop();
+                await acWait(600);
+
+                show('▶ 3 OF 3 · PLAYING THROUGH THE CONSOLE (' + (P.boom ? 'ENGINE ON' : 'ENGINE OFF') + ')…');
+                const savedOffset = offset;
+                offset = Math.min(30, Math.max(0, buffer.duration - 5));
+                play();
+                let wetBad = 0, outBad = 0;
+                for (let i = 0; i < 20; i++) {
+                    await acWait(100);
+                    wetBad += countBad(N.anWet);
+                    outBad += countBad(N.an)
+                }
+                stopAll();
+                offset = savedOffset;
+                lines.push('ENGINE  master chain ' + (wetBad ? 'PRODUCING INVALID SAMPLES (' + wetBad + ')' : 'clean') + ' · speaker feed ' + (outBad ? 'INVALID SAMPLES (' + outBad + ')' : 'clean') + ' · tested with engine ' + (P.boom ? 'on' : 'off'))
+            }
+            lines.push('', 'TELL CLAUDE WHAT YOU HEARD:',
+                '  1. the beep — clean or static?');
+            if (buffer)
+                lines.push('  2. the raw track (4 sec) — clean or static?',
+                    '  3. the console (2 sec) — clean or static?');
+            lines.push('Then screenshot this box and send it.');
+            show()
+        } catch (e) {
+            show('CHECK STOPPED: ' + (e && e.message || e))
+        } finally {
+            test.close().catch(() => {});
+            btn.disabled = false
+        }
     });
     /* Immersive Field: one button that dials in the real width/space tools already
        in the chain — Haas cross-feed, early reflections, mid/side width, and a
