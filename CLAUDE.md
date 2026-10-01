@@ -498,6 +498,23 @@ real secrets there. `.wrangler/` (local D1 state) is also gitignored.
   solved.** Sandbox gotcha: `pkill -f "http.server 90xx"` chained with
   `&&` in one Bash call matches its own shell and kills it (exit 144),
   silently skipping everything after it — run it on its own.
+- **Phone exports now land in a "your file is ready" card** (commit
+  `f35f8a5`) — Bradley: after bouncing on the iPhone he couldn't find
+  the file in Files. Cause: `deliver()` ran long after the tap, iOS
+  refuses `navigator.share` without a fresh tap, and the `<a download>`
+  fallback saves silently (or not at all). On touch devices
+  (`isTouchDevice` = touch + no `showSaveFilePicker`) every rendered
+  export (`deliver(blob, name, true)` from bounce master, 3-file bounce,
+  Auto A/B demo) goes to `showReady()`: inline `<audio>` player + a
+  SAVE / SHARE button that calls the share sheet on its own tap (Save
+  to Files / AirDrop / Messages / WhatsApp). Keeps the last
+  `READY_MAX` (4). Tap-started saves (ledger SAVE, stem download, docs)
+  try the share sheet if the last tap was <1s ago (own `lastTapAt`
+  tracking — `navigator.userActivation` is NOT trustworthy: Playwright's
+  Chromium reports `isActive` true even before any tap), and fall back
+  to the card if refused. Desktop flow unchanged. Verified on an
+  emulated iPhone 13 with a stubbed share sheet. Not yet seen on
+  Bradley's real iPhone.
 
 ## Working style established this session
 
