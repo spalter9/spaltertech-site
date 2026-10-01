@@ -1224,7 +1224,8 @@
         text-align: center
     }
 
-    #mp3Bounce {
+    #mp3Bounce,
+    #abDemoBounce {
         width: 100%;
         margin-top: 12px;
         border: 1px solid var(--line);
@@ -1237,7 +1238,8 @@
         background: #101114
     }
 
-    #mp3Bounce:active {
+    #mp3Bounce:active,
+    #abDemoBounce:active {
         background: #15161a
     }
 
@@ -3634,6 +3636,7 @@
                 </button>
                 <div id="xpStatus"></div>
                 <button id="mp3Bounce">◉ ALSO WANT THE ORIGINAL + A MONO CHECK? · 3-FILE BOUNCE</button>
+                <button id="abDemoBounce">◉ PLAYING THIS FOR SOMEONE? · EXPORT AUTO A/B AS ONE MP3</button>
                 <div id="bounceProgress">
                     <div id="bounceBarTrack">
                         <div id="bounceBarFill"></div>
@@ -7977,6 +7980,74 @@
             await renderChunk(v, buffer);
         return v === 'mono' ? monoDownmix(rendered) : rendered;
     }
+    /* Bakes the live Auto A/B toggle into a single downloadable file --
+       for playing to someone who should just put headphones on and
+       listen, no app or button-pressing involved, same MASTER/ORIGINAL
+       cadence as the on-screen toggle (see AUTO_AB_SECONDS). Builds on
+       the same renderChunk/sliceBuffer pieces chunked rendering already
+       uses: each MASTER segment is rendered with the same PRE_ROLL_SECONDS
+       of real audio before it (thrown away after) so reverb/compression/
+       delay are already settled by the time the kept portion starts, same
+       reasoning as renderChunked above. ORIGINAL segments need no
+       processing at all, just a straight copy of the source.
+       A hard, instant cut between two differently-processed segments is
+       exactly the kind of edit that reads as an audible click/pop --
+       splicing unrelated takes together has the same problem. Each
+       segment fades in/out over AB_FADE_MS at its own boundaries (both
+       sides touch zero, so there's never a discontinuity to click on) --
+       a deliberately short, soft dip rather than a true crossfade, which
+       doubles as a cue that a switch is happening. */
+    const AUTO_AB_SECONDS = 20,
+        AB_FADE_MS = 15;
+    async function renderAutoABDemo(onProgress) {
+        const sr = buffer.sampleRate,
+            ch = buffer.numberOfChannels,
+            totalLen = buffer.length,
+            segLenSamples = Math.floor(AUTO_AB_SECONDS * sr),
+            preRollSamples = Math.floor(PRE_ROLL_SECONDS * sr),
+            fadeSamples = Math.floor(AB_FADE_MS / 1000 * sr),
+            outChannels = Math.max(2, ch),
+            totalSegs = Math.ceil(totalLen / segLenSamples);
+        const out = new AudioBuffer({
+            numberOfChannels: outChannels,
+            length: totalLen,
+            sampleRate: sr
+        });
+        let pos = 0,
+            segIndex = 0;
+        while (pos < totalLen) {
+            segIndex++;
+            const segEnd = Math.min(totalLen, pos + segLenSamples),
+                segLen = segEnd - pos,
+                isWet = segIndex % 2 === 1;
+            if (onProgress)
+                onProgress(segIndex, totalSegs, isWet ? 'MASTER' : 'ORIGINAL');
+            const segChans = [];
+            if (isWet) {
+                const preRollStart = Math.max(0, pos - preRollSamples),
+                    actualPreRoll = pos - preRollStart,
+                    window = sliceBuffer(buffer, preRollStart, segEnd),
+                    rendered = await renderChunk('master', window);
+                for (let c = 0; c < outChannels; c++)
+                    segChans.push(rendered.getChannelData(Math.min(c, rendered.numberOfChannels - 1)).slice(actualPreRoll, actualPreRoll + segLen));
+            } else
+                for (let c = 0; c < outChannels; c++)
+                    segChans.push(buffer.getChannelData(Math.min(c, ch - 1)).slice(pos, segEnd));
+            for (let c = 0; c < outChannels; c++) {
+                const seg = segChans[c];
+                if (segIndex > 1)
+                    for (let i = 0; i < Math.min(fadeSamples, segLen); i++)
+                        seg[i] *= i / fadeSamples;
+                if (segEnd < totalLen)
+                    for (let i = 0; i < Math.min(fadeSamples, segLen); i++)
+                        seg[segLen - 1 - i] *= i / fadeSamples;
+                out.getChannelData(c).set(seg, pos)
+            }
+            pos = segEnd;
+            await new Promise(r => setTimeout(r, 200))
+        }
+        return out;
+    }
     async function deliver(blob, name) {
         if (window.showSaveFilePicker) {
             try {
@@ -8262,6 +8333,57 @@
         finally {
             renderBusy = false;
             $('mp3Bounce').style.opacity = 1
+        }
+    });
+    $('abDemoBounce').addEventListener('click', async () => {
+        if (!buffer) {
+            toast('LOAD AUDIO FIRST');
+            return
+        }
+        if (buffer.duration > 420) {
+            toast('TRACK TOO LONG FOR IN-APP BOUNCING — USE SERVER PRINT WHEN LIVE');
+            return
+        }
+        if (renderBusy) {
+            toast('DECK BUSY — ONE PRINT AT A TIME');
+            return
+        }
+        renderBusy = true;
+        $('abDemoBounce').style.opacity = .5;
+        try {
+            const canMp3 = !window.__noMp3 && typeof lamejs !== 'undefined';
+            toast(canMp3 ? 'AUTO A/B DEMO · 320K · RENDERING' : 'MP3 ENCODER OFFLINE · BOUNCING FLOAT32 WAV');
+            bounceStep('RENDERING AUTO A/B DEMO…', 0);
+            let rb = await renderAutoABDemo((seg, total, which) => {
+                bounceStep('SEGMENT ' + seg + ' OF ' + total + ' · ' + which + ' · ' + AUTO_AB_SECONDS + 'S EACH…', (seg - 1) / total * 100)
+            });
+            let blob,
+                ext;
+            if (canMp3) {
+                blob = toMp3(rb);
+                ext = '.mp3'
+            } else {
+                blob = new Blob([wavFloat32(rb)], {
+                    type: 'audio/wav'
+                });
+                ext = '_f32.wav'
+            }
+            rb = null;
+            const hash = await sha256(await blob.arrayBuffer());
+            const outName = (window.__srcName || 'sspengine') + '_AUTO_AB_DEMO' + ext;
+            ledgerSave(new Date().toLocaleTimeString() + ' · AUTO A/B DEMO · ' + AUTO_AB_SECONDS + 'S SWITCHES' + ext.toUpperCase(), hash, blob, outName);
+            flashLedgerRow();
+            bounceStep('✓ AUTO A/B DEMO SAVED', 100, true);
+            toast('AUTO A/B DEMO SAVED — MASTER/ORIGINAL EVERY ' + AUTO_AB_SECONDS + 'S');
+            await deliver(blob, outName);
+            blob = null
+        } catch (e) {
+            bounceStep('✕ EXPORT FAILED — TRACK MAY BE TOO LONG FOR THIS DEVICE', bouncePct);
+            toast('EXPORT FAILED — TRACK MAY BE TOO LONG FOR THIS DEVICE')
+        }
+        finally {
+            renderBusy = false;
+            $('abDemoBounce').style.opacity = 1
         }
     });
 
