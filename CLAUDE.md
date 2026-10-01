@@ -371,6 +371,31 @@ real secrets there. `.wrangler/` (local D1 state) is also gitignored.
   found elsewhere in the same track — confirms the fades genuinely
   eliminate clicks rather than just reduce them. Pushed to `main` at
   commit `1dfc750`.
+- **Refined per Bradley, ahead of an actual Dre meeting**: no mono in
+  this export (confirmed it never was), master always first then
+  original (already true), but **exactly `AUTO_AB_CYCLES` (3) full
+  master/original cycles** regardless of track length — not however
+  many 20s segments fit into the whole track — and a **spoken "SSP
+  on"/"SSP off" cue before each segment** so whoever's listening
+  always knows which one is about to play without looking at
+  anything. A browser can't render `speechSynthesis` output into an
+  offline `AudioBuffer`, so the cues are short pre-recorded clips
+  (`sspengine-static/audio/voice_ssp_on.wav`, `voice_ssp_off.wav` —
+  generated with `espeak-ng`, trimmed, peak-normalized, 5ms edge
+  fades; this sandbox had neither the tool nor the files installed by
+  default and both had to be set up fresh) fetched and resampled to
+  the track's own sample rate once per render. Each segment is now:
+  silence gap → voice cue → silence gap → 20s of music, fading in/out
+  at its own edges into the surrounding silence. Falls back to
+  however many complete cycles actually fit if the loaded track is
+  shorter than 3 cycles need (120s + voice/gap overhead). Verified in
+  Chromium on a 130s test track (long enough for all 3 cycles): total
+  duration matches the predicted sum of every piece to within 0.02s;
+  full-window RMS at all 6 music segments shows a clean, consistent
+  MASTER (~0.186) / ORIGINAL (~0.12) alternation in the right order;
+  a real voice cue confirmed present at all 6 predicted positions;
+  the gap immediately before each music segment measures exactly
+  zero. Pushed to `main` at commit `4593c1e`.
 
 ## Working style established this session
 
