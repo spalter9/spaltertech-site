@@ -528,6 +528,26 @@ real secrets there. `.wrangler/` (local D1 state) is also gitignored.
   download location points (Bradley was told how to set it to
   Desktop). Test gotcha: `addInitScript(fn)` serializes `fn`, so a
   closure variable inside it is undefined — pass it as the 2nd arg.
+- **A/B from two files: the user's own master + the original** (commit
+  `b09a67c`) — Bradley wants the Dre A/B built from the master he
+  already bounced and approved. Loading that master into the console's
+  engine-based Auto A/B would master it twice, so there's a separate
+  box under the export buttons (`#ab2Box`: slot 1 `#ab2MasterIn`, slot 2
+  `#ab2OrigIn`, `#ab2Bounce`). It calls `renderAutoABDemo(onProgress,
+  src, masterSeg)` — now parameterized: `src` = original, `masterSeg`
+  cuts MASTER segments straight from the master file (no processing).
+  `alignLag()` lines the files up (decimated correlation ±0.3s, then
+  exact to the sample), absorbing MP3 encoder delay. Measured: a
+  console master runs **~6 ms (264 samples) behind** the original —
+  the limiter's look-ahead (the engine-based A/B carries the same
+  offset; irrelevant there because every segment is separated by a
+  voice cue). Rejects files with correlation < .25 ("don't look like
+  the same song"), warns if the "master" is >1dB quieter (swapped?).
+  Verified: master segments bit-identical to the master file at the
+  exact sample for in-sync / +1105 / −300 sample offsets; original
+  segments exact to 16-bit precision. Test songs must be non-periodic
+  (`song_orig_130s.wav` generator in this session) — the old kick+tone
+  track fools any correlation-based alignment.
 
 ## Working style established this session
 
