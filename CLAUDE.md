@@ -515,6 +515,19 @@ real secrets there. `.wrangler/` (local D1 state) is also gitignored.
   to the card if refused. Desktop flow unchanged. Verified on an
   emulated iPhone 13 with a stubbed share sheet. Not yet seen on
   Bradley's real iPhone.
+- **Computers never use the share sheet now** (commit `1e9d1fc`) —
+  Bradley on the Mac: bounces "go right into that other mode" instead
+  of a file he can listen to before sending. `deliver()` used to try
+  `navigator.share` before a plain download on desktop too, and Mac
+  Safari supports it → AirDrop/Mail/Messages popup. Desktop rendered
+  exports now download immediately and also land in the card (title
+  "SAVED · LISTEN BEFORE YOU SEND IT", inline player); card button is
+  "SAVE AS… (PICK A FOLDER)" when `showSaveFilePicker` exists
+  (Chrome/Edge) else "DOWNLOAD AGAIN" (Safari). A web page can't pick
+  the Desktop itself — Safari saves wherever Settings → General → File
+  download location points (Bradley was told how to set it to
+  Desktop). Test gotcha: `addInitScript(fn)` serializes `fn`, so a
+  closure variable inside it is undefined — pass it as the 2nd arg.
 
 ## Working style established this session
 
