@@ -351,6 +351,26 @@ real secrets there. `.wrangler/` (local D1 state) is also gitignored.
   Playwright: countdown decrements exactly on schedule, BOOM flips
   precisely at the 20s mark, manual override correctly cancels and
   resets the button/status. Pushed to `main` at commit `56f74c1`.
+- **Added a one-click export of that Auto A/B cadence as a single MP3**
+  (`index.html`, button next to the 3-file bounce: "EXPORT AUTO A/B AS
+  ONE MP3") — for sending a demo ahead of a meeting (Bradley's
+  immediate case: an upcoming Dre meeting) or playing it somewhere the
+  console itself isn't open, not just the live in-browser toggle.
+  `renderAutoABDemo()` reuses the same `renderChunk`/`sliceBuffer`
+  pieces chunked rendering already uses: alternates 20-second
+  MASTER/ORIGINAL segments for the whole track, each MASTER segment
+  gets the same 3-second pre-roll (rendered, then discarded) so
+  reverb/compression/delay are already settled, and each segment
+  fades in/out over 15ms at its own boundaries so a hard cut between
+  two differently-processed segments never reads as a click. Reuses
+  the exact same encode/hash/ledger/deliver path as the 3-file bounce.
+  Verified in Chromium on a 100s test track: RMS/peak cleanly
+  alternate in the expected 20s MASTER/ORIGINAL/MASTER/... pattern,
+  and the sample-to-sample jump at every internal boundary is no
+  larger than (in a couple of cases, smaller than) the typical jump
+  found elsewhere in the same track — confirms the fades genuinely
+  eliminate clicks rather than just reduce them. Pushed to `main` at
+  commit `1dfc750`.
 
 ## Working style established this session
 
