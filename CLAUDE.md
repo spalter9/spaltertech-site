@@ -396,6 +396,36 @@ real secrets there. `.wrangler/` (local D1 state) is also gitignored.
   a real voice cue confirmed present at all 6 predicted positions;
   the gap immediately before each music segment measures exactly
   zero. Pushed to `main` at commit `4593c1e`.
+- **Verified the Auto A/B demo export's MASTER segments are genuinely
+  the same quality as a plain "Bounce Master" export** — Bradley's
+  explicit requirement before using this file to play for Dr. Dre
+  ("the quality has to be the same as, as the master... that's going
+  to be what sells Dre"). This was pure verification, no code changes
+  (no commit). Ran both exports in Chromium against the same 130s
+  test track/preset (both go through chunked rendering: plain master
+  bounce via `renderChunked`'s 30s/3s-preroll windows since the track
+  exceeds the 90s threshold, the AB demo via its own 20s/3s-preroll
+  windows in `renderAutoABDemo`), decoded both outputs' real audio
+  samples, and mathematically derived the exact sample position of
+  each MASTER segment inside the AB demo output (down to the sample,
+  from `AUTO_AB_SECONDS`/`AB_VOICE_GAP_MS`/the real voice-clip lengths
+  decoded at the track's sample rate) rather than relying on
+  cross-correlation search — a first attempt at blind cross-correlation
+  search gave misleadingly high "matches" at wrong offsets because the
+  synthetic test track's steady 300Hz test tone is periodic and
+  correlates with itself at many false lags; the fix was computing the
+  true alignment directly from the code's own constants instead of
+  searching for it. Compared each of the 3 MASTER segments against the
+  corresponding time range of the plain master bounce: segment 1
+  bit-for-bit identical (correlation 1.000000, zero RMS/peak
+  difference); segments 2 and 3 correlation 0.999998–0.999999 with
+  RMS difference ~0.0003 and peak difference ~0.006–0.007 — the same
+  tiny, inaudible magnitude already verified elsewhere this session as
+  the expected chunk-boundary rounding noise from chunked rendering
+  (not any quality loss, truncation, or artifact). Confirms Bradley's
+  requirement is genuinely met: what plays during the MASTER segments
+  of the Auto A/B demo is the same master quality, not some lesser
+  pass.
 
 ## Working style established this session
 
