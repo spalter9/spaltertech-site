@@ -446,6 +446,35 @@ real secrets there. `.wrangler/` (local D1 state) is also gitignored.
   new errors. Still a placeholder voice, just a clearer one — swap to
   Spalty's real ElevenLabs voice once that's wired up in production
   (see the Spalty item above).
+- **Live playback static on Safari (iPhone AND Mac Mini), even with the
+  engine OFF** — Bradley's report: "I just hit play... still static",
+  no music at all. Not reproducible in Chromium (live chain measured
+  clean, engine on and off). Root mechanism found in code: BOOM off only
+  set `N.wet` gain to 0 — the whole master chain stayed wired to the
+  speakers, plus the LUFS meter's gain-0 sink to `destination` (the
+  `ssp-loudness` worklet passes its input through). On WebKit NaN * 0 is
+  NaN (already documented in `makeCodec`), so any stage emitting NaN
+  poisons the ORIGINAL too. Proven in Chromium by injecting a NaN
+  AudioWorklet into `N.out`: old code → every output sample non-finite
+  with the engine off; new code → original plays clean. **Fix (commit
+  `7e814cc`):** `linkWet()` physically disconnects `N.wet` from `N.an`
+  and `N.lufsSink` from `destination` 250ms after BOOM-off (after the
+  fade, ~-108dB residual, no click) and reconnects on BOOM-on; and the
+  live valve `N.shaper.oversample` is now `'none'` (was `'4x'`), same
+  as every export — WebKit's oversampled WaveShaper is the documented
+  source of this garbage-output class, and monitor now = print. Rapid
+  toggle / Auto A/B / LUFS meter regression-tested clean.
+  **Not yet confirmed on real Safari.** The re-test tells you which
+  case it is: original clean but MASTER still static → something else
+  in the master chain glitches on WebKit (next suspects: the AudioWorklet
+  stages, HRTF panner, room convolver); ORIGINAL still static too → it
+  isn't the site at all, it's the loaded file itself (e.g. one of the
+  white-noise iPhone bounces being reloaded) or the Mac's audio
+  output/interface (disturbed in the same session by plugging wireless
+  dongles into the hub the interface shares). Also noticed, not fixed:
+  the loudness worklet's `hist` array grows without bound and is
+  re-filtered every block, so CPU on the audio thread creeps up over a
+  very long-lived tab.
 
 ## Working style established this session
 
