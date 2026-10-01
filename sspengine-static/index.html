@@ -8395,15 +8395,42 @@
             return e.name === 'AbortError'
         }
     }
-    async function shareOrDownload(blob, name, url) {
-        if (await tryShare(blob, name))
-            return;
+    function downloadUrl(url, name) {
         const a = document.createElement('a');
         a.href = url;
         a.download = name;
         document.body.appendChild(a);
         a.click();
         a.remove()
+    }
+    async function shareOrDownload(blob, name, url) {
+        if (await tryShare(blob, name))
+            return;
+        downloadUrl(url, name)
+    }
+    // Chrome/Edge "Save As" dialog (lets you pick e.g. the Desktop). Needs a fresh tap.
+    async function saveWithPicker(blob, name) {
+        if (!window.showSaveFilePicker)
+            return false;
+        try {
+            const dot = name.lastIndexOf('.');
+            const ext = dot >= 0 ? name.slice(dot) : '';
+            const handle = await window.showSaveFilePicker({
+                suggestedName: name,
+                types: ext ? [{
+                    description: 'Audio file',
+                    accept: {
+                        [blob.type || 'application/octet-stream']: [ext]
+                    }
+                }] : undefined
+            });
+            const writable = await handle.createWritable();
+            await writable.write(blob);
+            await writable.close();
+            return true
+        } catch (e) {
+            return e.name === 'AbortError'
+        }
     }
     function renderReady() {
         let card = $('readyCard');
@@ -8414,12 +8441,18 @@
             card.setAttribute('aria-label', 'Export ready');
             card.innerHTML = '<div class="rcHead"><span class="rcTitle"></span></div>' +
                 '<div class="rcList"></div>' +
-                '<div class="rcHint">Tap Save / Share, then pick "Save to Files" to keep it, or AirDrop / Messages / WhatsApp to send it.</div>' +
+                '<div class="rcHint"></div>' +
                 '<div class="rcBtns"><button type="button" class="rcClose">CLOSE</button></div>';
             document.body.appendChild(card);
             card.querySelector('.rcClose').addEventListener('click', closeReady)
         }
-        card.querySelector('.rcTitle').textContent = readyItems.length > 1 ? '✓ YOUR FILES ARE READY' : '✓ YOUR FILE IS READY';
+        const many = readyItems.length > 1;
+        card.querySelector('.rcTitle').textContent = isTouchDevice ?
+            (many ? '✓ YOUR FILES ARE READY' : '✓ YOUR FILE IS READY') :
+            (many ? '✓ SAVED · LISTEN BEFORE YOU SEND THEM' : '✓ SAVED · LISTEN BEFORE YOU SEND IT');
+        card.querySelector('.rcHint').textContent = isTouchDevice ?
+            'Tap Save / Share, then pick "Save to Files" to keep it, or AirDrop / Messages / WhatsApp to send it.' :
+            'Saved to your browser\'s download folder (Downloads, unless you changed it). Press play to check it right here first.';
         const list = card.querySelector('.rcList');
         list.textContent = '';
         for (const it of readyItems) {
@@ -8445,22 +8478,32 @@
             const save = document.createElement('button');
             save.type = 'button';
             save.className = 'rcSave';
-            save.textContent = 'SAVE / SHARE';
-            save.addEventListener('click', () => shareOrDownload(it.blob, it.name, it.url));
+            if (isTouchDevice) {
+                save.textContent = 'SAVE / SHARE';
+                save.addEventListener('click', () => shareOrDownload(it.blob, it.name, it.url))
+            } else if (window.showSaveFilePicker) {
+                save.textContent = 'SAVE AS… (PICK A FOLDER)';
+                save.addEventListener('click', () => saveWithPicker(it.blob, it.name))
+            } else {
+                save.textContent = 'DOWNLOAD AGAIN';
+                save.addEventListener('click', () => downloadUrl(it.url, it.name))
+            }
             row.appendChild(save);
             list.appendChild(row)
         }
         card.classList.add('show')
     }
     function showReady(blob, name) {
-        readyItems.push({
+        const it = {
             blob,
             name,
             url: URL.createObjectURL(blob)
-        });
+        };
+        readyItems.push(it);
         while (readyItems.length > READY_MAX)
             URL.revokeObjectURL(readyItems.shift().url);
-        renderReady()
+        renderReady();
+        return it
     }
     async function deliver(blob, name, rendered = false) {
         /* Phone: a finished render always goes to the card. Otherwise try
@@ -8473,54 +8516,19 @@
             showReady(blob, name);
             return true
         }
-        if (window.showSaveFilePicker) {
-            try {
-                const dot = name.lastIndexOf('.');
-                const ext = dot >= 0 ? name.slice(dot) : '';
-                const handle = await window.showSaveFilePicker({
-                    suggestedName: name,
-                    types: ext ? [{
-                        description: 'Audio file',
-                        accept: {
-                            [blob.type || 'application/octet-stream']: [ext]
-                        }
-                    }] : undefined
-                });
-                const writable = await handle.createWritable();
-                await writable.write(blob);
-                await writable.close();
-                return true
-            } catch (e) {
-                if (e.name === 'AbortError')
-                    return true
-            }
+        /* Computer: never the share sheet (that's the phone flow; on a Mac
+           it hijacked the save into the AirDrop/Mail/Messages popup). A
+           finished render downloads straight away and lands in the card so
+           it can be played back before it's sent anywhere. */
+        if (rendered) {
+            downloadUrl(showReady(blob, name).url, name);
+            return true
         }
-        const file = new File([blob], name, {
-            type: blob.type
-        });
-        if (navigator.canShare && navigator.canShare({
-            files: [file]
-        })) {
-            try {
-                await navigator.share({
-                    files: [file],
-                    title: name
-                });
-                return true
-            } catch (e) {
-                if (e.name === 'AbortError')
-                    return true
-            }
-        }
-        const a = document.createElement('a');
-        a.href = URL.createObjectURL(blob);
-        a.download = name;
-        document.body.appendChild(a);
-        a.click();
-        setTimeout(() => {
-            URL.revokeObjectURL(a.href);
-            a.remove()
-        }, 4000);
+        if (await saveWithPicker(blob, name))
+            return true;
+        const url = URL.createObjectURL(blob);
+        downloadUrl(url, name);
+        setTimeout(() => URL.revokeObjectURL(url), 4000);
         return true;
     }
     /* Every ledger row's SAVE button used to close over its blob directly,
