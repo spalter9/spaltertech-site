@@ -3315,6 +3315,10 @@
                     <div class="tglRow" style="justify-content:center">
                         <button class="tgl" id="tglMatch">LOUDNESS-MATCHED A/B</button>
                     </div>
+                    <div class="tglRow" style="justify-content:center">
+                        <button class="tgl" id="autoAB">▶ AUTO A/B · HANDS-FREE</button>
+                    </div>
+                    <div class="sk" id="autoABStatus" style="text-align:center;min-height:14px"></div>
                     <div class="sk" style="text-align:center">LIT = MASTERED CHAIN · DARK = ORIGINAL SOURCE</div>
                 </div>
             </div>
@@ -6090,10 +6094,57 @@
             N.wet.gain.setTargetAtTime(matchF, AC.currentTime, .1);
     }
     $('boom').addEventListener('click', () => {
+        stopAutoAB();
         P.boom = !P.boom;
         ctx();
         applyBoom();
         toast(P.boom ? 'BOOM · MASTER CHAIN' : 'A/B · ORIGINAL SOURCE')
+    });
+    /* Auto A/B: for playing a mix to someone who should just sit back,
+       close their eyes and listen -- flips BOOM on a timer by itself so
+       nobody has to touch anything mid-listen. Ticks on a short interval
+       rather than one big setTimeout per flip so the on-screen countdown
+       (useful for whoever's running the session, not the person
+       listening) stays smooth and accurate even if the tab is briefly
+       backgrounded. A manual BOOM click always wins -- see above -- so
+       taking over by hand never fights the timer. */
+    let autoABTimer = null,
+        autoABDeadline = 0,
+        autoABSeconds = 20;
+    function stopAutoAB() {
+        if (!autoABTimer)
+            return;
+        clearInterval(autoABTimer);
+        autoABTimer = null;
+        $('autoAB').classList.remove('on');
+        $('autoAB').textContent = '▶ AUTO A/B · HANDS-FREE';
+        $('autoABStatus').textContent = ''
+    }
+    function tickAutoAB() {
+        const remain = Math.max(0, Math.ceil((autoABDeadline - Date.now()) / 1000));
+        $('autoABStatus').textContent = (P.boom ? 'MASTER' : 'ORIGINAL') + ' · SWITCHES IN ' + remain + 's'
+    }
+    function startAutoAB() {
+        ctx();
+        autoABDeadline = Date.now() + autoABSeconds * 1000;
+        $('autoAB').classList.add('on');
+        $('autoAB').textContent = '■ STOP AUTO A/B';
+        tickAutoAB();
+        autoABTimer = setInterval(() => {
+            if (Date.now() >= autoABDeadline) {
+                P.boom = !P.boom;
+                ctx();
+                applyBoom();
+                autoABDeadline = Date.now() + autoABSeconds * 1000
+            }
+            tickAutoAB()
+        }, 250)
+    }
+    $('autoAB').addEventListener('click', () => {
+        if (autoABTimer)
+            stopAutoAB();
+        else
+            startAutoAB()
     });
     /* Immersive Field: one button that dials in the real width/space tools already
        in the chain — Haas cross-feed, early reflections, mid/side width, and a
