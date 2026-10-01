@@ -426,6 +426,26 @@ real secrets there. `.wrangler/` (local D1 state) is also gitignored.
   requirement is genuinely met: what plays during the MASTER segments
   of the Auto A/B demo is the same master quality, not some lesser
   pass.
+- **Upgraded the "SSP on"/"SSP off" voice cues from espeak-ng to a real
+  neural TTS voice** (commit `fc3a86f`) — Bradley's call: "go with
+  the smoothest computer voice you've got for right now... when we
+  get Spalty working, then we'll change it." Hugging Face (where
+  Piper's voice models are hosted today) is blocked by this sandbox's
+  network policy, but `github.com`/`raw.githubusercontent.com` are
+  not, and Piper's legacy v0.0.2 GitHub release still serves the same
+  voice models as `.tar.gz` assets — used that path to fetch
+  `en-us-ryan-high` (`pip install piper-tts`, model pulled from
+  `github.com/rhasspy/piper/releases/download/v0.0.2/`, no Hugging
+  Face access needed). Regenerated both clips with the same spelled-
+  out "S S P on"/"S S P off" input text and the same post-processing
+  as before (silence trim, peak-normalize to 0.92, 5ms edge fades).
+  Verified end-to-end in Chromium: swapped the new files into a
+  `main`-based test checkout, ran the full Auto A/B demo export
+  against the 130s test track, confirmed all 6 segments (3 voice
+  cues + 3 music segments, correctly alternating) completed with no
+  new errors. Still a placeholder voice, just a clearer one — swap to
+  Spalty's real ElevenLabs voice once that's wired up in production
+  (see the Spalty item above).
 
 ## Working style established this session
 
