@@ -475,6 +475,29 @@ real secrets there. `.wrangler/` (local D1 state) is also gitignored.
   the loudness worklet's `hist` array grows without bound and is
   re-filtered every block, so CPU on the audio thread creeps up over a
   very long-lived tab.
+- **`7e814cc` did NOT change anything on the iPhone** — Bradley: "still
+  massive static on the iPhone, nothing's changed" (Mac not yet
+  re-checked). Note the master chain still *runs* with the engine off
+  (source always feeds `N.inWet`; only its route to the speakers is
+  cut), so device CPU overload from the chain, the file itself, or an
+  iOS-level output problem are all still open. Rather than another
+  round-trip guess, added a temporary **AUDIO CHECK · STATIC
+  TROUBLESHOOTER** button under Auto A/B (commit `76339d7`, build tag
+  `AUDIO_CHECK_BUILD`). One tap → screenshot-ready box: build tag
+  (confirms the device isn't running a cached page), device/browser,
+  engine vs fresh-context sample rate, loaded-file stats (level, L/R
+  correlation, invalid samples → flags "the file itself is static"
+  using the known bad-bounce signature of high RMS + ~0 correlation),
+  master-chain/speaker-feed invalid-sample counts, then plays a 1s beep
+  and 4s of the raw track through a fresh bare AudioContext, then 2s
+  through the console. Reading it: beep static → iOS/device output,
+  nothing in our code; beep clean + raw static → the file; raw clean +
+  console static → our graph on that device (then: invalid samples
+  shown → NaN stage; none shown → likely audio-thread overload, try a
+  true bypass that stops feeding `N.inWet`). **Remove the button once
+  solved.** Sandbox gotcha: `pkill -f "http.server 90xx"` chained with
+  `&&` in one Bash call matches its own shell and kills it (exit 144),
+  silently skipping everything after it — run it on its own.
 
 ## Working style established this session
 
