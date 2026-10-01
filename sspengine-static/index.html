@@ -1225,7 +1225,8 @@
     }
 
     #mp3Bounce,
-    #abDemoBounce {
+    #abDemoBounce,
+    #ab2Bounce {
         width: 100%;
         margin-top: 12px;
         border: 1px solid var(--line);
@@ -1239,8 +1240,76 @@
     }
 
     #mp3Bounce:active,
-    #abDemoBounce:active {
+    #abDemoBounce:active,
+    #ab2Bounce:active {
         background: #15161a
+    }
+
+    #ab2Box {
+        margin-top: 14px;
+        padding: 14px;
+        border: 1px dashed var(--line);
+        border-radius: 10px;
+        display: flex;
+        flex-direction: column;
+        gap: 10px
+    }
+
+    #ab2Box .ab2Head {
+        font-family: var(--disp);
+        font-size: 11px;
+        letter-spacing: .2em;
+        color: var(--amber)
+    }
+
+    #ab2Box .ab2Note {
+        font-size: 10.5px;
+        line-height: 1.55;
+        color: var(--dim)
+    }
+
+    #ab2Box .ab2Slot {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        padding: 12px 14px;
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        background: #101114;
+        cursor: pointer
+    }
+
+    #ab2Box .ab2Slot:focus-within {
+        outline: 2px solid var(--blue);
+        outline-offset: 2px
+    }
+
+    #ab2Box .ab2Num {
+        font-size: 11px;
+        letter-spacing: .16em;
+        color: var(--bone);
+        flex: none
+    }
+
+    #ab2Box .ab2Slot b {
+        font-weight: 400;
+        font-size: 11px;
+        color: var(--dim);
+        text-align: right;
+        overflow-wrap: anywhere
+    }
+
+    #ab2Box .ab2Slot input {
+        position: absolute;
+        width: 1px;
+        height: 1px;
+        opacity: 0
+    }
+
+    #ab2Box #ab2Bounce {
+        margin-top: 2px;
+        opacity: .5
     }
 
     #ledger {
@@ -3734,6 +3803,13 @@
                 <div id="xpStatus"></div>
                 <button id="mp3Bounce">◉ ALSO WANT THE ORIGINAL + A MONO CHECK? · 3-FILE BOUNCE</button>
                 <button id="abDemoBounce">◉ PLAYING THIS FOR SOMEONE? · EXPORT AUTO A/B · 3x W/ VOICE CUES</button>
+                <div id="ab2Box">
+                    <div class="ab2Head">ALREADY HAVE YOUR MASTER? · A/B YOUR OWN TWO FILES</div>
+                    <div class="ab2Note">Plays both files exactly as they are, nothing re-processed, so the A/B is exactly the master you approved. Load your master here, not into the console above, or it gets mastered twice.</div>
+                    <label class="ab2Slot"><span class="ab2Num">1 · YOUR MASTER</span><b id="ab2MasterName">CHOOSE FILE</b><input type="file" id="ab2MasterIn" accept="audio/*,.mp3,.wav,.m4a,.aif,.aiff,.flac"></label>
+                    <label class="ab2Slot"><span class="ab2Num">2 · THE ORIGINAL</span><b id="ab2OrigName">CHOOSE FILE</b><input type="file" id="ab2OrigIn" accept="audio/*,.mp3,.wav,.m4a,.aif,.aiff,.flac"></label>
+                    <button id="ab2Bounce">◉ EXPORT A/B FROM THESE TWO FILES · 3x W/ VOICE CUES</button>
+                </div>
                 <div id="bounceProgress">
                     <div id="bounceBarTrack">
                         <div id="bounceBarFill"></div>
@@ -8274,10 +8350,14 @@
         abVoiceCache[key] = decoded;
         return decoded;
     }
-    async function renderAutoABDemo(onProgress) {
-        const sr = buffer.sampleRate,
-            ch = buffer.numberOfChannels,
-            totalLen = buffer.length,
+    /* src: the original to plan from and play in the ORIGINAL segments.
+       masterSeg(p, outChannels): optional source for the MASTER segments
+       (a master file the user already approved); without it, MASTER
+       segments are rendered from src through the engine. */
+    async function renderAutoABDemo(onProgress, src = buffer, masterSeg = null) {
+        const sr = src.sampleRate,
+            ch = src.numberOfChannels,
+            totalLen = src.length,
             segLenSamples = Math.floor(AUTO_AB_SECONDS * sr),
             preRollSamples = Math.floor(PRE_ROLL_SECONDS * sr),
             fadeSamples = Math.floor(AB_FADE_MS / 1000 * sr),
@@ -8325,16 +8405,18 @@
                 out.getChannelData(c).set(voiceBuf.getChannelData(Math.min(c, voiceBuf.numberOfChannels - 1)), writePos);
             writePos += voiceBuf.length + gapSamples;
             const segChans = [];
-            if (p.isWet) {
+            if (p.isWet && masterSeg)
+                segChans.push(...masterSeg(p, outChannels));
+            else if (p.isWet) {
                 const preRollStart = Math.max(0, p.pos - preRollSamples),
                     actualPreRoll = p.pos - preRollStart,
-                    window = sliceBuffer(buffer, preRollStart, p.segEnd),
+                    window = sliceBuffer(src, preRollStart, p.segEnd),
                     rendered = await renderChunk('master', window);
                 for (let c = 0; c < outChannels; c++)
                     segChans.push(rendered.getChannelData(Math.min(c, rendered.numberOfChannels - 1)).slice(actualPreRoll, actualPreRoll + p.segLen));
             } else
                 for (let c = 0; c < outChannels; c++)
-                    segChans.push(buffer.getChannelData(Math.min(c, ch - 1)).slice(p.pos, p.segEnd));
+                    segChans.push(src.getChannelData(Math.min(c, ch - 1)).slice(p.pos, p.segEnd));
             for (let c = 0; c < outChannels; c++) {
                 const seg = segChans[c];
                 for (let i = 0; i < Math.min(fadeSamples, p.segLen); i++) {
@@ -8816,6 +8898,181 @@
         finally {
             renderBusy = false;
             $('abDemoBounce').style.opacity = 1
+        }
+    });
+
+    /* A/B from two files the user already has: their approved master and
+       the original. Nothing is processed -- the MASTER segments are cut
+       straight from the master file -- so the A/B is exactly what was
+       approved, and loading a master into the engine-based A/B (which
+       would master it twice) is never needed. */
+    const ab2 = {
+        master: null,
+        orig: null,
+        masterName: '',
+        origName: ''
+    };
+    function monoDecimated(b, start, len, d) {
+        const L = b.getChannelData(0),
+            R = b.getChannelData(b.numberOfChannels > 1 ? 1 : 0),
+            n = Math.floor(len / d),
+            out = new Float32Array(n);
+        for (let k = 0; k < n; k++) {
+            let s = 0;
+            for (let j = 0; j < d; j++) {
+                const i = start + k * d + j;
+                if (i >= 0 && i < L.length)
+                    s += L[i] + R[i]
+            }
+            out[k] = s / (2 * d)
+        }
+        return out
+    }
+    function normCorr(a, b, bOff) {
+        let ab = 0, aa = 0, bb = 0;
+        for (let i = 0; i < a.length; i++) {
+            const y = b[i + bOff] || 0;
+            ab += a[i] * y;
+            aa += a[i] * a[i];
+            bb += y * y
+        }
+        return aa && bb ? ab / Math.sqrt(aa * bb) : 0
+    }
+    /* Finds lag L with master[i + L] ~ orig[i]. A bounced MP3 typically
+       starts ~25-50 ms late (encoder delay); left unaligned, every switch
+       would jump the beat. Coarse search on a decimated mix, then exact
+       to the sample. */
+    function alignLag(orig, master) {
+        const sr = orig.sampleRate,
+            D = 8,
+            maxLag = Math.floor(.3 * sr),
+            win = Math.floor(Math.min(8, Math.max(2, orig.duration / 3)) * sr),
+            start = Math.floor(Math.min(orig.length * .25, Math.max(0, orig.length - win - maxLag)));
+        const a = monoDecimated(orig, start, win, D),
+            mc = Math.floor(maxLag / D),
+            b = monoDecimated(master, start - mc * D, win + 2 * mc * D, D);
+        let best = 0, bestC = -2;
+        for (let k = 0; k <= 2 * mc; k++) {
+            const c = normCorr(a, b, k);
+            if (c > bestC) {
+                bestC = c;
+                best = (k - mc) * D
+            }
+        }
+        const fw = Math.min(win, Math.floor(2 * sr)),
+            fa = monoDecimated(orig, start, fw, 1),
+            fb = monoDecimated(master, start + best - D, fw + 2 * D, 1);
+        let fine = best, fineC = -2;
+        for (let k = 0; k <= 2 * D; k++) {
+            const c = normCorr(fa, fb, k);
+            if (c > fineC) {
+                fineC = c;
+                fine = best + k - D
+            }
+        }
+        return {
+            lag: fine,
+            corr: fineC
+        }
+    }
+    function ab2Refresh() {
+        $('ab2MasterName').textContent = ab2.master ? ab2.masterName + ' · ' + fmtT(ab2.master.duration) : 'CHOOSE FILE';
+        $('ab2OrigName').textContent = ab2.orig ? ab2.origName + ' · ' + fmtT(ab2.orig.duration) : 'CHOOSE FILE';
+        $('ab2Bounce').style.opacity = ab2.master && ab2.orig ? 1 : .5
+    }
+    [['ab2MasterIn', 'master', 'masterName'], ['ab2OrigIn', 'orig', 'origName']].forEach(([id, key, nameKey]) => {
+        $(id).addEventListener('change', async e => {
+            const f = e.target.files && e.target.files[0];
+            if (!f)
+                return;
+            const nameEl = $(key === 'master' ? 'ab2MasterName' : 'ab2OrigName');
+            nameEl.textContent = 'LOADING ' + f.name + '…';
+            try {
+                ab2[key] = await ctx().decodeAudioData(await f.arrayBuffer());
+                ab2[nameKey] = f.name
+            } catch (err) {
+                ab2[key] = null;
+                toast('COULDN\'T READ ' + f.name + ' — TRY AN MP3 OR WAV')
+            }
+            e.target.value = '';
+            ab2Refresh()
+        })
+    });
+    $('ab2Bounce').addEventListener('click', async () => {
+        if (!ab2.master || !ab2.orig) {
+            toast('CHOOSE BOTH FILES FIRST · 1 YOUR MASTER · 2 THE ORIGINAL');
+            return
+        }
+        if (Math.max(ab2.master.duration, ab2.orig.duration) > 420) {
+            toast('TRACK TOO LONG FOR IN-APP A/B');
+            return
+        }
+        if (renderBusy) {
+            toast('DECK BUSY — ONE PRINT AT A TIME');
+            return
+        }
+        renderBusy = true;
+        $('ab2Bounce').style.opacity = .5;
+        try {
+            const orig = ab2.orig,
+                master = ab2.master;
+            bounceStep('LINING UP YOUR TWO FILES…', 0);
+            await new Promise(r => setTimeout(r, 50));
+            const { lag, corr } = alignLag(orig, master);
+            if (corr < .25) {
+                bounceStep('✕ THESE TWO FILES DON\'T LOOK LIKE THE SAME SONG — CHECK SLOT 1 AND SLOT 2', 0);
+                toast('FILES DON\'T MATCH — NOTHING EXPORTED');
+                return
+            }
+            const rms = b => srcBufferStats(b).rms;
+            const swappedWarn = rms(master) < rms(orig) * .89 ? ' · HEADS UP: YOUR "MASTER" IS QUIETER THAN THE ORIGINAL — ARE THEY SWAPPED?' : '';
+            const masterSeg = (p, outChannels) => {
+                const chans = [];
+                for (let c = 0; c < outChannels; c++) {
+                    const m = master.getChannelData(Math.min(c, master.numberOfChannels - 1)),
+                        seg = new Float32Array(p.segLen),
+                        from = p.pos + lag;
+                    const s0 = Math.max(0, -from),
+                        s1 = Math.min(p.segLen, m.length - from);
+                    if (s1 > s0)
+                        seg.set(m.subarray(from + s0, from + s1), s0);
+                    chans.push(seg)
+                }
+                return chans
+            };
+            const canMp3 = !window.__noMp3 && typeof lamejs !== 'undefined';
+            let rb = await renderAutoABDemo((seg, total, which) => {
+                bounceStep('SEGMENT ' + seg + ' OF ' + total + ' · ' + which + ' · ' + AUTO_AB_SECONDS + 'S EACH…', (seg - 1) / total * 100)
+            }, orig, masterSeg);
+            let blob,
+                ext;
+            if (canMp3) {
+                blob = toMp3(rb);
+                ext = '.mp3'
+            } else {
+                blob = new Blob([wavFloat32(rb)], {
+                    type: 'audio/wav'
+                });
+                ext = '_f32.wav'
+            }
+            rb = null;
+            const hash = await sha256(await blob.arrayBuffer());
+            const base = ab2.origName.replace(/\.[^.]+$/, '') || 'sspengine';
+            const outName = base + '_AB_YOUR_MASTER' + ext;
+            ledgerSave(new Date().toLocaleTimeString() + ' · A/B FROM YOUR FILES · ' + AUTO_AB_CYCLES + 'x W/ VOICE CUES' + ext.toUpperCase(), hash, blob, outName);
+            flashLedgerRow();
+            const aligned = Math.abs(lag) > 0 ? ' · LINED UP ' + (lag / orig.sampleRate * 1000).toFixed(1) + ' MS' : ' · ALREADY LINED UP';
+            bounceStep((isTouchDevice ? '✓ A/B READY — PLAY OR SAVE IT BELOW' : '✓ A/B SAVED') + aligned + swappedWarn, 100, true);
+            toast('A/B FROM YOUR FILES ' + (isTouchDevice ? 'READY' : 'SAVED') + ' — ' + AUTO_AB_CYCLES + 'x YOUR MASTER / ORIGINAL');
+            await deliver(blob, outName, true);
+            blob = null
+        } catch (e) {
+            bounceStep('✕ EXPORT FAILED — TRACK MAY BE TOO LONG FOR THIS DEVICE', bouncePct);
+            toast('EXPORT FAILED — TRACK MAY BE TOO LONG FOR THIS DEVICE')
+        }
+        finally {
+            renderBusy = false;
+            ab2Refresh()
         }
     });
 
