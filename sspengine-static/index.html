@@ -3636,7 +3636,7 @@
                 </button>
                 <div id="xpStatus"></div>
                 <button id="mp3Bounce">◉ ALSO WANT THE ORIGINAL + A MONO CHECK? · 3-FILE BOUNCE</button>
-                <button id="abDemoBounce">◉ PLAYING THIS FOR SOMEONE? · EXPORT AUTO A/B AS ONE MP3</button>
+                <button id="abDemoBounce">◉ PLAYING THIS FOR SOMEONE? · EXPORT AUTO A/B · 3x W/ VOICE CUES</button>
                 <div id="bounceProgress">
                     <div id="bounceBarTrack">
                         <div id="bounceBarFill"></div>
@@ -7980,25 +7980,51 @@
             await renderChunk(v, buffer);
         return v === 'mono' ? monoDownmix(rendered) : rendered;
     }
-    /* Bakes the live Auto A/B toggle into a single downloadable file --
-       for playing to someone who should just put headphones on and
-       listen, no app or button-pressing involved, same MASTER/ORIGINAL
-       cadence as the on-screen toggle (see AUTO_AB_SECONDS). Builds on
-       the same renderChunk/sliceBuffer pieces chunked rendering already
-       uses: each MASTER segment is rendered with the same PRE_ROLL_SECONDS
-       of real audio before it (thrown away after) so reverb/compression/
-       delay are already settled by the time the kept portion starts, same
-       reasoning as renderChunked above. ORIGINAL segments need no
-       processing at all, just a straight copy of the source.
-       A hard, instant cut between two differently-processed segments is
-       exactly the kind of edit that reads as an audible click/pop --
-       splicing unrelated takes together has the same problem. Each
-       segment fades in/out over AB_FADE_MS at its own boundaries (both
-       sides touch zero, so there's never a discontinuity to click on) --
-       a deliberately short, soft dip rather than a true crossfade, which
-       doubles as a cue that a switch is happening. */
+    /* Bakes an Auto A/B listening demo into a single downloadable file --
+       for sending ahead of a meeting or playing somewhere the console
+       itself isn't open, so someone can put headphones on, close their
+       eyes, and just listen. Always MASTER first, then ORIGINAL, no
+       mono -- AUTO_AB_CYCLES full master/original pairs, not tied to
+       the whole track length (stops early only if the loaded track
+       itself is shorter than that many cycles need).
+       Builds on the same renderChunk/sliceBuffer pieces chunked
+       rendering already uses: each MASTER segment is rendered with the
+       same PRE_ROLL_SECONDS of real audio before it (thrown away after)
+       so reverb/compression/delay are already settled by the time the
+       kept portion starts, same reasoning as renderChunked above.
+       ORIGINAL segments need no processing at all, just a straight copy
+       of the source.
+       Each segment is preceded by a short silent gap, a spoken "SSP on"
+       / "SSP off" cue (so whoever's listening always knows which one
+       they're about to hear without looking at anything), then another
+       gap before the music starts -- real browsers can't render
+       speech-synthesis output into an offline buffer, so the two cues
+       are pre-recorded short WAV clips (sspengine-static/audio/) loaded
+       and resampled to the track's own sample rate once per render. The
+       silence on both sides keeps the cue cleanly separated from the
+       music; every music segment also fades in/out over AB_FADE_MS at
+       its own edges (both sides touch zero into the surrounding
+       silence, so there's never a discontinuity to click on). */
     const AUTO_AB_SECONDS = 20,
-        AB_FADE_MS = 15;
+        AUTO_AB_CYCLES = 3,
+        AB_FADE_MS = 15,
+        AB_VOICE_GAP_MS = 300,
+        AB_VOICE_URLS = {
+            master: 'audio/voice_ssp_on.wav',
+            original: 'audio/voice_ssp_off.wav'
+        };
+    const abVoiceCache = {};
+    async function loadAbVoiceClip(which, targetSampleRate) {
+        const key = which + '@' + targetSampleRate;
+        if (abVoiceCache[key])
+            return abVoiceCache[key];
+        const resp = await fetch(AB_VOICE_URLS[which]),
+            arrBuf = await resp.arrayBuffer(),
+            tempCtx = new OfflineAudioContext(1, 1, targetSampleRate),
+            decoded = await tempCtx.decodeAudioData(arrBuf);
+        abVoiceCache[key] = decoded;
+        return decoded;
+    }
     async function renderAutoABDemo(onProgress) {
         const sr = buffer.sampleRate,
             ch = buffer.numberOfChannels,
@@ -8006,44 +8032,69 @@
             segLenSamples = Math.floor(AUTO_AB_SECONDS * sr),
             preRollSamples = Math.floor(PRE_ROLL_SECONDS * sr),
             fadeSamples = Math.floor(AB_FADE_MS / 1000 * sr),
+            gapSamples = Math.floor(AB_VOICE_GAP_MS / 1000 * sr),
             outChannels = Math.max(2, ch),
-            totalSegs = Math.ceil(totalLen / segLenSamples);
+            maxSegs = AUTO_AB_CYCLES * 2,
+            availableSegs = Math.ceil(totalLen / segLenSamples),
+            totalSegs = Math.min(maxSegs, availableSegs);
+        const masterVoice = await loadAbVoiceClip('master', sr),
+            originalVoice = await loadAbVoiceClip('original', sr);
+        const planned = [];
+        let pos = 0;
+        for (let segIndex = 1; segIndex <= totalSegs; segIndex++) {
+            const segEnd = Math.min(totalLen, pos + segLenSamples),
+                segLen = segEnd - pos;
+            if (segLen <= 0)
+                break;
+            planned.push({
+                segIndex,
+                pos,
+                segEnd,
+                segLen,
+                isWet: segIndex % 2 === 1
+            });
+            pos = segEnd
+        }
+        let outLen = 0;
+        for (const p of planned)
+            outLen += gapSamples + (p.isWet ? masterVoice : originalVoice).length + gapSamples + p.segLen;
+        /* AudioBuffer channel data starts zeroed, so the gaps need no
+           explicit silence -- just advancing writePos past them leaves
+           that stretch untouched. */
         const out = new AudioBuffer({
             numberOfChannels: outChannels,
-            length: totalLen,
+            length: outLen,
             sampleRate: sr
         });
-        let pos = 0,
-            segIndex = 0;
-        while (pos < totalLen) {
-            segIndex++;
-            const segEnd = Math.min(totalLen, pos + segLenSamples),
-                segLen = segEnd - pos,
-                isWet = segIndex % 2 === 1;
+        let writePos = 0;
+        for (const p of planned) {
             if (onProgress)
-                onProgress(segIndex, totalSegs, isWet ? 'MASTER' : 'ORIGINAL');
+                onProgress(p.segIndex, planned.length, p.isWet ? 'MASTER' : 'ORIGINAL');
+            const voiceBuf = p.isWet ? masterVoice : originalVoice;
+            writePos += gapSamples;
+            for (let c = 0; c < outChannels; c++)
+                out.getChannelData(c).set(voiceBuf.getChannelData(Math.min(c, voiceBuf.numberOfChannels - 1)), writePos);
+            writePos += voiceBuf.length + gapSamples;
             const segChans = [];
-            if (isWet) {
-                const preRollStart = Math.max(0, pos - preRollSamples),
-                    actualPreRoll = pos - preRollStart,
-                    window = sliceBuffer(buffer, preRollStart, segEnd),
+            if (p.isWet) {
+                const preRollStart = Math.max(0, p.pos - preRollSamples),
+                    actualPreRoll = p.pos - preRollStart,
+                    window = sliceBuffer(buffer, preRollStart, p.segEnd),
                     rendered = await renderChunk('master', window);
                 for (let c = 0; c < outChannels; c++)
-                    segChans.push(rendered.getChannelData(Math.min(c, rendered.numberOfChannels - 1)).slice(actualPreRoll, actualPreRoll + segLen));
+                    segChans.push(rendered.getChannelData(Math.min(c, rendered.numberOfChannels - 1)).slice(actualPreRoll, actualPreRoll + p.segLen));
             } else
                 for (let c = 0; c < outChannels; c++)
-                    segChans.push(buffer.getChannelData(Math.min(c, ch - 1)).slice(pos, segEnd));
+                    segChans.push(buffer.getChannelData(Math.min(c, ch - 1)).slice(p.pos, p.segEnd));
             for (let c = 0; c < outChannels; c++) {
                 const seg = segChans[c];
-                if (segIndex > 1)
-                    for (let i = 0; i < Math.min(fadeSamples, segLen); i++)
-                        seg[i] *= i / fadeSamples;
-                if (segEnd < totalLen)
-                    for (let i = 0; i < Math.min(fadeSamples, segLen); i++)
-                        seg[segLen - 1 - i] *= i / fadeSamples;
-                out.getChannelData(c).set(seg, pos)
+                for (let i = 0; i < Math.min(fadeSamples, p.segLen); i++) {
+                    seg[i] *= i / fadeSamples;
+                    seg[p.segLen - 1 - i] *= i / fadeSamples
+                }
+                out.getChannelData(c).set(seg, writePos)
             }
-            pos = segEnd;
+            writePos += p.segLen;
             await new Promise(r => setTimeout(r, 200))
         }
         return out;
@@ -8371,10 +8422,10 @@
             rb = null;
             const hash = await sha256(await blob.arrayBuffer());
             const outName = (window.__srcName || 'sspengine') + '_AUTO_AB_DEMO' + ext;
-            ledgerSave(new Date().toLocaleTimeString() + ' · AUTO A/B DEMO · ' + AUTO_AB_SECONDS + 'S SWITCHES' + ext.toUpperCase(), hash, blob, outName);
+            ledgerSave(new Date().toLocaleTimeString() + ' · AUTO A/B DEMO · ' + AUTO_AB_CYCLES + 'x W/ VOICE CUES' + ext.toUpperCase(), hash, blob, outName);
             flashLedgerRow();
             bounceStep('✓ AUTO A/B DEMO SAVED', 100, true);
-            toast('AUTO A/B DEMO SAVED — MASTER/ORIGINAL EVERY ' + AUTO_AB_SECONDS + 'S');
+            toast('AUTO A/B DEMO SAVED — ' + AUTO_AB_CYCLES + 'x MASTER/ORIGINAL W/ "SSP ON/OFF" VOICE CUES');
             await deliver(blob, outName);
             blob = null
         } catch (e) {
