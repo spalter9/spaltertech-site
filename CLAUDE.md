@@ -574,7 +574,17 @@ real secrets there. `.wrangler/` (local D1 state) is also gitignored.
   each loop point B→A→B (bug caught: first boundary was scheduled at
   t0 because playback starts 60ms after the tap → clamp pass ≥ 0).
   Uses the two-file box's files when both loaded, else the console's
-  song. Live BOOM Auto A/B now also starts on the original. Verified on
+  song. Live BOOM Auto A/B now also starts on the original.
+  **MATCH LEVELS switch** on the A/B screen (commit `561995d`):
+  `passageLoudness()` = integrated LUFS (BS.1770 K-weighting via
+  OfflineAudioContext highshelf 1500Hz +4dB / highpass 38Hz, 400ms
+  blocks, -70/-10 gating); `abApplyMatch()` turns the louder side down
+  via per-side `abS.trim` gains (never boosts). Gotcha: Web Audio's
+  highpass/lowpass Q is in **dB** — BS.1770's linear Q 0.5 must be
+  `20*log10(.5)`; with plain 0.5 music read ~1.7 dB hot. Cross-checked
+  with `pyloudnorm` (pip-installable here): within 0.02 dB. Note the
+  gap depends on preset: Spalter preset master +3.7 dB vs original on
+  the test song, default FLAT preset master −1.4 dB. Verified on
   a 90 BPM test song with a known chorus at 32.0s (`structured_song.wav`
   generator in this session): picks 32.0s / 8 bars / 90 BPM.
 
