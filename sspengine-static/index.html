@@ -9371,7 +9371,7 @@
     /* A/B screen: the chosen passage, B (original, "SSP off") on the left,
        A (master, "SSP on") on the right. Both play together, looped and in
        sync, on a bare AudioContext (no engine in the path); a side is just
-       which one is audible. Tap a side to switch at the same spot, or Auto:
+       which one is audible. Tap a side to hear it from the top of the passage, or Auto:
        B for one pass, A for the next, switching at the loop point. */
     const abS = {
         ctx: null,
@@ -9386,7 +9386,8 @@
         pending: null,
         scheduledPass: null,
         tick: 0,
-        raf: 0
+        raf: 0,
+        restartT: 0
     };
     function abLen() {
         return abS.bufs.b.duration
@@ -9492,6 +9493,7 @@
         abS.raf = requestAnimationFrame(abFrame)
     }
     function abClose() {
+        clearTimeout(abS.restartT);
         abPause();
         clearInterval(abS.tick);
         cancelAnimationFrame(abS.raf);
@@ -9517,16 +9519,32 @@
             abS.playing ? abPause() : abPlay(false)
         }
     }
+    /* A tap plays the chosen version from the top of the passage, so both
+       sides are always heard over identical music (never picking up
+       mid-passage). The current one is faded out first so the cut can't
+       click. */
     function abChoose(side) {
         if (abS.auto) {
             abS.auto = false;
             abCancelAuto()
         }
         abS.side = side;
-        if (abS.playing)
-            abGainsTo(side, abS.ctx.currentTime);
-        else
-            abPlay(false);
+        clearTimeout(abS.restartT);
+        if (abS.playing) {
+            const t = abS.ctx.currentTime;
+            for (const k of ['a', 'b']) {
+                const p = abS.g[k].gain;
+                p.cancelScheduledValues(t);
+                p.setTargetAtTime(0, t, .004)
+            }
+            abS.restartT = setTimeout(() => {
+                if (!abS.ctx)
+                    return;
+                abPause();
+                abPlay(true)
+            }, 30)
+        } else
+            abPlay(true);
         abRender()
     }
     function abBuildScreen() {
@@ -9541,7 +9559,7 @@
             '</div>' +
             '<div class="abBar"><div class="abFill"></div></div>' +
             '<div class="abCtrls"><button type="button" class="abPlay">▶ PLAY</button><span class="abTime">0:00 / 0:00</span><button type="button" class="abAuto" aria-pressed="false">AUTO A/B · OFF</button></div>' +
-            '<div class="abHint">Tap a side to switch at the same spot. Auto plays B, then A, switching each time the passage starts over.</div>';
+            '<div class="abHint">Tap a side to hear that version from the top of the passage. Auto plays B, then A, each from the top.</div>';
         document.body.appendChild(el);
         el.querySelector('.abClose').addEventListener('click', abClose);
         el.querySelectorAll('.abSide').forEach(b => b.addEventListener('click', () => abS.bufs && abChoose(b.dataset.side)));
