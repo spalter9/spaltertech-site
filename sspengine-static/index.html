@@ -1226,7 +1226,8 @@
 
     #mp3Bounce,
     #abDemoBounce,
-    #ab2Bounce {
+    #ab2Bounce,
+    #abScreenOpen {
         width: 100%;
         margin-top: 12px;
         border: 1px solid var(--line);
@@ -1241,7 +1242,8 @@
 
     #mp3Bounce:active,
     #abDemoBounce:active,
-    #ab2Bounce:active {
+    #ab2Bounce:active,
+    #abScreenOpen:active {
         background: #15161a
     }
 
@@ -1311,6 +1313,206 @@
         margin-top: 2px;
         opacity: .5
     }
+
+    #abScreen {
+        position: fixed;
+        inset: 0;
+        z-index: 110;
+        background: #06060b;
+        color: var(--bone);
+        font-family: var(--mono);
+        display: none;
+        flex-direction: column;
+        gap: 14px;
+        padding: max(16px, env(safe-area-inset-top)) 16px max(16px, env(safe-area-inset-bottom))
+    }
+
+    #abScreen.show {
+        display: flex
+    }
+
+    #abScreen .abTop {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        gap: 12px
+    }
+
+    #abScreen .abTitle {
+        font-family: var(--disp);
+        font-size: 12px;
+        letter-spacing: .22em;
+        color: var(--amber)
+    }
+
+    #abScreen .abInfo {
+        margin-top: 4px;
+        font-size: 11px;
+        letter-spacing: .08em;
+        line-height: 1.5;
+        color: var(--dim)
+    }
+
+    #abScreen button {
+        font-family: var(--mono);
+        cursor: pointer
+    }
+
+    #abScreen button:disabled {
+        opacity: .4;
+        cursor: default
+    }
+
+    #abScreen button:focus-visible {
+        outline: 2px solid var(--bone);
+        outline-offset: 3px
+    }
+
+    #abScreen .abClose {
+        flex: none;
+        background: transparent;
+        color: var(--dim);
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        padding: 10px 14px;
+        font-size: 11px;
+        letter-spacing: .14em
+    }
+
+    #abScreen .abSides {
+        flex: 1;
+        display: flex;
+        gap: 12px;
+        min-height: 0
+    }
+
+    #abScreen .abSide {
+        --c: var(--blue);
+        flex: 1;
+        min-width: 0;
+        border: 2px solid var(--line);
+        border-radius: 16px;
+        background: #0d0e14;
+        color: var(--dim);
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        padding: 16px 8px;
+        transition: border-color .15s, background .15s, color .15s, box-shadow .15s
+    }
+
+    #abScreen .abSide[data-side="a"] {
+        --c: var(--amber)
+    }
+
+    #abScreen .abSide.on {
+        border-color: var(--c);
+        color: var(--bone);
+        background: color-mix(in srgb, var(--c) 12%, #0d0e14);
+        box-shadow: 0 0 40px color-mix(in srgb, var(--c) 30%, transparent)
+    }
+
+    #abScreen .abLetter {
+        font-family: var(--disp);
+        font-size: clamp(64px, 20vw, 168px);
+        line-height: 1;
+        color: inherit
+    }
+
+    #abScreen .abSide.on .abLetter {
+        color: var(--c)
+    }
+
+    #abScreen .abName {
+        font-size: clamp(12px, 3.2vw, 16px);
+        letter-spacing: .16em;
+        text-align: center
+    }
+
+    #abScreen .abSub {
+        font-size: 11px;
+        letter-spacing: .2em;
+        color: var(--dim)
+    }
+
+    #abScreen .abNow {
+        font-size: 10px;
+        letter-spacing: .2em;
+        color: var(--c);
+        visibility: hidden
+    }
+
+    #abScreen .abSide.on .abNow {
+        visibility: visible
+    }
+
+    #abScreen .abBar {
+        height: 4px;
+        border-radius: 2px;
+        background: var(--line);
+        overflow: hidden
+    }
+
+    #abScreen .abFill {
+        height: 100%;
+        width: 0;
+        background: var(--bone)
+    }
+
+    #abScreen .abCtrls {
+        display: flex;
+        align-items: center;
+        gap: 10px
+    }
+
+    #abScreen .abPlay,
+    #abScreen .abAuto {
+        flex: 1;
+        padding: 14px 10px;
+        border-radius: 10px;
+        font-size: 12px;
+        letter-spacing: .14em;
+        border: 1px solid var(--amber)
+    }
+
+    #abScreen .abPlay {
+        background: var(--amber);
+        color: #14151b
+    }
+
+    #abScreen .abAuto {
+        background: transparent;
+        color: var(--amber)
+    }
+
+    #abScreen .abAuto.on {
+        background: color-mix(in srgb, var(--amber) 18%, transparent)
+    }
+
+    #abScreen .abTime {
+        flex: none;
+        font-size: 11px;
+        color: var(--dim);
+        font-variant-numeric: tabular-nums;
+        min-width: 92px;
+        text-align: center
+    }
+
+    #abScreen .abHint {
+        font-size: 10.5px;
+        line-height: 1.5;
+        color: var(--dim);
+        text-align: center
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+        #abScreen .abSide {
+            transition: none
+        }
+    }
+
 
     #ledger {
         margin-top: 12px;
@@ -3802,10 +4004,11 @@
                 </button>
                 <div id="xpStatus"></div>
                 <button id="mp3Bounce">◉ ALSO WANT THE ORIGINAL + A MONO CHECK? · 3-FILE BOUNCE</button>
+                <button id="abScreenOpen">◐ OPEN THE A/B SCREEN · B ORIGINAL vs A MASTER · TAP OR AUTO</button>
                 <button id="abDemoBounce">◉ PLAYING THIS FOR SOMEONE? · EXPORT AUTO A/B · 3x W/ VOICE CUES</button>
                 <div id="ab2Box">
                     <div class="ab2Head">ALREADY HAVE YOUR MASTER? · A/B YOUR OWN TWO FILES</div>
-                    <div class="ab2Note">Plays both files exactly as they are, nothing re-processed, so the A/B is exactly the master you approved. Load your master here, not into the console above, or it gets mastered twice.</div>
+                    <div class="ab2Note">Plays both files exactly as they are, nothing re-processed, so the A/B is exactly the master you approved. Load your master here, not into the console above, or it gets mastered twice. With both files loaded, the A/B screen above uses them too.</div>
                     <label class="ab2Slot"><span class="ab2Num">1 · YOUR MASTER</span><b id="ab2MasterName">CHOOSE FILE</b><input type="file" id="ab2MasterIn" accept="audio/*,.mp3,.wav,.m4a,.aif,.aiff,.flac"></label>
                     <label class="ab2Slot"><span class="ab2Num">2 · THE ORIGINAL</span><b id="ab2OrigName">CHOOSE FILE</b><input type="file" id="ab2OrigIn" accept="audio/*,.mp3,.wav,.m4a,.aif,.aiff,.flac"></label>
                     <button id="ab2Bounce">◉ EXPORT A/B FROM THESE TWO FILES · 3x W/ VOICE CUES</button>
@@ -6332,6 +6535,9 @@
     }
     function startAutoAB() {
         ctx();
+        // original first, then the master -- same order as the A/B exports and screen
+        P.boom = false;
+        applyBoom();
         autoABDeadline = Date.now() + autoABSeconds * 1000;
         $('autoAB').classList.add('on');
         $('autoAB').textContent = '■ STOP AUTO A/B';
@@ -8305,32 +8511,13 @@
             await renderChunk(v, buffer);
         return v === 'mono' ? monoDownmix(rendered) : rendered;
     }
-    /* Bakes an Auto A/B listening demo into a single downloadable file --
-       for sending ahead of a meeting or playing somewhere the console
-       itself isn't open, so someone can put headphones on, close their
-       eyes, and just listen. Always MASTER first, then ORIGINAL, no
-       mono -- AUTO_AB_CYCLES full master/original pairs, not tied to
-       the whole track length (stops early only if the loaded track
-       itself is shorter than that many cycles need).
-       Builds on the same renderChunk/sliceBuffer pieces chunked
-       rendering already uses: each MASTER segment is rendered with the
-       same PRE_ROLL_SECONDS of real audio before it (thrown away after)
-       so reverb/compression/delay are already settled by the time the
-       kept portion starts, same reasoning as renderChunked above.
-       ORIGINAL segments need no processing at all, just a straight copy
-       of the source.
-       Each segment is preceded by a short silent gap, a spoken "SSP on"
-       / "SSP off" cue (so whoever's listening always knows which one
-       they're about to hear without looking at anything), then another
-       gap before the music starts -- real browsers can't render
-       speech-synthesis output into an offline buffer, so the two cues
-       are pre-recorded short WAV clips (sspengine-static/audio/) loaded
-       and resampled to the track's own sample rate once per render. The
-       silence on both sides keeps the cue cleanly separated from the
-       music; every music segment also fades in/out over AB_FADE_MS at
-       its own edges (both sides touch zero into the surrounding
-       silence, so there's never a discontinuity to click on). */
-    const AUTO_AB_SECONDS = 20,
+    /* A/B listening, built around ONE passage of the song: the strongest
+       stretch (usually the chorus), picked automatically, and compared
+       against itself -- original first (B, "SSP off"), then the master of
+       that exact same passage (A, "SSP on"). Comparing two different parts
+       of the song (the old 0-20s original / 20-40s master layout) isn't a
+       real A/B. Used by both A/B exports and the A/B screen. */
+    const AB_TARGET_SECONDS = 20,
         AUTO_AB_CYCLES = 3,
         AB_FADE_MS = 15,
         AB_VOICE_GAP_MS = 300,
@@ -8350,85 +8537,207 @@
         abVoiceCache[key] = decoded;
         return decoded;
     }
-    /* src: the original to plan from and play in the ORIGINAL segments.
-       masterSeg(p, outChannels): optional source for the MASTER segments
-       (a master file the user already approved); without it, MASTER
-       segments are rendered from src through the engine. */
-    async function renderAutoABDemo(onProgress, src = buffer, masterSeg = null) {
-        const sr = src.sampleRate,
-            ch = src.numberOfChannels,
-            totalLen = src.length,
-            segLenSamples = Math.floor(AUTO_AB_SECONDS * sr),
-            preRollSamples = Math.floor(PRE_ROLL_SECONDS * sr),
-            fadeSamples = Math.floor(AB_FADE_MS / 1000 * sr),
-            gapSamples = Math.floor(AB_VOICE_GAP_MS / 1000 * sr),
-            outChannels = Math.max(2, ch),
-            maxSegs = AUTO_AB_CYCLES * 2,
-            availableSegs = Math.ceil(totalLen / segLenSamples),
-            totalSegs = Math.min(maxSegs, availableSegs);
-        const masterVoice = await loadAbVoiceClip('master', sr),
-            originalVoice = await loadAbVoiceClip('original', sr);
-        const planned = [];
-        let pos = 0;
-        for (let segIndex = 1; segIndex <= totalSegs; segIndex++) {
-            const segEnd = Math.min(totalLen, pos + segLenSamples),
-                segLen = segEnd - pos;
-            if (segLen <= 0)
-                break;
-            planned.push({
-                segIndex,
-                pos,
-                segEnd,
-                segLen,
-                isWet: segIndex % 2 === 1
-            });
-            pos = segEnd
+    // Mono RMS per hop (fps frames per second).
+    function frameEnergy(b, fps) {
+        const L = b.getChannelData(0),
+            R = b.getChannelData(b.numberOfChannels > 1 ? 1 : 0),
+            hop = Math.max(1, Math.round(b.sampleRate / fps)),
+            n = Math.floor(L.length / hop),
+            env = new Float32Array(n);
+        for (let f = 0; f < n; f++) {
+            let s = 0;
+            for (let i = f * hop, e = i + hop; i < e; i++) {
+                const m = (L[i] + R[i]) * .5;
+                s += m * m
+            }
+            env[f] = Math.sqrt(s / hop)
         }
-        let outLen = 0;
-        for (const p of planned)
-            outLen += gapSamples + (p.isWet ? masterVoice : originalVoice).length + gapSamples + p.segLen;
-        /* AudioBuffer channel data starts zeroed, so the gaps need no
-           explicit silence -- just advancing writePos past them leaves
-           that stretch untouched. */
+        return { env, hop }
+    }
+    /* Beat period in frames from the autocorrelation of the onset curve,
+       60-180 BPM; 0 when nothing periodic stands out. */
+    function estimateBeat(flux, fps) {
+        const n = flux.length,
+            from = Math.floor(n * .2),
+            to = Math.min(n, from + 45 * fps),
+            minL = Math.round(fps * 60 / 180),
+            maxL = Math.round(fps * 60 / 60);
+        if (to - from < maxL * 4)
+            return 0;
+        let mean = 0;
+        for (let i = from; i < to; i++)
+            mean += flux[i];
+        mean /= (to - from);
+        let r0 = 0;
+        for (let i = from; i < to; i++)
+            r0 += (flux[i] - mean) ** 2;
+        const ac = L => {
+            let r = 0;
+            for (let i = from; i + L < to; i++)
+                r += (flux[i] - mean) * (flux[i + L] - mean);
+            return r
+        };
+        let best = 0, bestR = 0;
+        for (let L = minL; L <= maxL; L++) {
+            const r = ac(L);
+            if (r > bestR) {
+                bestR = r;
+                best = L
+            }
+        }
+        if (!r0 || bestR / r0 <= .1)
+            return 0;
+        // sub-frame peak (parabola through the neighbours): over 8+ bars a
+        // whole-frame beat error adds up to a tenth of a second
+        const a = ac(best - 1), c = ac(best + 1), den = a - 2 * bestR + c;
+        return den < 0 ? best + .5 * (a - c) / den : best
+    }
+    /* The passage to compare: whole bars (4 beats) adding up to about 20s,
+       placed on the loudest, fullest stretch of the song (the earliest one
+       within 0.5 dB of the loudest, so the first chorus beats the outro),
+       starting on a strong beat. */
+    function pickBestSection(b) {
+        const sr = b.sampleRate,
+            fps = 100;
+        if (b.duration <= AB_TARGET_SECONDS + 2)
+            return { start: 0, len: b.length, bpm: 0, bars: 0 };
+        const { env, hop } = frameEnergy(b, fps),
+            n = env.length,
+            flux = new Float32Array(n);
+        for (let i = 1; i < n; i++)
+            flux[i] = Math.max(0, env[i] - env[i - 1]);
+        const beatF = estimateBeat(flux, fps);
+        let lenF = AB_TARGET_SECONDS * fps, bars = 0;
+        if (beatF) {
+            // phrase lengths songs are actually written in
+            const barF = beatF * 4;
+            let bestK = 0;
+            for (const k of [4, 8, 16]) {
+                const sec = k * barF / fps;
+                if (sec >= 12 && sec <= 32 && k * barF < n && (!bestK || Math.abs(sec - AB_TARGET_SECONDS) < Math.abs(bestK * barF / fps - AB_TARGET_SECONDS)))
+                    bestK = k
+            }
+            if (bestK) {
+                lenF = Math.round(bestK * barF);
+                bars = bestK
+            }
+        }
+        lenF = Math.min(lenF, n);
+        // windowed mean power via prefix sums
+        const pre = new Float64Array(n + 1);
+        for (let i = 0; i < n; i++)
+            pre[i + 1] = pre[i] + env[i] * env[i];
+        const last = n - lenF;
+        let maxP = 0;
+        for (let s = 0; s <= last; s++)
+            maxP = Math.max(maxP, pre[s + lenF] - pre[s]);
+        /* The earliest window within 0.5 dB of the loudest picks WHICH
+           chorus; the loudest window around it picks exactly where it
+           starts (the tolerance alone would drift back into the verse). */
+        let cand = 0;
+        for (let s = 0; s <= last; s++)
+            if (pre[s + lenF] - pre[s] >= maxP * .89) {
+                cand = s;
+                break
+            }
+        let startF = cand, bestP = -1;
+        for (let s = Math.max(0, cand - (lenF >> 1)); s <= Math.min(last, cand + (lenF >> 1)); s++) {
+            const p = pre[s + lenF] - pre[s];
+            if (p > bestP) {
+                bestP = p;
+                startF = s
+            }
+        }
+        // snap to the strongest onset within about a beat
+        const reach = beatF ? Math.round(beatF * .6) : Math.round(fps * .5);
+        let snap = startF, snapV = -1;
+        for (let s = Math.max(1, startF - reach); s <= Math.min(last, startF + reach); s++)
+            if (flux[s] > snapV) {
+                snapV = flux[s];
+                snap = s
+            }
+        const start = Math.max(0, (snap - 1) * hop),
+            len = Math.min(lenF * hop, b.length - start);
+        return {
+            start,
+            len,
+            bpm: beatF ? Math.round(60 * fps / beatF) : 0,
+            bars
+        }
+    }
+    // Copy len samples from buf starting at `from` (may run off either end: zero-filled), as stereo.
+    function shiftedSlice(buf, from, len) {
         const out = new AudioBuffer({
-            numberOfChannels: outChannels,
-            length: outLen,
+            numberOfChannels: 2,
+            length: len,
+            sampleRate: buf.sampleRate
+        });
+        const s0 = Math.max(0, -from),
+            s1 = Math.min(len, buf.length - from);
+        for (let c = 0; c < 2; c++)
+            if (s1 > s0)
+                out.getChannelData(c).set(buf.getChannelData(Math.min(c, buf.numberOfChannels - 1)).subarray(from + s0, from + s1), s0);
+        return out
+    }
+    function sectionLabel(sec, sr) {
+        return fmtT(sec.start / sr) + '–' + fmtT((sec.start + sec.len) / sr) + (sec.bars ? ' · ' + sec.bars + ' BARS @ ' + sec.bpm + ' BPM' : '')
+    }
+    /* { orig, master, sec } for the chosen passage. source.master given
+       (a master file, with source.lag from alignLag): cut straight from it.
+       Otherwise the engine renders the passage (with pre-roll so reverb /
+       compression are settled), lined up for the limiter's look-ahead. */
+    async function getABPair(source, sec = pickBestSection(source.orig)) {
+        const orig = source.orig,
+            sr = orig.sampleRate,
+            origSec = shiftedSlice(orig, sec.start, sec.len);
+        let masterSec;
+        if (source.master)
+            masterSec = shiftedSlice(source.master, sec.start + source.lag, sec.len);
+        else {
+            const pre = Math.min(sec.start, Math.floor(PRE_ROLL_SECONDS * sr)),
+                end = Math.min(orig.length, sec.start + sec.len + Math.floor(.4 * sr)),
+                rendered = await renderChunk('master', sliceBuffer(orig, sec.start - pre, end)),
+                { lag } = alignLag(origSec, shiftedSlice(rendered, pre, rendered.length - pre));
+            masterSec = shiftedSlice(rendered, pre + lag, sec.len)
+        }
+        return { orig: origSec, master: masterSec, sec }
+    }
+    function fadedCopy(buf, c) {
+        const d = buf.getChannelData(Math.min(c, buf.numberOfChannels - 1)).slice(),
+            f = Math.min(Math.floor(AB_FADE_MS / 1000 * buf.sampleRate), d.length >> 1);
+        for (let i = 0; i < f; i++) {
+            d[i] *= i / f;
+            d[d.length - 1 - i] *= i / f
+        }
+        return d
+    }
+    /* The file: AUTO_AB_CYCLES x [gap, "SSP off", gap, original passage,
+       gap, "SSP on", gap, master of the same passage]. Each passage fades
+       in/out over AB_FADE_MS into silence, so no cut can click. */
+    async function buildABFile(pair) {
+        const sr = pair.orig.sampleRate,
+            on = await loadAbVoiceClip('master', sr),
+            off = await loadAbVoiceClip('original', sr),
+            gap = Math.floor(AB_VOICE_GAP_MS / 1000 * sr),
+            parts = [off, pair.orig, on, pair.master];
+        let cycleLen = 0;
+        for (const p of parts)
+            cycleLen += gap + p.length;
+        const out = new AudioBuffer({
+            numberOfChannels: 2,
+            length: cycleLen * AUTO_AB_CYCLES,
             sampleRate: sr
         });
-        let writePos = 0;
-        for (const p of planned) {
-            if (onProgress)
-                onProgress(p.segIndex, planned.length, p.isWet ? 'MASTER' : 'ORIGINAL');
-            const voiceBuf = p.isWet ? masterVoice : originalVoice;
-            writePos += gapSamples;
-            for (let c = 0; c < outChannels; c++)
-                out.getChannelData(c).set(voiceBuf.getChannelData(Math.min(c, voiceBuf.numberOfChannels - 1)), writePos);
-            writePos += voiceBuf.length + gapSamples;
-            const segChans = [];
-            if (p.isWet && masterSeg)
-                segChans.push(...masterSeg(p, outChannels));
-            else if (p.isWet) {
-                const preRollStart = Math.max(0, p.pos - preRollSamples),
-                    actualPreRoll = p.pos - preRollStart,
-                    window = sliceBuffer(src, preRollStart, p.segEnd),
-                    rendered = await renderChunk('master', window);
-                for (let c = 0; c < outChannels; c++)
-                    segChans.push(rendered.getChannelData(Math.min(c, rendered.numberOfChannels - 1)).slice(actualPreRoll, actualPreRoll + p.segLen));
-            } else
-                for (let c = 0; c < outChannels; c++)
-                    segChans.push(src.getChannelData(Math.min(c, ch - 1)).slice(p.pos, p.segEnd));
-            for (let c = 0; c < outChannels; c++) {
-                const seg = segChans[c];
-                for (let i = 0; i < Math.min(fadeSamples, p.segLen); i++) {
-                    seg[i] *= i / fadeSamples;
-                    seg[p.segLen - 1 - i] *= i / fadeSamples
-                }
-                out.getChannelData(c).set(seg, writePos)
+        let w = 0;
+        for (let k = 0; k < AUTO_AB_CYCLES; k++)
+            for (const p of parts) {
+                w += gap;
+                const music = p === pair.orig || p === pair.master;
+                for (let c = 0; c < 2; c++)
+                    out.getChannelData(c).set(music ? fadedCopy(p, c) : p.getChannelData(Math.min(c, p.numberOfChannels - 1)), w);
+                w += p.length
             }
-            writePos += p.segLen;
-            await new Promise(r => setTimeout(r, 200))
-        }
-        return out;
+        return out
     }
     /* Phones: an export finishes long after the tap that started it, and
        iOS only opens the share sheet (or saves a download) right after a
@@ -8849,6 +9158,31 @@
             $('mp3Bounce').style.opacity = 1
         }
     });
+    // Shared tail of both A/B exports: build, encode, hash, ledger, hand off.
+    async function finishABExport(pair, baseName, ledgerName, doneDetail) {
+        const canMp3 = !window.__noMp3 && typeof lamejs !== 'undefined';
+        bounceStep('BUILDING THE A/B FILE…', 75);
+        let rb = await buildABFile(pair),
+            blob,
+            ext;
+        if (canMp3) {
+            blob = toMp3(rb);
+            ext = '.mp3'
+        } else {
+            blob = new Blob([wavFloat32(rb)], {
+                type: 'audio/wav'
+            });
+            ext = '_f32.wav'
+        }
+        rb = null;
+        const hash = await sha256(await blob.arrayBuffer()),
+            outName = baseName + ext;
+        ledgerSave(new Date().toLocaleTimeString() + ' · ' + ledgerName + ' · ' + AUTO_AB_CYCLES + 'x ORIGINAL→MASTER' + ext.toUpperCase(), hash, blob, outName);
+        flashLedgerRow();
+        bounceStep((isTouchDevice ? '✓ A/B READY — PLAY OR SAVE IT BELOW' : '✓ A/B SAVED') + doneDetail, 100, true);
+        toast(ledgerName + ' ' + (isTouchDevice ? 'READY' : 'SAVED') + ' — ' + AUTO_AB_CYCLES + 'x "SSP OFF" ORIGINAL → "SSP ON" MASTER, SAME PASSAGE');
+        await deliver(blob, outName, true)
+    }
     $('abDemoBounce').addEventListener('click', async () => {
         if (!buffer) {
             toast('LOAD AUDIO FIRST');
@@ -8865,32 +9199,15 @@
         renderBusy = true;
         $('abDemoBounce').style.opacity = .5;
         try {
-            const canMp3 = !window.__noMp3 && typeof lamejs !== 'undefined';
-            toast(canMp3 ? 'AUTO A/B DEMO · 320K · RENDERING' : 'MP3 ENCODER OFFLINE · BOUNCING FLOAT32 WAV');
-            bounceStep('RENDERING AUTO A/B DEMO…', 0);
-            let rb = await renderAutoABDemo((seg, total, which) => {
-                bounceStep('SEGMENT ' + seg + ' OF ' + total + ' · ' + which + ' · ' + AUTO_AB_SECONDS + 'S EACH…', (seg - 1) / total * 100)
-            });
-            let blob,
-                ext;
-            if (canMp3) {
-                blob = toMp3(rb);
-                ext = '.mp3'
-            } else {
-                blob = new Blob([wavFloat32(rb)], {
-                    type: 'audio/wav'
-                });
-                ext = '_f32.wav'
-            }
-            rb = null;
-            const hash = await sha256(await blob.arrayBuffer());
-            const outName = (window.__srcName || 'sspengine') + '_AUTO_AB_DEMO' + ext;
-            ledgerSave(new Date().toLocaleTimeString() + ' · AUTO A/B DEMO · ' + AUTO_AB_CYCLES + 'x W/ VOICE CUES' + ext.toUpperCase(), hash, blob, outName);
-            flashLedgerRow();
-            bounceStep(isTouchDevice ? '✓ AUTO A/B DEMO READY — PLAY OR SAVE IT BELOW' : '✓ AUTO A/B DEMO SAVED', 100, true);
-            toast('AUTO A/B DEMO ' + (isTouchDevice ? 'READY' : 'SAVED') + ' — ' + AUTO_AB_CYCLES + 'x MASTER/ORIGINAL W/ "SSP ON/OFF" VOICE CUES');
-            await deliver(blob, outName, true);
-            blob = null
+            bounceStep('PICKING THE STRONGEST PART OF THE SONG…', 5);
+            await new Promise(r => setTimeout(r, 50));
+            const sec = pickBestSection(buffer),
+                label = sectionLabel(sec, buffer.sampleRate);
+            bounceStep('RENDERING THE MASTER OF ' + label + '…', 25);
+            const pair = await getABPair({
+                orig: buffer
+            }, sec);
+            await finishABExport(pair, (window.__srcName || 'sspengine') + '_AUTO_AB_DEMO', 'AUTO A/B DEMO', ' · ' + label)
         } catch (e) {
             bounceStep('✕ EXPORT FAILED — TRACK MAY BE TOO LONG FOR THIS DEVICE', bouncePct);
             toast('EXPORT FAILED — TRACK MAY BE TOO LONG FOR THIS DEVICE')
@@ -8998,15 +9315,32 @@
             ab2Refresh()
         })
     });
-    $('ab2Bounce').addEventListener('click', async () => {
+    /* Checks + line-up for the two loaded files. Returns the source for
+       getABPair, or null after saying what's wrong on the status line. */
+    function prepareAB2() {
         if (!ab2.master || !ab2.orig) {
             toast('CHOOSE BOTH FILES FIRST · 1 YOUR MASTER · 2 THE ORIGINAL');
-            return
+            return null
         }
         if (Math.max(ab2.master.duration, ab2.orig.duration) > 420) {
             toast('TRACK TOO LONG FOR IN-APP A/B');
-            return
+            return null
         }
+        const { lag, corr } = alignLag(ab2.orig, ab2.master);
+        if (corr < .25) {
+            bounceStep('✕ THESE TWO FILES DON\'T LOOK LIKE THE SAME SONG — CHECK SLOT 1 AND SLOT 2', 0);
+            toast('FILES DON\'T MATCH — NOTHING EXPORTED');
+            return null
+        }
+        const rms = b => srcBufferStats(b).rms;
+        return {
+            orig: ab2.orig,
+            master: ab2.master,
+            lag,
+            warn: rms(ab2.master) < rms(ab2.orig) * .89 ? ' · HEADS UP: YOUR "MASTER" IS QUIETER THAN THE ORIGINAL — ARE THEY SWAPPED?' : ''
+        }
+    }
+    $('ab2Bounce').addEventListener('click', async () => {
         if (renderBusy) {
             toast('DECK BUSY — ONE PRINT AT A TIME');
             return
@@ -9014,58 +9348,16 @@
         renderBusy = true;
         $('ab2Bounce').style.opacity = .5;
         try {
-            const orig = ab2.orig,
-                master = ab2.master;
             bounceStep('LINING UP YOUR TWO FILES…', 0);
             await new Promise(r => setTimeout(r, 50));
-            const { lag, corr } = alignLag(orig, master);
-            if (corr < .25) {
-                bounceStep('✕ THESE TWO FILES DON\'T LOOK LIKE THE SAME SONG — CHECK SLOT 1 AND SLOT 2', 0);
-                toast('FILES DON\'T MATCH — NOTHING EXPORTED');
-                return
-            }
-            const rms = b => srcBufferStats(b).rms;
-            const swappedWarn = rms(master) < rms(orig) * .89 ? ' · HEADS UP: YOUR "MASTER" IS QUIETER THAN THE ORIGINAL — ARE THEY SWAPPED?' : '';
-            const masterSeg = (p, outChannels) => {
-                const chans = [];
-                for (let c = 0; c < outChannels; c++) {
-                    const m = master.getChannelData(Math.min(c, master.numberOfChannels - 1)),
-                        seg = new Float32Array(p.segLen),
-                        from = p.pos + lag;
-                    const s0 = Math.max(0, -from),
-                        s1 = Math.min(p.segLen, m.length - from);
-                    if (s1 > s0)
-                        seg.set(m.subarray(from + s0, from + s1), s0);
-                    chans.push(seg)
-                }
-                return chans
-            };
-            const canMp3 = !window.__noMp3 && typeof lamejs !== 'undefined';
-            let rb = await renderAutoABDemo((seg, total, which) => {
-                bounceStep('SEGMENT ' + seg + ' OF ' + total + ' · ' + which + ' · ' + AUTO_AB_SECONDS + 'S EACH…', (seg - 1) / total * 100)
-            }, orig, masterSeg);
-            let blob,
-                ext;
-            if (canMp3) {
-                blob = toMp3(rb);
-                ext = '.mp3'
-            } else {
-                blob = new Blob([wavFloat32(rb)], {
-                    type: 'audio/wav'
-                });
-                ext = '_f32.wav'
-            }
-            rb = null;
-            const hash = await sha256(await blob.arrayBuffer());
-            const base = ab2.origName.replace(/\.[^.]+$/, '') || 'sspengine';
-            const outName = base + '_AB_YOUR_MASTER' + ext;
-            ledgerSave(new Date().toLocaleTimeString() + ' · A/B FROM YOUR FILES · ' + AUTO_AB_CYCLES + 'x W/ VOICE CUES' + ext.toUpperCase(), hash, blob, outName);
-            flashLedgerRow();
-            const aligned = Math.abs(lag) > 0 ? ' · LINED UP ' + (lag / orig.sampleRate * 1000).toFixed(1) + ' MS' : ' · ALREADY LINED UP';
-            bounceStep((isTouchDevice ? '✓ A/B READY — PLAY OR SAVE IT BELOW' : '✓ A/B SAVED') + aligned + swappedWarn, 100, true);
-            toast('A/B FROM YOUR FILES ' + (isTouchDevice ? 'READY' : 'SAVED') + ' — ' + AUTO_AB_CYCLES + 'x YOUR MASTER / ORIGINAL');
-            await deliver(blob, outName, true);
-            blob = null
+            const src = prepareAB2();
+            if (!src)
+                return;
+            bounceStep('PICKING THE STRONGEST PART OF THE SONG…', 30);
+            const sec = pickBestSection(src.orig),
+                pair = await getABPair(src, sec),
+                aligned = src.lag ? ' · LINED UP ' + (src.lag / src.orig.sampleRate * 1000).toFixed(1) + ' MS' : ' · ALREADY LINED UP';
+            await finishABExport(pair, (ab2.origName.replace(/\.[^.]+$/, '') || 'sspengine') + '_AB_YOUR_MASTER', 'A/B FROM YOUR FILES', ' · ' + sectionLabel(sec, src.orig.sampleRate) + aligned + src.warn)
         } catch (e) {
             bounceStep('✕ EXPORT FAILED — TRACK MAY BE TOO LONG FOR THIS DEVICE', bouncePct);
             toast('EXPORT FAILED — TRACK MAY BE TOO LONG FOR THIS DEVICE')
@@ -9073,6 +9365,265 @@
         finally {
             renderBusy = false;
             ab2Refresh()
+        }
+    });
+
+    /* A/B screen: the chosen passage, B (original, "SSP off") on the left,
+       A (master, "SSP on") on the right. Both play together, looped and in
+       sync, on a bare AudioContext (no engine in the path); a side is just
+       which one is audible. Tap a side to switch at the same spot, or Auto:
+       B for one pass, A for the next, switching at the loop point. */
+    const abS = {
+        ctx: null,
+        bufs: null,
+        src: [],
+        g: null,
+        playing: false,
+        auto: false,
+        side: 'b',
+        t0: 0,
+        pos0: 0,
+        pending: null,
+        scheduledPass: null,
+        tick: 0,
+        raf: 0
+    };
+    function abLen() {
+        return abS.bufs.b.duration
+    }
+    function abPos() {
+        return abS.playing ? Math.max(0, abS.ctx.currentTime - abS.t0) % abLen() : abS.pos0
+    }
+    function abGainsTo(side, at) {
+        for (const k of ['a', 'b']) {
+            const p = abS.g[k].gain;
+            p.cancelScheduledValues(at);
+            p.setTargetAtTime(k === side ? 1 : 0, at, .004)
+        }
+    }
+    function abRender() {
+        const el = $('abScreen');
+        if (!el)
+            return;
+        el.querySelectorAll('.abSide').forEach(b => {
+            const on = b.dataset.side === abS.side;
+            b.classList.toggle('on', on);
+            b.setAttribute('aria-pressed', on ? 'true' : 'false')
+        });
+        el.querySelector('.abPlay').textContent = abS.playing ? '❚❚ PAUSE' : '▶ PLAY';
+        const au = el.querySelector('.abAuto');
+        au.textContent = abS.auto ? 'AUTO A/B · ON' : 'AUTO A/B · OFF';
+        au.classList.toggle('on', abS.auto);
+        au.setAttribute('aria-pressed', abS.auto ? 'true' : 'false')
+    }
+    function abCancelAuto() {
+        abS.pending = null;
+        abS.scheduledPass = null;
+        if (abS.playing)
+            abGainsTo(abS.side, abS.ctx.currentTime)
+    }
+    function abPlay(fromTop) {
+        const ctx = abS.ctx;
+        if (ctx.state === 'suspended')
+            ctx.resume();
+        if (fromTop)
+            abS.pos0 = 0;
+        const at = ctx.currentTime + .06;
+        abS.src = ['a', 'b'].map(k => {
+            const s = ctx.createBufferSource();
+            s.buffer = abS.bufs[k];
+            s.loop = true;
+            s.connect(abS.g[k]);
+            s.start(at, abS.pos0);
+            return s
+        });
+        abS.t0 = at - abS.pos0;
+        abS.playing = true;
+        abGainsTo(abS.side, ctx.currentTime);
+        abS.pending = null;
+        abS.scheduledPass = null;
+        abRender()
+    }
+    function abPause() {
+        if (!abS.playing)
+            return;
+        abS.pos0 = abPos();
+        abS.src.forEach(s => {
+            try {
+                s.stop()
+            } catch (e) {}
+        });
+        abS.src = [];
+        abS.playing = false;
+        abS.pending = null;
+        abS.scheduledPass = null;
+        abRender()
+    }
+    function abTick() {
+        if (!abS.playing)
+            return;
+        // playback starts slightly after the tap, so clamp: no "pass -1" boundary at t0
+        const now = abS.ctx.currentTime,
+            pass = Math.max(0, Math.floor((now - abS.t0) / abLen()));
+        if (abS.pending && now >= abS.pending.at) {
+            abS.side = abS.pending.side;
+            abS.pending = null;
+            abRender()
+        }
+        if (abS.auto && !abS.pending && abS.scheduledPass !== pass + 1) {
+            const at = abS.t0 + (pass + 1) * abLen(),
+                next = abS.side === 'b' ? 'a' : 'b';
+            // passages fade to silence at the loop point, so the switch is click-free
+            abGainsTo(next, at);
+            abS.pending = { at, side: next };
+            abS.scheduledPass = pass + 1
+        }
+    }
+    function abFrame() {
+        const el = $('abScreen');
+        if (!el || !el.classList.contains('show'))
+            return;
+        if (abS.bufs) {
+            const pos = abPos(),
+                len = abLen();
+            el.querySelector('.abFill').style.width = (pos / len * 100).toFixed(2) + '%';
+            el.querySelector('.abTime').textContent = fmtT(pos) + ' / ' + fmtT(len)
+        }
+        abS.raf = requestAnimationFrame(abFrame)
+    }
+    function abClose() {
+        abPause();
+        clearInterval(abS.tick);
+        cancelAnimationFrame(abS.raf);
+        if (abS.ctx)
+            abS.ctx.close().catch(() => {});
+        abS.ctx = null;
+        abS.bufs = null;
+        const el = $('abScreen');
+        if (el)
+            el.classList.remove('show');
+        document.removeEventListener('keydown', abKeys)
+    }
+    function abKeys(e) {
+        if (!abS.bufs)
+            return;
+        if (e.key === 'Escape')
+            abClose();
+        else if (e.key === 'ArrowLeft' || e.key === 'ArrowRight') {
+            e.preventDefault();
+            abChoose(e.key === 'ArrowLeft' ? 'b' : 'a')
+        } else if (e.key === ' ' && e.target === document.body) {
+            e.preventDefault();
+            abS.playing ? abPause() : abPlay(false)
+        }
+    }
+    function abChoose(side) {
+        if (abS.auto) {
+            abS.auto = false;
+            abCancelAuto()
+        }
+        abS.side = side;
+        if (abS.playing)
+            abGainsTo(side, abS.ctx.currentTime);
+        else
+            abPlay(false);
+        abRender()
+    }
+    function abBuildScreen() {
+        const el = document.createElement('div');
+        el.id = 'abScreen';
+        el.setAttribute('role', 'dialog');
+        el.setAttribute('aria-label', 'A/B listening screen');
+        el.innerHTML = '<div class="abTop"><div><div class="abTitle">A/B · SAME PASSAGE, BOTH WAYS</div><div class="abInfo"></div></div><button type="button" class="abClose">✕ CLOSE</button></div>' +
+            '<div class="abSides">' +
+            '<button type="button" class="abSide" data-side="b"><span class="abLetter">B</span><span class="abName">ORIGINAL</span><span class="abSub">SSP OFF</span><span class="abNow">NOW PLAYING</span></button>' +
+            '<button type="button" class="abSide" data-side="a"><span class="abLetter">A</span><span class="abName">SSP MASTER</span><span class="abSub">SSP ON</span><span class="abNow">NOW PLAYING</span></button>' +
+            '</div>' +
+            '<div class="abBar"><div class="abFill"></div></div>' +
+            '<div class="abCtrls"><button type="button" class="abPlay">▶ PLAY</button><span class="abTime">0:00 / 0:00</span><button type="button" class="abAuto" aria-pressed="false">AUTO A/B · OFF</button></div>' +
+            '<div class="abHint">Tap a side to switch at the same spot. Auto plays B, then A, switching each time the passage starts over.</div>';
+        document.body.appendChild(el);
+        el.querySelector('.abClose').addEventListener('click', abClose);
+        el.querySelectorAll('.abSide').forEach(b => b.addEventListener('click', () => abS.bufs && abChoose(b.dataset.side)));
+        el.querySelector('.abPlay').addEventListener('click', () => {
+            if (!abS.bufs)
+                return;
+            abS.playing ? abPause() : abPlay(false)
+        });
+        el.querySelector('.abAuto').addEventListener('click', () => {
+            if (!abS.bufs)
+                return;
+            abS.auto = !abS.auto;
+            if (abS.auto && !abS.playing) {
+                abS.side = 'b';
+                abPlay(true)
+            } else if (!abS.auto)
+                abCancelAuto();
+            abRender()
+        });
+        return el
+    }
+    $('abScreenOpen').addEventListener('click', async () => {
+        if (renderBusy) {
+            toast('DECK BUSY — ONE PRINT AT A TIME');
+            return
+        }
+        const useFiles = !!(ab2.master && ab2.orig);
+        if (!useFiles && !buffer) {
+            toast('LOAD A SONG FIRST — OR BOTH FILES IN THE "YOUR OWN TWO FILES" BOX');
+            return
+        }
+        stopAutoAB();
+        stopAll();
+        // created inside the tap so iOS lets it make sound
+        abS.ctx = new (window.AudioContext || window.webkitAudioContext)();
+        abS.ctx.resume();
+        const el = $('abScreen') || abBuildScreen(),
+            info = el.querySelector('.abInfo');
+        Object.assign(abS, { bufs: null, playing: false, auto: false, side: 'b', pos0: 0, pending: null, scheduledPass: null });
+        el.querySelectorAll('.abSide, .abPlay, .abAuto').forEach(b => b.disabled = true);
+        abRender();
+        info.textContent = 'PICKING THE STRONGEST PART OF THE SONG…';
+        el.classList.add('show');
+        document.addEventListener('keydown', abKeys);
+        abS.raf = requestAnimationFrame(abFrame);
+        renderBusy = true;
+        try {
+            await new Promise(r => setTimeout(r, 50));
+            const source = useFiles ? prepareAB2() : { orig: buffer, warn: '' };
+            if (!source) {
+                abClose();
+                return
+            }
+            const sec = pickBestSection(source.orig),
+                label = sectionLabel(sec, source.orig.sampleRate);
+            if (!useFiles)
+                info.textContent = 'MAKING THE MASTER OF ' + label + '…';
+            const pair = await getABPair(source, sec);
+            if (!abS.ctx)
+                return;
+            const toBuf = b => {
+                const o = new AudioBuffer({ numberOfChannels: 2, length: b.length, sampleRate: b.sampleRate });
+                for (let c = 0; c < 2; c++)
+                    o.getChannelData(c).set(fadedCopy(b, c));
+                return o
+            };
+            abS.bufs = { b: toBuf(pair.orig), a: toBuf(pair.master) };
+            abS.g = {};
+            for (const k of ['a', 'b']) {
+                abS.g[k] = abS.ctx.createGain();
+                abS.g[k].gain.value = 0;
+                abS.g[k].connect(abS.ctx.destination)
+            }
+            info.textContent = 'PASSAGE ' + label + ' · ' + (useFiles ? 'YOUR TWO FILES, UNTOUCHED' : 'MASTER MADE BY THE ENGINE FROM THE LOADED SONG') + source.warn;
+            el.querySelectorAll('.abSide, .abPlay, .abAuto').forEach(b => b.disabled = false);
+            clearInterval(abS.tick);
+            abS.tick = setInterval(abTick, 50);
+            abRender()
+        } catch (e) {
+            info.textContent = '✕ COULDN\'T PREPARE THE A/B — TRACK MAY BE TOO LONG FOR THIS DEVICE'
+        } finally {
+            renderBusy = false
         }
     });
 
