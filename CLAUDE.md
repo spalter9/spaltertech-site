@@ -584,7 +584,12 @@ real secrets there. `.wrangler/` (local D1 state) is also gitignored.
   `20*log10(.5)`; with plain 0.5 music read ~1.7 dB hot. Cross-checked
   with `pyloudnorm` (pip-installable here): within 0.02 dB. Note the
   gap depends on preset: Spalter preset master +3.7 dB vs original on
-  the test song, default FLAT preset master −1.4 dB. Verified on
+  the test song, default FLAT preset master −1.4 dB.
+  **Immersive off now restores, not resets** (commit `d741c3c`):
+  `immersiveSnap` captures width / Haas / ER / room type / room amount
+  on engage and restores them on disengage (it used to force 100% / 0 /
+  0 / dry, wiping the preset's width). A preset picked while Immersive
+  is on updates `immersiveSnap.wide` and skips `sWide`. Verified on
   a 90 BPM test song with a known chorus at 32.0s (`structured_song.wav`
   generator in this session): picks 32.0s / 8 bars / 90 BPM.
 
