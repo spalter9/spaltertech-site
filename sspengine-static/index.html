@@ -1487,6 +1487,23 @@
         color: var(--amber)
     }
 
+    #abScreen .abMatch {
+        flex: 1;
+        padding: 12px 10px;
+        border-radius: 10px;
+        font-size: 11.5px;
+        letter-spacing: .1em;
+        border: 1px solid var(--line);
+        background: transparent;
+        color: var(--bone)
+    }
+
+    #abScreen .abMatch.on {
+        border-color: var(--green);
+        color: var(--green);
+        background: color-mix(in srgb, var(--green) 12%, transparent)
+    }
+
     #abScreen .abAuto.on {
         background: color-mix(in srgb, var(--amber) 18%, transparent)
     }
@@ -9387,8 +9404,64 @@
         scheduledPass: null,
         tick: 0,
         raf: 0,
-        restartT: 0
+        restartT: 0,
+        trim: null,
+        match: false,
+        diffDb: 0
     };
+    /* Integrated loudness (LUFS) of a passage, the way mastering loudness
+       meters measure it: ITU-R BS.1770 K-weighting (high-shelf + low-cut),
+       400 ms blocks, absolute -70 LUFS and relative -10 LU
+       gating. Used to level-match the A/B so the master has to win on
+       sound, not volume. */
+    async function passageLoudness(buf) {
+        const sr = buf.sampleRate,
+            oc = new OfflineAudioContext(2, buf.length, sr),
+            src = oc.createBufferSource(),
+            shelf = oc.createBiquadFilter(),
+            hp = oc.createBiquadFilter();
+        src.buffer = buf;
+        shelf.type = 'highshelf';
+        shelf.frequency.value = 1500;
+        shelf.gain.value = 4;
+        hp.type = 'highpass';
+        hp.frequency.value = 38;
+        // Web Audio takes highpass Q in dB: this is BS.1770's linear Q of 0.5
+        hp.Q.value = 20 * Math.log10(.5);
+        src.connect(shelf);
+        shelf.connect(hp);
+        hp.connect(oc.destination);
+        src.start();
+        const r = await oc.startRendering(),
+            L = r.getChannelData(0),
+            R = r.getChannelData(1),
+            blk = Math.round(.4 * sr),
+            hop = Math.round(.1 * sr),
+            z = [];
+        for (let i = 0; i + blk <= L.length; i += hop) {
+            let ms = 0;
+            for (let j = i; j < i + blk; j++)
+                ms += L[j] * L[j] + R[j] * R[j];
+            z.push(ms / blk)
+        }
+        const lufs = v => -.691 + 10 * Math.log10(v),
+            mean = a => a.reduce((x, y) => x + y, 0) / a.length,
+            gated = z.filter(v => v > 0 && lufs(v) > -70);
+        if (!gated.length)
+            return -Infinity;
+        const rel = lufs(mean(gated)) - 10,
+            kept = gated.filter(v => lufs(v) > rel);
+        return lufs(mean(kept))
+    }
+    // Matching only ever turns the louder side down, so nothing can clip.
+    function abApplyMatch() {
+        if (!abS.trim)
+            return;
+        const d = abS.match ? abS.diffDb : 0,
+            t = abS.ctx.currentTime;
+        abS.trim.a.gain.setTargetAtTime(d > 0 ? Math.pow(10, -d / 20) : 1, t, .01);
+        abS.trim.b.gain.setTargetAtTime(d < 0 ? Math.pow(10, d / 20) : 1, t, .01)
+    }
     function abLen() {
         return abS.bufs.b.duration
     }
@@ -9415,7 +9488,12 @@
         const au = el.querySelector('.abAuto');
         au.textContent = abS.auto ? 'AUTO A/B · ON' : 'AUTO A/B · OFF';
         au.classList.toggle('on', abS.auto);
-        au.setAttribute('aria-pressed', abS.auto ? 'true' : 'false')
+        au.setAttribute('aria-pressed', abS.auto ? 'true' : 'false');
+        const mb = el.querySelector('.abMatch'),
+            gap = Math.abs(abS.diffDb).toFixed(1) + ' dB ' + (abS.diffDb >= 0 ? 'LOUDER' : 'QUIETER');
+        mb.textContent = abS.match ? 'MATCH LEVELS · ON · SAME LOUDNESS (MASTER WAS ' + gap + ')' : 'MATCH LEVELS · OFF · MASTER IS ' + gap;
+        mb.classList.toggle('on', abS.match);
+        mb.setAttribute('aria-pressed', abS.match ? 'true' : 'false')
     }
     function abCancelAuto() {
         abS.pending = null;
@@ -9434,7 +9512,7 @@
             const s = ctx.createBufferSource();
             s.buffer = abS.bufs[k];
             s.loop = true;
-            s.connect(abS.g[k]);
+            s.connect(abS.trim[k]);
             s.start(at, abS.pos0);
             return s
         });
@@ -9559,6 +9637,7 @@
             '</div>' +
             '<div class="abBar"><div class="abFill"></div></div>' +
             '<div class="abCtrls"><button type="button" class="abPlay">▶ PLAY</button><span class="abTime">0:00 / 0:00</span><button type="button" class="abAuto" aria-pressed="false">AUTO A/B · OFF</button></div>' +
+            '<div class="abCtrls"><button type="button" class="abMatch" aria-pressed="false">MATCH LEVELS · OFF</button></div>' +
             '<div class="abHint">Tap a side to hear that version from the top of the passage. Auto plays B, then A, each from the top.</div>';
         document.body.appendChild(el);
         el.querySelector('.abClose').addEventListener('click', abClose);
@@ -9567,6 +9646,13 @@
             if (!abS.bufs)
                 return;
             abS.playing ? abPause() : abPlay(false)
+        });
+        el.querySelector('.abMatch').addEventListener('click', () => {
+            if (!abS.bufs)
+                return;
+            abS.match = !abS.match;
+            abApplyMatch();
+            abRender()
         });
         el.querySelector('.abAuto').addEventListener('click', () => {
             if (!abS.bufs)
@@ -9599,7 +9685,7 @@
         const el = $('abScreen') || abBuildScreen(),
             info = el.querySelector('.abInfo');
         Object.assign(abS, { bufs: null, playing: false, auto: false, side: 'b', pos0: 0, pending: null, scheduledPass: null });
-        el.querySelectorAll('.abSide, .abPlay, .abAuto').forEach(b => b.disabled = true);
+        el.querySelectorAll('.abSide, .abPlay, .abAuto, .abMatch').forEach(b => b.disabled = true);
         abRender();
         info.textContent = 'PICKING THE STRONGEST PART OF THE SONG…';
         el.classList.add('show');
@@ -9628,13 +9714,23 @@
             };
             abS.bufs = { b: toBuf(pair.orig), a: toBuf(pair.master) };
             abS.g = {};
+            abS.trim = {};
             for (const k of ['a', 'b']) {
                 abS.g[k] = abS.ctx.createGain();
                 abS.g[k].gain.value = 0;
-                abS.g[k].connect(abS.ctx.destination)
+                abS.g[k].connect(abS.ctx.destination);
+                abS.trim[k] = abS.ctx.createGain();
+                abS.trim[k].connect(abS.g[k])
             }
+            info.textContent = 'MEASURING LOUDNESS…';
+            abS.diffDb = (await passageLoudness(abS.bufs.a)) - (await passageLoudness(abS.bufs.b));
+            if (!isFinite(abS.diffDb))
+                abS.diffDb = 0;
+            if (!abS.ctx)
+                return;
+            abApplyMatch();
             info.textContent = 'PASSAGE ' + label + ' · ' + (useFiles ? 'YOUR TWO FILES, UNTOUCHED' : 'MASTER MADE BY THE ENGINE FROM THE LOADED SONG') + source.warn;
-            el.querySelectorAll('.abSide, .abPlay, .abAuto').forEach(b => b.disabled = false);
+            el.querySelectorAll('.abSide, .abPlay, .abAuto, .abMatch').forEach(b => b.disabled = false);
             clearInterval(abS.tick);
             abS.tick = setInterval(abTick, 50);
             abRender()
