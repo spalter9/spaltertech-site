@@ -568,7 +568,9 @@ real secrets there. `.wrangler/` (local D1 state) is also gitignored.
   far lighter on phones). New **A/B screen** (`#abScreenOpen` →
   `#abScreen`, state in `abS`): B left / A right, both buffers looped
   in sync on a bare AudioContext (no engine), gains pick the audible
-  side; tap = switch at the same spot (cancels Auto); Auto switches at
+  side; tap = that side from the TOP of the passage (commit `aea9c81`,
+  Bradley: "they have to hear exact, identical... it doesn't continue
+  on"; 15ms fade-out first, cancels Auto); Auto switches at
   each loop point B→A→B (bug caught: first boundary was scheduled at
   t0 because playback starts 60ms after the tap → clamp pass ≥ 0).
   Uses the two-file box's files when both loaded, else the console's
