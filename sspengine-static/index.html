@@ -3600,6 +3600,9 @@
                         <input type="range" id="sDrive" min="0" max="100" value="0">
                     </div>
                     <div class="tglRow">
+                        <button class="tgl" id="tglValveHQ" title="Runs the same valve curve at 4x the sample rate with high-quality filtering in and out, so the saturation doesn't fold harsh, grainy aliasing back into the highs. Same tone, cleaner. Applies to playback and every export.">HQ VALVE · 4× ANTI-ALIASED</button>
+                    </div>
+                    <div class="tglRow">
                         <button class="tgl" id="tglWarm" title="Asymmetric saturation (even-harmonic bias) plus a low-end swell and high-end rolloff — a warmer, smoother character on the valve stage. Off by default; the plain drive curve is unchanged either way.">VALVE CHARACTER · WARMTH</button>
                     </div>
                     <div class="gluePresets" id="warmPresetsRow" style="margin-top:8px">
@@ -5587,7 +5590,43 @@
         "      if (++this.n >= 2048) { this.port.postMessage(this.peakGr); this.peakGr = 0; this.n = 0 }",
         "    }",
         "    return true } }",
+        "class SspValve extends AudioWorkletProcessor {",
+        "  constructor(opts) { super();",
+        "    const o = (opts && opts.processorOptions) || {};",
+        "    this.curve = o.curve || null;",
+        "    this.port.onmessage = e => { this.curve = e.data };",
+        "    const N = 128, R = 4, fc = 0.125, beta = 7, I0 = x => { let s = 1, t = 1; for (let k = 1; k < 40; k++) { t *= (x / (2 * k)) * (x / (2 * k)); s += t } return s };",
+        "    const h = new Float64Array(N); let sum = 0;",
+        "    for (let i = 0; i < N; i++) { const m = i - (N - 1) / 2, sinc = m === 0 ? 2 * fc : Math.sin(2 * Math.PI * fc * m) / (Math.PI * m), r = 2 * i / (N - 1) - 1;",
+        "      h[i] = sinc * I0(beta * Math.sqrt(Math.max(0, 1 - r * r))) / I0(beta); sum += h[i] }",
+        "    for (let i = 0; i < N; i++) h[i] /= sum;",
+        "    this.h = h; this.N = N; this.R = R; this.P = N / R;",
+        "    this.xh = [new Float64Array(2 * this.P), new Float64Array(2 * this.P)]; this.xw = [0, 0];",
+        "    this.wh = [new Float64Array(2 * N), new Float64Array(2 * N)]; this.ww = [0, 0];",
+        "    this.hr = new Float64Array(N); for (let j = 0; j < N; j++) this.hr[j] = h[N - 1 - j] }",
+        "  shape(v) { const c = this.curve; if (!c) return v; const n = c.length;",
+        "    if (v <= -1) return c[0]; if (v >= 1) return c[n - 1];",
+        "    const f = (v + 1) * 0.5 * (n - 1), i = Math.floor(f), t = f - i; return c[i] + (c[i + 1] - c[i]) * t }",
+        "  process(inputs, outputs) {",
+        "    const inp = inputs[0], out = outputs[0];",
+        "    if (!inp || !inp.length) { for (const y of out) y.fill(0); return true }",
+        "    const h = this.h, N = this.N, R = this.R, P = this.P;",
+        "    for (let c = 0; c < out.length; c++) {",
+        "      const x = inp[Math.min(c, inp.length - 1)], y = out[c], xh = this.xh[c], wh = this.wh[c];",
+        "      let xw = this.xw[c], ww = this.ww[c];",
+        "      for (let i = 0; i < x.length; i++) {",
+        "        const v = Number.isFinite(x[i]) ? x[i] : 0; xh[xw] = v; xh[xw + P] = v;",
+        "        const xb = xw + P;",
+        "        for (let p = 0; p < R; p++) {",
+        "          let u = 0; for (let k = 0, hi = p; k < P; k++, hi += R) u += h[hi] * xh[xb - k];",
+        "          const s = this.shape(u * R); wh[ww] = s; wh[ww + N] = s; ww = ww + 1 === N ? 0 : ww + 1 }",
+        "        const hr = this.hr; let acc = 0;",
+        "        for (let j = 0; j < N; j++) acc += hr[j] * wh[ww + j];",
+        "        y[i] = acc; xw = xw + 1 === P ? 0 : xw + 1 }",
+        "      this.xw[c] = xw; this.ww[c] = ww }",
+        "    return true } }",
         "registerProcessor('ssp-transient', SspTransient);",
+        "registerProcessor('ssp-valve', SspValve);",
         "registerProcessor('ssp-limiter', SspLimiter);",
         "registerProcessor('ssp-loudness', SspLoudness);",
         "registerProcessor('ssp-glue', SspGlue);"
@@ -5720,6 +5759,10 @@
             return;
         AC.audioWorklet.addModule(WORKLET_URL).then(() => {
             attachWorklets(AC, N, true);
+            try {
+                N.valveHQ = makeValveHQ(AC, valveCurve(P.drive, P.warmChar, P.warmAmt))
+            } catch (e) {}
+            routeValve(false);
             applyStages()
         }).catch(() => {});
     }
@@ -5788,8 +5831,12 @@
         N.warmth = makeWarmth(a);
         N.inWet.connect(N.dn.inp);
         N.dn.out.connect(N.tr.inp);
-        N.tr.out.connect(N.shaper);
-        N.shaper.connect(N.warmth.inp);
+        N.valveIn = a.createGain();
+        N.valveOut = a.createGain();
+        N.tr.out.connect(N.valveIn);
+        N.valveIn.connect(N.shaper);
+        N.shaper.connect(N.valveOut);
+        N.valveOut.connect(N.warmth.inp);
         N.warmth.out.connect(N.preTrim);
         N.preTrim.connect(N.low);
         N.low.connect(N.mid);
@@ -6419,22 +6466,74 @@
         if (driveRAF)
             return;
         driveRAF = requestAnimationFrame(() => {
-            N.shaper.curve = valveCurve(P.drive, P.warmChar, P.warmAmt);
+            updateValveCurve();
             driveRAF = null;
         });
+    });
+    /* HQ valve: the same valveCurve run at 4x the sample rate inside our own
+       worklet (128-tap Kaiser-windowed polyphase FIR up and down), so the
+       saturation's upper harmonics don't fold back down as aliasing. It is
+       off by default; the WaveShaper path above stays exactly as it was. Our
+       own worklet, so WebKit's oversampled-WaveShaper bug can't reach it. */
+    P.valveHQ = false;
+    function makeValveHQ(a, curve) {
+        return new AudioWorkletNode(a, 'ssp-valve', {
+            outputChannelCount: [2],
+            processorOptions: { curve }
+        })
+    }
+    function updateValveCurve() {
+        const c = valveCurve(P.drive, P.warmChar, P.warmAmt);
+        N.shaper.curve = c;
+        if (N.valveHQ)
+            N.valveHQ.port.postMessage(c)
+    }
+    // swap which valve sits between valveIn and valveOut, dipping briefly so the swap can't click
+    function routeValve(fade) {
+        if (!N.valveIn)
+            return;
+        const useHQ = P.valveHQ && !!N.valveHQ,
+            swap = () => {
+                try { N.valveIn.disconnect() } catch (e) {}
+                for (const nd of [N.shaper, N.valveHQ])
+                    if (nd)
+                        try { nd.disconnect() } catch (e) {}
+                const nd = useHQ ? N.valveHQ : N.shaper;
+                N.valveIn.connect(nd);
+                nd.connect(N.valveOut)
+            };
+        if (!fade) {
+            swap();
+            return
+        }
+        const g = N.valveOut.gain, t = AC.currentTime;
+        g.cancelScheduledValues(t);
+        g.setTargetAtTime(0, t, .004);
+        setTimeout(() => {
+            swap();
+            g.setTargetAtTime(1, AC.currentTime, .004)
+        }, 25)
+    }
+    $('tglValveHQ').addEventListener('click', () => {
+        P.valveHQ = !P.valveHQ;
+        $('tglValveHQ').classList.toggle('on', P.valveHQ);
+        ctx();
+        routeValve(true);
+        // if the worklet is still loading, loadWorklets() routes it in once it's ready
+        toast(P.valveHQ ? (N.valveHQ ? 'HQ VALVE ON · 4× ANTI-ALIASED' : 'HQ VALVE ON · LOADING…') : 'HQ VALVE OFF · STANDARD VALVE')
     });
     $('tglWarm').addEventListener('click', () => {
         P.warmChar = !P.warmChar;
         $('tglWarm').classList.toggle('on', P.warmChar);
         ctx();
-        N.shaper.curve = valveCurve(P.drive, P.warmChar, P.warmAmt);
+        updateValveCurve();
         applyStages();
         toast(P.warmChar ? 'VALVE CHARACTER · WARMTH ENGAGED' : 'VALVE CHARACTER · CLEAN (DEFAULT CURVE)')
     });
     bindSlider('sWarmAmt', 'vWarmAmt', v => v + '%', v => {
         P.warmAmt = v;
         autoEngage('warmChar', 'tglWarm', 'sWarmAmt', v);
-        N.shaper.curve = valveCurve(P.drive, P.warmChar, P.warmAmt);
+        updateValveCurve();
         applyStages()
     });
     /* Warmth presets — most people don't want to reason about bias amounts, they want to
@@ -8283,7 +8382,7 @@
             glue: makeGlue(oc),
             warmth: makeWarmth(oc)
         };
-        if (oc.audioWorklet && WORKLET_URL && (P.trAtk || P.trSus || P.mxOn || P.glueOn)) {
+        if (oc.audioWorklet && WORKLET_URL && (P.trAtk || P.trSus || P.mxOn || P.glueOn || P.valveHQ)) {
             try {
                 await oc.audioWorklet.addModule(WORKLET_URL);
                 attachWorklets(oc, off, false)
@@ -8327,8 +8426,14 @@
         out.gain.value = Math.pow(10, P.out / 20);
         s.connect(off.dn.inp);
         off.dn.out.connect(off.tr.inp);
-        off.tr.out.connect(sh);
-        sh.connect(off.warmth.inp);
+        let hq = null;
+        if (P.valveHQ)
+            try {
+                hq = makeValveHQ(oc, sh.curve)
+            } catch (e) {}
+        const valveNode = hq || sh;
+        off.tr.out.connect(valveNode);
+        valveNode.connect(off.warmth.inp);
         off.warmth.out.connect(pt);
         pt.connect(lo);
         lo.connect(mi);
