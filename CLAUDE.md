@@ -548,6 +548,33 @@ real secrets there. `.wrangler/` (local D1 state) is also gitignored.
   segments exact to 16-bit precision. Test songs must be non-periodic
   (`song_orig_130s.wav` generator in this session) — the old kick+tone
   track fools any correlation-based alignment.
+- **A/B redesigned around ONE passage, original first** (commit
+  `aad686c`) — Bradley: the old layout (0–20s one version, 20–40s the
+  other) compared different music; he wants the same passage both ways,
+  the strongest part (usually the chorus), original ("SSP off", B)
+  first, then master ("SSP on", A). `pickBestSection()`: 100 fps RMS
+  envelope; tempo from onset-flux autocorrelation 60–180 BPM with
+  parabolic sub-frame peak (`estimateBeat`); length = 4/8/16 bars
+  closest to `AB_TARGET_SECONDS` (20) within 12–32s; the earliest
+  window within 0.5 dB of the loudest picks WHICH chorus, then the
+  loudest window within ±half a passage picks exactly where (tolerance
+  alone drifted one bar back into the verse — caught in testing);
+  start snapped to the strongest onset within ~0.6 beat. `getABPair()`
+  → `{orig, master, sec}` (master from file via lag, or engine-rendered
+  passage with pre-roll + `alignLag`). `buildABFile()` = 3 ×
+  [gap, "SSP off", gap, original, gap, "SSP on", gap, master]; both
+  export buttons share `finishABExport()`; two-file checks live in
+  `prepareAB2()`. Engine version now renders only the passage (~4s,
+  far lighter on phones). New **A/B screen** (`#abScreenOpen` →
+  `#abScreen`, state in `abS`): B left / A right, both buffers looped
+  in sync on a bare AudioContext (no engine), gains pick the audible
+  side; tap = switch at the same spot (cancels Auto); Auto switches at
+  each loop point B→A→B (bug caught: first boundary was scheduled at
+  t0 because playback starts 60ms after the tap → clamp pass ≥ 0).
+  Uses the two-file box's files when both loaded, else the console's
+  song. Live BOOM Auto A/B now also starts on the original. Verified on
+  a 90 BPM test song with a known chorus at 32.0s (`structured_song.wav`
+  generator in this session): picks 32.0s / 8 bars / 90 BPM.
 
 ## Working style established this session
 
