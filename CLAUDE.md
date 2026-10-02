@@ -589,7 +589,28 @@ real secrets there. `.wrangler/` (local D1 state) is also gitignored.
   `immersiveSnap` captures width / Haas / ER / room type / room amount
   on engage and restores them on disengage (it used to force 100% / 0 /
   0 / dry, wiping the preset's width). A preset picked while Immersive
-  is on updates `immersiveSnap.wide` and skips `sWide`. Verified on
+  is on updates `immersiveSnap.wide` and skips `sWide`.
+- **Sound-quality roadmap (Bradley: "take this up another notch")** —
+  agreed order: (1) HQ valve, (2) a tube model that responds to level,
+  (3) better EQ (more bands, M/S, analog-matched air), (4) pro delivery
+  (24-bit WAV + dither, -1 dBTP, ~-14 LUFS target), (5) real captured
+  rooms, (6) eventually our own compressor in place of
+  DynamicsCompressorNode (Blink and WebKit share its code lineage, so
+  cross-browser drift is smaller than first claimed; main gain is
+  tunability). Every upgrade ships as an opt-in switch, default OFF,
+  until Bradley approves by ear; "off" must stay bit-identical to the
+  live site (SHA-256 of a renderChunk output vs `origin/main`).
+  **(1) done — HQ VALVE** (commit `d93c7e8`): `ssp-valve` worklet runs
+  the identical `valveCurve` at 4x (128-tap Kaiser β7 polyphase FIR up
+  and down, doubled ring buffers), ~31 samples latency. Live: `N.valveIn`
+  → (`N.shaper` | `N.valveHQ`) → `N.valveOut`, swapped by `routeValve()`;
+  curve updates via `updateValveCurve()` (port message); export:
+  `makeValveHQ(oc, curve)` with the curve in `processorOptions` (a port
+  message could arrive after offline rendering starts). Measured: same
+  harmonics at 100 Hz to 0.1 dB; aliasing on a 7 kHz tone -32→-59 dB
+  (warm) / -31→-94 dB (clean); remaining warm residue is 23rd–28th
+  harmonics folding at the 4x rate (~-60 dB). ~3x render cost when on.
+  Verified on
   a 90 BPM test song with a known chorus at 32.0s (`structured_song.wav`
   generator in this session): picks 32.0s / 8 bars / 90 BPM.
 
