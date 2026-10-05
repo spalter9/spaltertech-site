@@ -11,6 +11,7 @@
     "start": "bun src/__server.ts",
     "typecheck": "tsc --noEmit",
     "test:protocol": "bun --env-file=../../.env run src/api/protocol/tests/protocol.test.ts",
+    "test:credential": "bun run src/api/credential/tests/credential.test.ts",
     "lint": "cd ../.. && oxlint packages/web --deny-warnings --no-error-on-unmatched-pattern",
     "preview": "bun run build && vite preview",
     "db:generate": "bun --env-file=../../.env drizzle-kit generate",
