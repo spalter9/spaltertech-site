@@ -2,6 +2,7 @@ export type EngineModuleId =
   | "investor"
   | "multitask"
   | "authorship"
+  | "credit"
   | "gaming"
   | "film"
   | "music"

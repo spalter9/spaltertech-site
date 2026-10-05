@@ -84,8 +84,13 @@ export function keyIdFor(publicKey: KeyObject): string {
 }
 
 export async function signManifest(manifest: AuthorialManifest): Promise<ManifestSignature> {
+  return signCanonical(manifest);
+}
+
+/** Sign any JSON value by its canonical form. Manifests and credentials share this. */
+export async function signCanonical(value: unknown): Promise<ManifestSignature> {
   const { privateKey, publicKey } = await loadSigningKeys();
-  const payload = Buffer.from(canonicalJson(manifest), "utf8");
+  const payload = Buffer.from(canonicalJson(value), "utf8");
   // Ed25519 signs the message directly — the digest argument must be null.
   const signature = sign(null, payload, privateKey);
   return {
@@ -108,9 +113,13 @@ export function verifyManifestSignature(
   manifest: AuthorialManifest,
   signature: ManifestSignature,
 ): boolean {
+  return verifyCanonical(manifest, signature);
+}
+
+export function verifyCanonical(value: unknown, signature: ManifestSignature): boolean {
   if (signature.algorithm !== "Ed25519") return false;
   try {
-    const payload = Buffer.from(canonicalJson(manifest), "utf8");
+    const payload = Buffer.from(canonicalJson(value), "utf8");
     if (sha256Hex(payload) !== signature.signed_digest) return false;
     const publicKey = createPublicKey({
       key: Buffer.from(signature.public_key_spki_b64, "base64"),

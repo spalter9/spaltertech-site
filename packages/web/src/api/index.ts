@@ -510,6 +510,91 @@ app.post("/api/v1/export/verify", async (c) => {
 });
 
 /* ───────────────────────────────────────────────────────────
+   SSP CREDIT LAYER — signed authorship credentials for images
+     POST /api/v1/credential/inspect → 200 AI disclosures already in the file
+     POST /api/v1/credential/issue   → 201 signed credential + credited file
+     POST /api/v1/credential/verify  → 200 signature / content / disclosure checks
+   Disclosures are inventoried and preserved, never removed; the credential
+   is signed over them, so stripping one later fails verification.
+   ─────────────────────────────────────────────────────────── */
+const CREDENTIAL_MAX_BYTES = 50 * 1024 * 1024;
+const CREDIT_ROLES = ["creator", "director", "artist", "designer", "photographer", "producer"] as const;
+
+function listField(value: unknown): string[] {
+  return String(value ?? "")
+    .split("\n")
+    .map((s) => s.trim())
+    .filter(Boolean)
+    .slice(0, 20)
+    .map((s) => s.slice(0, 200));
+}
+
+app.post("/api/v1/credential/inspect", async (c) => {
+  const { detectDisclosures } = await import("./credential/detect");
+  const { extractCredential } = await import("./credential/container");
+  const upload = await readUpload(c, CREDENTIAL_MAX_BYTES);
+  if (!upload) return c.json({ error: "Missing file field 'file'" }, 400);
+  if (upload.tooLarge) return c.json({ error: "File exceeds the 50 MB limit" }, 413);
+  return c.json({
+    ...detectDisclosures(upload.bytes),
+    has_ssp_credential: extractCredential(upload.bytes) !== null,
+  });
+});
+
+app.post("/api/v1/credential/issue", async (c) => {
+  const { issueCredential } = await import("./credential/credential");
+  const upload = await readUpload(c, CREDENTIAL_MAX_BYTES);
+  if (!upload) return c.json({ error: "Missing file field 'file'" }, 400);
+  if (upload.tooLarge) return c.json({ error: "File exceeds the 50 MB limit" }, 413);
+  if (upload.bytes.byteLength === 0) return c.json({ error: "Empty upload" }, 400);
+
+  const { form, file, bytes } = upload;
+  const creatorName = String(form["creatorName"] ?? "").trim().slice(0, 120);
+  if (!creatorName) return c.json({ error: "creatorName is required" }, 400);
+  const contributions = listField(form["contributions"]);
+  if (contributions.length === 0) {
+    return c.json({ error: "List at least one creative contribution" }, 400);
+  }
+  const roleRaw = String(form["role"] ?? "creator");
+  const role = (CREDIT_ROLES as readonly string[]).includes(roleRaw)
+    ? (roleRaw as (typeof CREDIT_ROLES)[number])
+    : "creator";
+  const statement = String(form["statement"] ?? "").trim().slice(0, 600) || undefined;
+
+  try {
+    const result = await issueCredential(bytes, {
+      fileName: file.name || "upload",
+      creatorName,
+      role,
+      contributions,
+      declaredTools: listField(form["declaredTools"]),
+      statement,
+    });
+    return c.json(
+      {
+        ...result.signed,
+        credited_file_b64: result.credited_file
+          ? Buffer.from(result.credited_file).toString("base64")
+          : null,
+        sidecar_json: result.sidecar_json,
+      },
+      201,
+    );
+  } catch (err) {
+    return c.json({ error: err instanceof Error ? err.message : "Credential failed" }, 422);
+  }
+});
+
+app.post("/api/v1/credential/verify", async (c) => {
+  const { verifyCredential } = await import("./credential/credential");
+  const upload = await readUpload(c, CREDENTIAL_MAX_BYTES);
+  if (!upload) return c.json({ error: "Missing file field 'file'" }, 400);
+  if (upload.tooLarge) return c.json({ error: "File exceeds the 50 MB limit" }, 413);
+  const sidecar = upload.form["sidecar"] ? String(upload.form["sidecar"]) : undefined;
+  return c.json(verifyCredential(upload.bytes, sidecar));
+});
+
+/* ───────────────────────────────────────────────────────────
    COMPLIANCE & SETTLEMENT INFRASTRUCTURE status route
    Regulatory + settlement posture across the three capability groups.
    GET /api/compliance → C2PA / EU AI Act readiness + live counts
