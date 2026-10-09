@@ -8670,7 +8670,8 @@
         AB_EXPORT_SECONDS = 30,
         AB_EXPORT_GAP_MS = 750,
         AB_EXPORT_FADE_OUT_MS = 120,
-        AB_EXPORT_MAX_LIFT_DB = 4.5;
+        AB_EXPORT_MAX_LIFT_DB = 4.5,
+        AB_EXPORT_MIN_LIFT_DB = 1;
     // Mono RMS per hop (fps frames per second).
     function frameEnergy(b, fps) {
         const L = b.getChannelData(0),
@@ -8786,6 +8787,26 @@
                 startF = s
             }
         }
+        /* An export passage should open where a section kicks in, so the
+           listener hears the drop rather than walking in mid-phrase: if a
+           clear jump in level (the 2 s after it at least 3 dB above the 2 s
+           before) sits within half a passage of the loudest window, and the
+           window starting there is still within 1 dB of the loudest, start
+           there -- the biggest such jump wins. */
+        if (seconds) {
+            const w = 2 * fps;
+            let bestS = -1, bestRise = 2;
+            for (let s = Math.max(w, startF - (lenF >> 1)); s <= Math.min(last, startF + (lenF >> 1)); s++) {
+                const before = (pre[s] - pre[s - w]) / w,
+                    after = (pre[s + w] - pre[s]) / w;
+                if (before > 0 && after / before > bestRise && pre[s + lenF] - pre[s] >= maxP * .79) {
+                    bestRise = after / before;
+                    bestS = s
+                }
+            }
+            if (bestS >= 0)
+                startF = bestS
+        }
         // snap to the strongest onset within about a beat
         const reach = beatF ? Math.round(beatF * .6) : Math.round(fps * .5);
         let snap = startF, snapV = -1;
@@ -8794,7 +8815,8 @@
                 snapV = flux[s];
                 snap = s
             }
-        const start = Math.max(0, (snap - 1) * hop),
+        // exports open 60 ms ahead of that hit, so the fade-in is done before it lands
+        const start = Math.max(0, seconds ? snap * hop - Math.round(.06 * sr) : (snap - 1) * hop),
             len = Math.min(lenF * hop, b.length - start);
         return {
             start,
@@ -9313,7 +9335,7 @@
         const canMp3 = !window.__noMp3 && typeof lamejs !== 'undefined';
         bounceStep('MATCHING LEVELS…', 70);
         const lift = (await passageLoudness(pair.master)) - (await passageLoudness(pair.orig));
-        let liftNote = '';
+        let liftNote = '', headsUp = '';
         if (isFinite(lift)) {
             if (lift > AB_EXPORT_MAX_LIFT_DB) {
                 const k = Math.pow(10, (AB_EXPORT_MAX_LIFT_DB - lift) / 20);
@@ -9323,7 +9345,14 @@
                         d[i] *= k
                 }
             }
-            liftNote = ' · MASTER ' + (lift >= 0 ? '+' : '') + Math.min(lift, AB_EXPORT_MAX_LIFT_DB).toFixed(1) + ' dB'
+            liftNote = ' · MASTER ' + (lift >= 0 ? '+' : '') + Math.min(lift, AB_EXPORT_MAX_LIFT_DB).toFixed(1) + ' dB';
+            // the A/B never turns the master up, so a master that isn't
+            // clearly louder plays that way -- say so before it's played to anyone
+            if (lift < AB_EXPORT_MIN_LIFT_DB) {
+                const why = lift < 0 ? 'THE MASTER IS QUIETER THAN THE ORIGINAL' : 'THE MASTER IS ONLY +' + lift.toFixed(1) + ' dB LOUDER THAN THE ORIGINAL';
+                headsUp = 'HEADS UP: ' + why + ' — PUSH THE MAXIMIZER IF IT SHOULD STAND OUT';
+                liftNote += ' · ' + headsUp
+            }
         }
         bounceStep('BUILDING THE A/B FILE…', 75);
         let rb = buildABFile(pair),
@@ -9344,7 +9373,7 @@
         ledgerSave(new Date().toLocaleTimeString() + ' · ' + ledgerName + ' · 30s ORIGINAL→30s MASTER' + ext.toUpperCase(), hash, blob, outName);
         flashLedgerRow();
         bounceStep((isTouchDevice ? '✓ A/B READY — PLAY OR SAVE IT BELOW' : '✓ A/B SAVED') + doneDetail + liftNote, 100, true);
-        toast(ledgerName + ' ' + (isTouchDevice ? 'READY' : 'SAVED') + ' — 30s ORIGINAL, PAUSE, 30s MASTER, SAME PASSAGE');
+        toast(headsUp || ledgerName + ' ' + (isTouchDevice ? 'READY' : 'SAVED') + ' — 30s ORIGINAL, PAUSE, 30s MASTER, SAME PASSAGE');
         await deliver(blob, outName, true)
     }
     $('abDemoBounce').addEventListener('click', async () => {
