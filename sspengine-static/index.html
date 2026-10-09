@@ -4025,13 +4025,13 @@
                 <div id="xpStatus"></div>
                 <button id="mp3Bounce">◉ ALSO WANT THE ORIGINAL + A MONO CHECK? · 3-FILE BOUNCE</button>
                 <button id="abScreenOpen">◐ OPEN THE A/B SCREEN · B ORIGINAL vs A MASTER · TAP OR AUTO</button>
-                <button id="abDemoBounce">◉ PLAYING THIS FOR SOMEONE? · EXPORT AUTO A/B · 3x W/ VOICE CUES</button>
+                <button id="abDemoBounce">◉ PLAYING THIS FOR SOMEONE? · EXPORT A/B · 30s ORIGINAL → 30s MASTER</button>
                 <div id="ab2Box">
                     <div class="ab2Head">ALREADY HAVE YOUR MASTER? · A/B YOUR OWN TWO FILES</div>
-                    <div class="ab2Note">Plays both files exactly as they are, nothing re-processed, so the A/B is exactly the master you approved. Load your master here, not into the console above, or it gets mastered twice. With both files loaded, the A/B screen above uses them too.</div>
+                    <div class="ab2Note">Plays both files exactly as they are, nothing re-processed (the master is only turned down if it is more than 4.5 dB louder), so the A/B is exactly the master you approved. Load your master here, not into the console above, or it gets mastered twice. With both files loaded, the A/B screen above uses them too.</div>
                     <label class="ab2Slot"><span class="ab2Num">1 · YOUR MASTER</span><b id="ab2MasterName">CHOOSE FILE</b><input type="file" id="ab2MasterIn" accept="audio/*,.mp3,.wav,.m4a,.aif,.aiff,.flac"></label>
                     <label class="ab2Slot"><span class="ab2Num">2 · THE ORIGINAL</span><b id="ab2OrigName">CHOOSE FILE</b><input type="file" id="ab2OrigIn" accept="audio/*,.mp3,.wav,.m4a,.aif,.aiff,.flac"></label>
-                    <button id="ab2Bounce">◉ EXPORT A/B FROM THESE TWO FILES · 3x W/ VOICE CUES</button>
+                    <button id="ab2Bounce">◉ EXPORT A/B FROM THESE TWO FILES · 30s ORIGINAL → 30s MASTER</button>
                 </div>
                 <div id="bounceProgress">
                     <div id="bounceBarTrack">
@@ -8659,25 +8659,18 @@
        of the song (the old 0-20s original / 20-40s master layout) isn't a
        real A/B. Used by both A/B exports and the A/B screen. */
     const AB_TARGET_SECONDS = 20,
-        AUTO_AB_CYCLES = 3,
         AB_FADE_MS = 15,
-        AB_VOICE_GAP_MS = 300,
-        AB_VOICE_URLS = {
-            master: 'audio/voice_ssp_on.wav',
-            original: 'audio/voice_ssp_off.wav'
-        };
-    const abVoiceCache = {};
-    async function loadAbVoiceClip(which, targetSampleRate) {
-        const key = which + '@' + targetSampleRate;
-        if (abVoiceCache[key])
-            return abVoiceCache[key];
-        const resp = await fetch(AB_VOICE_URLS[which]),
-            arrBuf = await resp.arrayBuffer(),
-            tempCtx = new OfflineAudioContext(1, 1, targetSampleRate),
-            decoded = await tempCtx.decodeAudioData(arrBuf);
-        abVoiceCache[key] = decoded;
-        return decoded;
-    }
+        /* The A/B exports (Bradley: "30 seconds with it off, 30 seconds with
+           it on, and that's it"): one pass, the original first ("SSP off"),
+           a short pause, then the master of the same 30 seconds ("SSP on").
+           A master more than AB_EXPORT_MAX_LIFT_DB louder is turned down to
+           that, so the jump in volume isn't what does the talking -- and not
+           below it, or the original's uncompressed drum hits start to sound
+           louder than the master's. */
+        AB_EXPORT_SECONDS = 30,
+        AB_EXPORT_GAP_MS = 750,
+        AB_EXPORT_FADE_OUT_MS = 120,
+        AB_EXPORT_MAX_LIFT_DB = 4.5;
     // Mono RMS per hop (fps frames per second).
     function frameEnergy(b, fps) {
         const L = b.getChannelData(0),
@@ -8733,14 +8726,16 @@
         const a = ac(best - 1), c = ac(best + 1), den = a - 2 * bestR + c;
         return den < 0 ? best + .5 * (a - c) / den : best
     }
-    /* The passage to compare: whole bars (4 beats) adding up to about 20s,
+    /* The passage to compare: whole bars (4 beats) adding up to about 20s
+       (or exactly `seconds`, when given),
        placed on the loudest, fullest stretch of the song (the earliest one
        within 0.5 dB of the loudest, so the first chorus beats the outro),
        starting on a strong beat. */
-    function pickBestSection(b) {
+    function pickBestSection(b, seconds = 0) {
         const sr = b.sampleRate,
-            fps = 100;
-        if (b.duration <= AB_TARGET_SECONDS + 2)
+            fps = 100,
+            target = seconds || AB_TARGET_SECONDS;
+        if (b.duration <= target + 2)
             return { start: 0, len: b.length, bpm: 0, bars: 0 };
         const { env, hop } = frameEnergy(b, fps),
             n = env.length,
@@ -8748,8 +8743,10 @@
         for (let i = 1; i < n; i++)
             flux[i] = Math.max(0, env[i] - env[i - 1]);
         const beatF = estimateBeat(flux, fps);
-        let lenF = AB_TARGET_SECONDS * fps, bars = 0;
-        if (beatF) {
+        let lenF = target * fps, bars = 0;
+        // a fixed length (the exports' 30 seconds) is taken as asked;
+        // otherwise round to whole bars
+        if (beatF && !seconds) {
             // phrase lengths songs are actually written in
             const barF = beatF * 4;
             let bestK = 0;
@@ -8843,43 +8840,55 @@
         }
         return { orig: origSec, master: masterSec, sec }
     }
-    function fadedCopy(buf, c) {
+    function fadedCopy(buf, c, outMs = AB_FADE_MS) {
         const d = buf.getChannelData(Math.min(c, buf.numberOfChannels - 1)).slice(),
-            f = Math.min(Math.floor(AB_FADE_MS / 1000 * buf.sampleRate), d.length >> 1);
-        for (let i = 0; i < f; i++) {
+            f = Math.min(Math.floor(AB_FADE_MS / 1000 * buf.sampleRate), d.length >> 1),
+            fo = Math.min(Math.floor(outMs / 1000 * buf.sampleRate), d.length >> 1);
+        for (let i = 0; i < f; i++)
             d[i] *= i / f;
-            d[d.length - 1 - i] *= i / f
-        }
+        for (let i = 0; i < fo; i++)
+            d[d.length - 1 - i] *= i / fo;
         return d
     }
-    /* The file: AUTO_AB_CYCLES x [gap, "SSP off", gap, original passage,
-       gap, "SSP on", gap, master of the same passage]. Each passage fades
-       in/out over AB_FADE_MS into silence, so no cut can click. */
-    async function buildABFile(pair) {
+    /* The file: the original passage, AB_EXPORT_GAP_MS of silence, then
+       the master of the same passage. Each fades in and out into the
+       silence, so no cut can click. */
+    function buildABFile(pair) {
         const sr = pair.orig.sampleRate,
-            on = await loadAbVoiceClip('master', sr),
-            off = await loadAbVoiceClip('original', sr),
-            gap = Math.floor(AB_VOICE_GAP_MS / 1000 * sr),
-            parts = [off, pair.orig, on, pair.master];
-        let cycleLen = 0;
-        for (const p of parts)
-            cycleLen += gap + p.length;
-        const out = new AudioBuffer({
-            numberOfChannels: 2,
-            length: cycleLen * AUTO_AB_CYCLES,
-            sampleRate: sr
-        });
-        let w = 0;
-        for (let k = 0; k < AUTO_AB_CYCLES; k++)
-            for (const p of parts) {
-                w += gap;
-                const music = p === pair.orig || p === pair.master;
-                for (let c = 0; c < 2; c++)
-                    out.getChannelData(c).set(music ? fadedCopy(p, c) : p.getChannelData(Math.min(c, p.numberOfChannels - 1)), w);
-                w += p.length
-            }
+            gap = Math.round(AB_EXPORT_GAP_MS / 1000 * sr),
+            out = new AudioBuffer({
+                numberOfChannels: 2,
+                length: pair.orig.length + gap + pair.master.length,
+                sampleRate: sr
+            });
+        for (let c = 0; c < 2; c++) {
+            out.getChannelData(c).set(fadedCopy(pair.orig, c, AB_EXPORT_FADE_OUT_MS), 0);
+            out.getChannelData(c).set(fadedCopy(pair.master, c, AB_EXPORT_FADE_OUT_MS), pair.orig.length + gap)
+        }
         return out
     }
+    /* How far the master's sound is from the original's, in dB: what is left
+       of the master after taking out the best-matching copy of the original.
+       Below about -60 dB the master is just the original at another volume
+       -- the console's FLAT preset does exactly that -- so an A/B of it
+       would play the same thing twice. */
+    function abToneChangeDb(pair) {
+        let oo = 0, om = 0, mm = 0;
+        for (let c = 0; c < 2; c++) {
+            const o = pair.orig.getChannelData(c),
+                m = pair.master.getChannelData(c);
+            for (let i = 0; i < o.length; i++) {
+                oo += o[i] * o[i];
+                om += o[i] * m[i];
+                mm += m[i] * m[i]
+            }
+        }
+        if (!oo || !om)
+            return 0;
+        const g = om / oo;
+        return 10 * Math.log10(Math.max(1e-30, (mm - 2 * g * om + g * g * oo) / (g * g * oo)))
+    }
+    const AB_SAME_SOUND_DB = -60;
     /* Phones: an export finishes long after the tap that started it, and
        iOS only opens the share sheet (or saves a download) right after a
        tap -- so the file used to vanish into Files > Downloads, or not
@@ -9302,8 +9311,22 @@
     // Shared tail of both A/B exports: build, encode, hash, ledger, hand off.
     async function finishABExport(pair, baseName, ledgerName, doneDetail) {
         const canMp3 = !window.__noMp3 && typeof lamejs !== 'undefined';
+        bounceStep('MATCHING LEVELS…', 70);
+        const lift = (await passageLoudness(pair.master)) - (await passageLoudness(pair.orig));
+        let liftNote = '';
+        if (isFinite(lift)) {
+            if (lift > AB_EXPORT_MAX_LIFT_DB) {
+                const k = Math.pow(10, (AB_EXPORT_MAX_LIFT_DB - lift) / 20);
+                for (let c = 0; c < pair.master.numberOfChannels; c++) {
+                    const d = pair.master.getChannelData(c);
+                    for (let i = 0; i < d.length; i++)
+                        d[i] *= k
+                }
+            }
+            liftNote = ' · MASTER ' + (lift >= 0 ? '+' : '') + Math.min(lift, AB_EXPORT_MAX_LIFT_DB).toFixed(1) + ' dB'
+        }
         bounceStep('BUILDING THE A/B FILE…', 75);
-        let rb = await buildABFile(pair),
+        let rb = buildABFile(pair),
             blob,
             ext;
         if (canMp3) {
@@ -9318,10 +9341,10 @@
         rb = null;
         const hash = await sha256(await blob.arrayBuffer()),
             outName = baseName + ext;
-        ledgerSave(new Date().toLocaleTimeString() + ' · ' + ledgerName + ' · ' + AUTO_AB_CYCLES + 'x ORIGINAL→MASTER' + ext.toUpperCase(), hash, blob, outName);
+        ledgerSave(new Date().toLocaleTimeString() + ' · ' + ledgerName + ' · 30s ORIGINAL→30s MASTER' + ext.toUpperCase(), hash, blob, outName);
         flashLedgerRow();
-        bounceStep((isTouchDevice ? '✓ A/B READY — PLAY OR SAVE IT BELOW' : '✓ A/B SAVED') + doneDetail, 100, true);
-        toast(ledgerName + ' ' + (isTouchDevice ? 'READY' : 'SAVED') + ' — ' + AUTO_AB_CYCLES + 'x "SSP OFF" ORIGINAL → "SSP ON" MASTER, SAME PASSAGE');
+        bounceStep((isTouchDevice ? '✓ A/B READY — PLAY OR SAVE IT BELOW' : '✓ A/B SAVED') + doneDetail + liftNote, 100, true);
+        toast(ledgerName + ' ' + (isTouchDevice ? 'READY' : 'SAVED') + ' — 30s ORIGINAL, PAUSE, 30s MASTER, SAME PASSAGE');
         await deliver(blob, outName, true)
     }
     $('abDemoBounce').addEventListener('click', async () => {
@@ -9342,12 +9365,17 @@
         try {
             bounceStep('PICKING THE STRONGEST PART OF THE SONG…', 5);
             await new Promise(r => setTimeout(r, 50));
-            const sec = pickBestSection(buffer),
+            const sec = pickBestSection(buffer, AB_EXPORT_SECONDS),
                 label = sectionLabel(sec, buffer.sampleRate);
             bounceStep('RENDERING THE MASTER OF ' + label + '…', 25);
             const pair = await getABPair({
                 orig: buffer
             }, sec);
+            if (abToneChangeDb(pair) < AB_SAME_SOUND_DB) {
+                bounceStep('✕ THE CONSOLE IS ON FLAT, SO THE MASTER SOUNDS THE SAME AS THE ORIGINAL — PICK A PRESET (LIKE SILK) FIRST, THEN EXPORT', 0);
+                toast('PICK A PRESET FIRST — ON FLAT BOTH HALVES SOUND THE SAME');
+                return
+            }
             await finishABExport(pair, (window.__srcName || 'sspengine') + '_AUTO_AB_DEMO', 'AUTO A/B DEMO', ' · ' + label)
         } catch (e) {
             bounceStep('✕ EXPORT FAILED — TRACK MAY BE TOO LONG FOR THIS DEVICE', bouncePct);
@@ -9495,7 +9523,7 @@
             if (!src)
                 return;
             bounceStep('PICKING THE STRONGEST PART OF THE SONG…', 30);
-            const sec = pickBestSection(src.orig),
+            const sec = pickBestSection(src.orig, AB_EXPORT_SECONDS),
                 pair = await getABPair(src, sec),
                 aligned = src.lag ? ' · LINED UP ' + (src.lag / src.orig.sampleRate * 1000).toFixed(1) + ' MS' : ' · ALREADY LINED UP';
             await finishABExport(pair, (ab2.origName.replace(/\.[^.]+$/, '') || 'sspengine') + '_AB_YOUR_MASTER', 'A/B FROM YOUR FILES', ' · ' + sectionLabel(sec, src.orig.sampleRate) + aligned + src.warn)
@@ -9830,6 +9858,8 @@
             const pair = await getABPair(source, sec);
             if (!abS.ctx)
                 return;
+            if (!useFiles && abToneChangeDb(pair) < AB_SAME_SOUND_DB)
+                toast('HEADS UP: THE CONSOLE IS ON FLAT, SO A AND B SOUND THE SAME — PICK A PRESET FIRST');
             const toBuf = b => {
                 const o = new AudioBuffer({ numberOfChannels: 2, length: b.length, sampleRate: b.sampleRate });
                 for (let c = 0; c < 2; c++)
