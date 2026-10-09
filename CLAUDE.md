@@ -610,6 +610,24 @@ real secrets there. `.wrangler/` (local D1 state) is also gitignored.
   (measured residual: SURREAL −23, SILK −14, STREET −6, FLAT+high 1.5 dB
   −39, FLAT+maximizer −49). The voice-cue loader is gone; the
   `audio/voice_ssp_*.wav` clips remain on the site, unused.
+  **Then (commit `7a06be7`, Bradley: "the A/B is what's going to convince
+  Dre… it's key that these A/Bs are on point"):** with `seconds` set,
+  `pickBestSection` moves the start to the biggest level jump (2 s after
+  vs 2 s before, ≥ +3 dB) within ±half a passage of the loudest window,
+  if that window is still within 1 dB of the loudest, and opens 60 ms
+  ahead of the onset-snapped hit. The Trap 2:33.7 → 2:22.65 (the drop);
+  `structured_song.wav` → 31.94 (chorus at 32.0); no-section songs
+  unchanged; A/B screen pick untouched (still 152.00 / 8 bars on The
+  Trap). Gotcha: the search first only reached 2 s past the loudest
+  window, which on the structured song sits at 29.33 (it swallows the
+  pre-chorus) — the chorus jump at 32.0 was out of reach; it must search
+  ±half a passage. A master < `AB_EXPORT_MIN_LIFT_DB` (+1) louder gets a
+  HEADS UP on the status line and toast (the A/B never boosts). Verified
+  through the real lamejs 1.2.0 (`npm pack lamejs@1.2.0`, served via
+  `ctx.route('**/lamejs/1.2.0/lame.min.js')`): 60.79 s MP3, +4.49 dB.
+  Emulated iPhone in Playwright still takes the desktop branch because
+  Chromium has `showSaveFilePicker` — delete it in an init script to
+  exercise the phone card.
   **The Trap test master** (Bradley's song, not shipped anywhere):
   SILK preset, low −1, mid +2.5, high +6.5, codec restore 35%, maximizer
   +6 dB / −2.0 dBTP → −9.2 LUFS (orig −16.0), presence 2.5→3.1%, air
