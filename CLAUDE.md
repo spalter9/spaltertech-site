@@ -604,7 +604,9 @@ real secrets there. `.wrangler/` (local D1 state) is also gitignored.
   engine's master is the original × 0.85 (−1.41 dB, residual −121 dB) —
   the export played the same thing twice, quieter the second time.
   `abToneChangeDb(pair)` < `AB_SAME_SOUND_DB` (−60) now stops the engine
-  export with "PICK A PRESET FIRST" and makes the A/B screen warn
+  export ("NOTHING IN THE CONSOLE IS CHANGING THE SOUND YET… DIAL IN YOUR
+  MASTER FIRST" — reworded in `802dd95`: Bradley dials his own settings,
+  a preset isn't required, any real tweak passes) and makes the A/B screen warn
   (measured residual: SURREAL −23, SILK −14, STREET −6, FLAT+high 1.5 dB
   −39, FLAT+maximizer −49). The voice-cue loader is gone; the
   `audio/voice_ssp_*.wav` clips remain on the site, unused.
