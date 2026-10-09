@@ -590,6 +590,28 @@ real secrets there. `.wrangler/` (local D1 state) is also gitignored.
   on engage and restores them on disengage (it used to force 100% / 0 /
   0 / dry, wiping the preset's width). A preset picked while Immersive
   is on updates `immersiveSnap.wide` and skips `sWide`.
+- **A/B exports are now 30s original → 0.75s pause → 30s master, once,
+  no voice cues** (commit `45061a6`; Bradley: "30 seconds with it off,
+  30 seconds with it on, and that's it"). Both `#abDemoBounce` and
+  `#ab2Bounce` use `pickBestSection(b, AB_EXPORT_SECONDS)` (fixed length,
+  no bar rounding; the A/B screen still uses the 20s/bars pick) and
+  `buildABFile` (15ms fade in, `AB_EXPORT_FADE_OUT_MS` 120ms out).
+  `finishABExport` turns the master down to `AB_EXPORT_MAX_LIFT_DB`
+  (+4.5 dB LUFS over the original) if louder, never up — Bradley found
+  +6 too obvious, and at +3 the original's uncompressed drum hits sounded
+  louder than the limited master (measured: master peaks 2.8 dB lower).
+  Root cause of "it doesn't switch": the console boots on FLAT, where the
+  engine's master is the original × 0.85 (−1.41 dB, residual −121 dB) —
+  the export played the same thing twice, quieter the second time.
+  `abToneChangeDb(pair)` < `AB_SAME_SOUND_DB` (−60) now stops the engine
+  export with "PICK A PRESET FIRST" and makes the A/B screen warn
+  (measured residual: SURREAL −23, SILK −14, STREET −6, FLAT+high 1.5 dB
+  −39, FLAT+maximizer −49). The voice-cue loader is gone; the
+  `audio/voice_ssp_*.wav` clips remain on the site, unused.
+  **The Trap test master** (Bradley's song, not shipped anywhere):
+  SILK preset, low −1, mid +2.5, high +6.5, codec restore 35%, maximizer
+  +6 dB / −2.0 dBTP → −9.2 LUFS (orig −16.0), presence 2.5→3.1%, air
+  0.9→2.7%. Headless Chromium renders at 44.1 kHz (the MP3 is 48 kHz).
 - **Sound-quality roadmap (Bradley: "take this up another notch")** —
   agreed order: (1) HQ valve, (2) a tube model that responds to level,
   (3) better EQ (more bands, M/S, analog-matched air), (4) pro delivery
