@@ -9372,8 +9372,8 @@
                 orig: buffer
             }, sec);
             if (abToneChangeDb(pair) < AB_SAME_SOUND_DB) {
-                bounceStep('✕ THE CONSOLE IS ON FLAT, SO THE MASTER SOUNDS THE SAME AS THE ORIGINAL — PICK A PRESET (LIKE SILK) FIRST, THEN EXPORT', 0);
-                toast('PICK A PRESET FIRST — ON FLAT BOTH HALVES SOUND THE SAME');
+                bounceStep('✕ NOTHING IN THE CONSOLE IS CHANGING THE SOUND YET (IT OPENS ON FLAT), SO BOTH HALVES WOULD SOUND THE SAME — DIAL IN YOUR MASTER FIRST, THEN EXPORT', 0);
+                toast('DIAL IN YOUR MASTER FIRST — RIGHT NOW BOTH HALVES SOUND THE SAME');
                 return
             }
             await finishABExport(pair, (window.__srcName || 'sspengine') + '_AUTO_AB_DEMO', 'AUTO A/B DEMO', ' · ' + label)
@@ -9859,7 +9859,7 @@
             if (!abS.ctx)
                 return;
             if (!useFiles && abToneChangeDb(pair) < AB_SAME_SOUND_DB)
-                toast('HEADS UP: THE CONSOLE IS ON FLAT, SO A AND B SOUND THE SAME — PICK A PRESET FIRST');
+                toast('HEADS UP: NOTHING IN THE CONSOLE IS CHANGING THE SOUND YET, SO A AND B SOUND THE SAME');
             const toBuf = b => {
                 const o = new AudioBuffer({ numberOfChannels: 2, length: b.length, sampleRate: b.sampleRate });
                 for (let c = 0; c < 2; c++)
