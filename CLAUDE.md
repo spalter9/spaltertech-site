@@ -628,6 +628,24 @@ real secrets there. `.wrangler/` (local D1 state) is also gitignored.
   Emulated iPhone in Playwright still takes the desktop branch because
   Chromium has `showSaveFilePicker` — delete it in an init script to
   exercise the phone card.
+  **Print ≠ monitor, found and fixed (commit `065f9c8`)** — Bradley: "when
+  I'm mixing it sounds good, but when I hit the A/B… the master loses its
+  balls." `renderChunk` (every export and the A/B screen) had `pt.gain
+  .85` (−1.4 dB) before the EQ/comp/maximizer where the live `N.preTrim`
+  is 1.0, and had no `N.safety` (live's last stage: DynamicsCompressor
+  −2 dB, knee 0, 20:1, 1 ms/100 ms — its automatic makeup adds ~1 dB).
+  Measured by recording the live chain (an AudioWorklet tap on
+  `N.safety`, playing via `seekTo`/`play`) against `getABPair` for the
+  same 10 s: render 1.2–1.8 dB quieter in every band; after the fix
+  within 0.05 dB, correlation 1.00000 (`diag_live_vs_offline.js` +
+  `lvo_analyze.py` in the session scratchpad). The +4.5 dB A/B cap is
+  removed (master plays at its mixed level: SILK +6.2 dB on The Trap; a
+  light hand-tweak went +0.3 → +2.8 dB). The flat check is now
+  `consoleIsFlat()` (settings) — `abToneChangeDb` is gone, since the
+  safety stage touches even FLAT. The 3D HRTF panner (`P.spatial`) is
+  live-only but nothing sets it any more. **This changes every bounce
+  (louder, matching the monitor) — earlier bounces were 1.2–1.8 dB
+  softer than what was approved by ear.**
   **The Trap test master** (Bradley's song, not shipped anywhere):
   SILK preset, low −1, mid +2.5, high +6.5, codec restore 35%, maximizer
   +6 dB / −2.0 dBTP → −9.2 LUFS (orig −16.0), presence 2.5→3.1%, air
