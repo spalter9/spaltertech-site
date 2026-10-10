@@ -4003,6 +4003,7 @@
             <div class="panel">
                 <h2>ARTIST PRESETS</h2>
                 <div class="presets">
+                    <button data-pre="radio">SSP · RADIO READY</button>
                     <button data-pre="dre">STREET · KNOCK</button>
                     <button data-pre="spalter">BRADLEY SPALTER · SILK</button>
                     <button data-pre="manny">GLOSS · POLISH</button>
@@ -5358,11 +5359,12 @@
         ramp(n.tr.byp.gain, trOn ? 0 : 1);
         ramp(n.tr.wet.gain, trOn ? 1 : 0);
         if (n.tr.node) {
-            /* the worklet's attack/sustain params are declared -1..1; the sliders are -100..100,
-               so this must be normalized or the browser silently clamps every non-trivial slider
-               move to the same maxed-out value instead of scaling with the slider */
-            ramp(n.tr.node.parameters.get('attack'), P.trAtk / 100);
-            ramp(n.tr.node.parameters.get('sustain'), P.trSus / 100)
+            /* the worklet's attack/sustain params are declared -1..1 and the
+               sliders' handlers already store P.trAtk / P.trSus as -1..1
+               (v / 100). Dividing by 100 again here ran the shaper at 1% of
+               the slider -- +100% attack measured as no change at all. */
+            ramp(n.tr.node.parameters.get('attack'), P.trAtk);
+            ramp(n.tr.node.parameters.get('sustain'), P.trSus)
         }
         const subOn = P.subDb > 0;
         ramp(n.sub.f.gain, P.subDb);
@@ -5406,30 +5408,43 @@
     }
     /* ---- Stages II ---- */
     const SSP_WORKLET_SRC = [
+        /* Transient designer. One level follower (instant attack, 120 ms
+           release, linked across channels so the image never shifts) is
+           compared with a slower copy of itself (25 ms attack): right after
+           a hit the level is ahead of its slow copy, and only that gap is
+           turned up (attack > 0) or down (attack < 0). On a steady note the
+           two settle within a few percent of each other, under the 1 dB
+           threshold, so it passes at exactly the same level. Sustain works
+           the same way on the tail: a 300 ms-release follower against a
+           40 ms one, 3 dB threshold. Gain moves as a power of the gap
+           (dB-proportional), capped at 12 dB of gap.
+           The earlier version compared a per-cycle peak follower with a
+           20 ms average, which disagree on any waveform -- turned up, it
+           lifted the whole track about 6 dB instead of the hits. */
         "class SspTransient extends AudioWorkletProcessor {",
         "  static get parameterDescriptors() { return [",
         "    { name: 'attack', defaultValue: 0, minValue: -1, maxValue: 1, automationRate: 'k-rate' },",
         "    { name: 'sustain', defaultValue: 0, minValue: -1, maxValue: 1, automationRate: 'k-rate' } ] }",
-        "  constructor() { super(); this.ef = [0, 0]; this.es = [0, 0]; this.g = [1, 1] }",
+        "  constructor() { super(); this.e = 0; this.sa = 0; this.fs = 0; this.ss = 0; this.g = 1 }",
         "  process(inputs, outputs, params) {",
         "    const inp = inputs[0], out = outputs[0]; if (!inp || !inp.length) return true;",
-        "    const att = params.attack[0], sus = params.sustain[0];",
-        "    const cFa = Math.exp(-1 / (sampleRate * 0.0005)), cFr = Math.exp(-1 / (sampleRate * 0.02));",
-        "    const cSa = Math.exp(-1 / (sampleRate * 0.02)), cSr = Math.exp(-1 / (sampleRate * 0.02));",
-        "    const cG = Math.exp(-1 / (sampleRate * 0.001));",
-        "    for (let c = 0; c < inp.length; c++) {",
-        "      const x = inp[c], y = out[c]; if (!y) continue;",
-        "      let ef = this.ef[c] || 0, es = this.es[c] || 0, g = this.g[c] || 1;",
-        "      for (let i = 0; i < x.length; i++) {",
-        "        const a = Math.abs(x[i]);",
-        "        ef = a > ef ? ef * cFa + a * (1 - cFa) : ef * cFr + a * (1 - cFr);",
-        "        es = a > es ? es * cSa + a * (1 - cSa) : es * cSr + a * (1 - cSr);",
-        "        const d = (ef - es) / (es + 1e-4);",
-        "        const tr = Math.min(1, Math.max(0, d)), su = Math.min(1, Math.max(0, -d));",
-        "        let gt = (1 + att * tr * 1.6) * (1 + sus * su * 1.2); if (gt < 0.05) gt = 0.05;",
-        "        g = g * cG + gt * (1 - cG); y[i] = x[i] * g }",
-        "      this.ef[c] = ef; this.es[c] = es; this.g[c] = g }",
-        "    for (let c = inp.length; c < out.length; c++) out[c].set(out[0]);",
+        "    const att = params.attack[0] * 0.75, sus = params.sustain[0] * 0.5, nc = inp.length, n = inp[0].length;",
+        "    const k = t => Math.exp(-1 / (sampleRate * t));",
+        "    const cRel = k(0.12), cSA = k(0.025), cFR = k(0.04), cSR = k(0.3), cG = k(0.001);",
+        "    let e = this.e, sa = this.sa, fs = this.fs, ss = this.ss, g = this.g;",
+        "    for (let i = 0; i < n; i++) {",
+        "      let a = 0; for (let c = 0; c < nc; c++) { const v = Math.abs(inp[c][i]); if (v > a) a = v }",
+        "      e = a > e ? a : e * cRel + a * (1 - cRel);",
+        "      sa = e > sa ? sa * cSA + e * (1 - cSA) : sa * cRel + e * (1 - cRel);",
+        "      fs = a > fs ? a : fs * cFR + a * (1 - cFR);",
+        "      ss = a > ss ? a : ss * cSR + a * (1 - cSR);",
+        "      let gt = 1;",
+        "      if (att) gt *= Math.pow(Math.min(3.98, Math.max(1, (e + 1e-9) / (sa * 1.12 + 1e-9))), att);",
+        "      if (sus) gt *= Math.pow(Math.min(3.98, Math.max(1, (ss + 1e-9) / (fs * 1.41 + 1e-9))), sus);",
+        "      g = g * cG + gt * (1 - cG);",
+        "      for (let c = 0; c < nc; c++) if (out[c]) out[c][i] = inp[c][i] * g }",
+        "    this.e = e; this.sa = sa; this.fs = fs; this.ss = ss; this.g = g;",
+        "    for (let c = nc; c < out.length; c++) out[c].set(out[0]);",
         "    return true } }",
         "class SspLimiter extends AudioWorkletProcessor {",
         "  static get parameterDescriptors() { return [",
@@ -6950,6 +6965,23 @@
     });
     /* presets */
     const PRESETS = {
+        /* Tuned on The Trap and checked on two other songs, scored against
+           the original at matched loudness: vocals/presence +1.7 dB, added
+           hiss +0.4 dB (SILK +3.0), sub +0.25 (SILK +1.1), true peak -0.8
+           dBTP (SILK reached +1.3 on one song), 5.4 dB louder. Loudness
+           comes from the maximizer, not from EQ or the safety stage, so
+           the top stays smooth and the kick keeps its hit. */
+        radio: {
+            width: 108,
+            drive: 8,
+            low: 1,
+            mid: 3.5,
+            high: .5,
+            comp: -5,
+            out: 0,
+            mx: [3.5, -2, 250],
+            trAtk: 40
+        },
         dre: {
             width: 95,
             drive: 16,
@@ -7033,6 +7065,14 @@
             immersiveSnap.wide = p.width ?? 100;
             map = map.filter(([id]) => id !== 'sWide')
         }
+        // presets that carry their own loudness/punch stages turn those on too
+        if (p.mx) {
+            if (!P.mxOn)
+                $('tglMx').click();
+            map.push(['sMxDrive', p.mx[0]], ['sMxCeil', p.mx[1]], ['sMxRel', p.mx[2]])
+        }
+        if (p.trAtk !== undefined)
+            map.push(['sTrAtk', p.trAtk]);
         for (const [id, v] of map) {
             const s = $(id);
             s.value = v;
