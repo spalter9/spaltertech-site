@@ -4028,7 +4028,7 @@
                 <button id="abDemoBounce">◉ PLAYING THIS FOR SOMEONE? · EXPORT A/B · 30s ORIGINAL → 30s MASTER</button>
                 <div id="ab2Box">
                     <div class="ab2Head">ALREADY HAVE YOUR MASTER? · A/B YOUR OWN TWO FILES</div>
-                    <div class="ab2Note">Plays both files exactly as they are, nothing re-processed (the master is only turned down if it is more than 4.5 dB louder), so the A/B is exactly the master you approved. Load your master here, not into the console above, or it gets mastered twice. With both files loaded, the A/B screen above uses them too.</div>
+                    <div class="ab2Note">Plays both files exactly as they are, nothing re-processed, so the A/B is exactly the master you approved. Load your master here, not into the console above, or it gets mastered twice. With both files loaded, the A/B screen above uses them too.</div>
                     <label class="ab2Slot"><span class="ab2Num">1 · YOUR MASTER</span><b id="ab2MasterName">CHOOSE FILE</b><input type="file" id="ab2MasterIn" accept="audio/*,.mp3,.wav,.m4a,.aif,.aiff,.flac"></label>
                     <label class="ab2Slot"><span class="ab2Num">2 · THE ORIGINAL</span><b id="ab2OrigName">CHOOSE FILE</b><input type="file" id="ab2OrigIn" accept="audio/*,.mp3,.wav,.m4a,.aif,.aiff,.flac"></label>
                     <button id="ab2Bounce">◉ EXPORT A/B FROM THESE TWO FILES · 30s ORIGINAL → 30s MASTER</button>
@@ -8401,8 +8401,13 @@
            export came out as static. 'none' keeps the saturation curve correct, just
            without the extra alias-suppression the live monitor path still gets. */
         sh.oversample = 'none';
+        /* Same trim as the live chain's N.preTrim. This was .85 here
+           (-1.4 dB) while the live chain ran at 1.0, so every bounce and
+           A/B hit the EQ, compressor and maximizer 1.4 dB softer than
+           what was approved by ear -- and on FLAT the "master" was just
+           the original 1.4 dB quieter. */
         const pt = oc.createGain();
-        pt.gain.value = .85;
+        pt.gain.value = 1;
         const lo = oc.createBiquadFilter();
         lo.type = 'lowshelf';
         lo.frequency.value = 90;
@@ -8536,7 +8541,18 @@
         }
         post.connect(out);
         out.connect(off.mx.inp);
-        const fin = off.mx.out;
+        /* The live chain's last stage, N.safety, was never in the print:
+           a fast, near-brickwall compressor at -2 dB whose automatic
+           makeup gain adds about 1 dB. Without it every export came out
+           1.2-1.8 dB quieter, with different peaks, than the monitor. */
+        const safety = oc.createDynamicsCompressor();
+        safety.threshold.value = -2;
+        safety.knee.value = 0;
+        safety.ratio.value = 20;
+        safety.attack.value = .001;
+        safety.release.value = .1;
+        off.mx.out.connect(safety);
+        const fin = safety;
         fin.connect(oc.destination);
         s.start();
         return await oc.startRendering();
@@ -8662,15 +8678,13 @@
         AB_FADE_MS = 15,
         /* The A/B exports (Bradley: "30 seconds with it off, 30 seconds with
            it on, and that's it"): one pass, the original first ("SSP off"),
-           a short pause, then the master of the same 30 seconds ("SSP on").
-           A master more than AB_EXPORT_MAX_LIFT_DB louder is turned down to
-           that, so the jump in volume isn't what does the talking -- and not
-           below it, or the original's uncompressed drum hits start to sound
-           louder than the master's. */
+           a short pause, then the master of the same 30 seconds ("SSP on"),
+           at exactly the level it was mixed at. (It used to be turned down
+           to +4.5 dB over the original; Bradley: the master "loses its
+           balls" in the A/B -- the A/B has to sound like the mix.) */
         AB_EXPORT_SECONDS = 30,
         AB_EXPORT_GAP_MS = 750,
         AB_EXPORT_FADE_OUT_MS = 120,
-        AB_EXPORT_MAX_LIFT_DB = 4.5,
         AB_EXPORT_MIN_LIFT_DB = 1;
     // Mono RMS per hop (fps frames per second).
     function frameEnergy(b, fps) {
@@ -8889,28 +8903,16 @@
         }
         return out
     }
-    /* How far the master's sound is from the original's, in dB: what is left
-       of the master after taking out the best-matching copy of the original.
-       Below about -60 dB the master is just the original at another volume
-       -- the console's FLAT preset does exactly that -- so an A/B of it
-       would play the same thing twice. */
-    function abToneChangeDb(pair) {
-        let oo = 0, om = 0, mm = 0;
-        for (let c = 0; c < 2; c++) {
-            const o = pair.orig.getChannelData(c),
-                m = pair.master.getChannelData(c);
-            for (let i = 0; i < o.length; i++) {
-                oo += o[i] * o[i];
-                om += o[i] * m[i];
-                mm += m[i] * m[i]
-            }
-        }
-        if (!oo || !om)
-            return 0;
-        const g = om / oo;
-        return 10 * Math.log10(Math.max(1e-30, (mm - 2 * g * om + g * g * oo) / (g * g * oo)))
+    /* True when nothing in the console changes the sound -- how it opens:
+       FLAT, every stage off. The engine's master is then the original
+       through the final safety stage alone, so an A/B of it would play the
+       same thing twice. Read off the settings, not measured: the safety
+       stage touches a hot original even on FLAT. */
+    function consoleIsFlat() {
+        return P.width === 1 && !P.drive && !P.low && !P.mid && !P.high && !P.comp && !P.out &&
+            !P.dnOn && !P.deOn && !P.haasMix && !P.erMix && !P.trAtk && !P.trSus && !P.subDb &&
+            !P.codec && !P.mxOn && !P.mbOn && !P.glueOn && !P.warmChar && (!P.room || P.room === 'off' || !P.roomMix)
     }
-    const AB_SAME_SOUND_DB = -60;
     /* Phones: an export finishes long after the tap that started it, and
        iOS only opens the share sheet (or saves a download) right after a
        tap -- so the file used to vanish into Files > Downloads, or not
@@ -9333,19 +9335,11 @@
     // Shared tail of both A/B exports: build, encode, hash, ledger, hand off.
     async function finishABExport(pair, baseName, ledgerName, doneDetail) {
         const canMp3 = !window.__noMp3 && typeof lamejs !== 'undefined';
-        bounceStep('MATCHING LEVELS…', 70);
+        bounceStep('MEASURING LEVELS…', 70);
         const lift = (await passageLoudness(pair.master)) - (await passageLoudness(pair.orig));
         let liftNote = '', headsUp = '';
         if (isFinite(lift)) {
-            if (lift > AB_EXPORT_MAX_LIFT_DB) {
-                const k = Math.pow(10, (AB_EXPORT_MAX_LIFT_DB - lift) / 20);
-                for (let c = 0; c < pair.master.numberOfChannels; c++) {
-                    const d = pair.master.getChannelData(c);
-                    for (let i = 0; i < d.length; i++)
-                        d[i] *= k
-                }
-            }
-            liftNote = ' · MASTER ' + (lift >= 0 ? '+' : '') + Math.min(lift, AB_EXPORT_MAX_LIFT_DB).toFixed(1) + ' dB';
+            liftNote = ' · MASTER ' + (lift >= 0 ? '+' : '') + lift.toFixed(1) + ' dB';
             // the A/B never turns the master up, so a master that isn't
             // clearly louder plays that way -- say so before it's played to anyone
             if (lift < AB_EXPORT_MIN_LIFT_DB) {
@@ -9400,7 +9394,7 @@
             const pair = await getABPair({
                 orig: buffer
             }, sec);
-            if (abToneChangeDb(pair) < AB_SAME_SOUND_DB) {
+            if (consoleIsFlat()) {
                 bounceStep('✕ NOTHING IN THE CONSOLE IS CHANGING THE SOUND YET (IT OPENS ON FLAT), SO BOTH HALVES WOULD SOUND THE SAME — DIAL IN YOUR MASTER FIRST, THEN EXPORT', 0);
                 toast('DIAL IN YOUR MASTER FIRST — RIGHT NOW BOTH HALVES SOUND THE SAME');
                 return
@@ -9887,7 +9881,7 @@
             const pair = await getABPair(source, sec);
             if (!abS.ctx)
                 return;
-            if (!useFiles && abToneChangeDb(pair) < AB_SAME_SOUND_DB)
+            if (!useFiles && consoleIsFlat())
                 toast('HEADS UP: NOTHING IN THE CONSOLE IS CHANGING THE SOUND YET, SO A AND B SOUND THE SAME');
             const toBuf = b => {
                 const o = new AudioBuffer({ numberOfChannels: 2, length: b.length, sampleRate: b.sampleRate });
