@@ -688,6 +688,21 @@ real secrets there. `.wrangler/` (local D1 state) is also gitignored.
   overall, sub −1.7, air −2.6, presence +0.7 — real but subtle; the
   LOUDNESS-MATCHED A/B toggle (`#tglMatch`) makes BOOM on/off nearly
   identical (master −0.7 dB vs original).
+  **STEREO SPREAD (commit `c0c2d5a`)** — Bradley: "subtle and cool… doing
+  something in the background." `makeSpread(a)`: mid (½(L+R)) → 2×
+  highpass 700 Hz → 11 ms delay → all-pass 2.4 kHz Q .6 → highshelf
+  5 kHz +6 dB → `amt` (k = `P.spread`·0.5) → +L / −R via a merger, so
+  L+R is untouched (block alone: max mono diff 3e-8). Live: `N.wideSum`
+  → `N.spread` → `N.haas.inp`; offline only built when `P.spread` > 0
+  (off = bit-identical export, verified by SHA-256 vs main). Slider
+  `#sSpread` (0–100). RADIO READY spread 60: The Trap top-octave side
+  +2.2 dB (per-speaker tone ≤ +0.7 dB), near-mono test songs +8–10 dB
+  (it derives side from the center, so it does most where a mix is
+  narrowest). Live = export: corr 1.000000, −72.8 dB. First try without
+  the 5 kHz shelf was inaudible (+1.8 dB top octave even at 100%).
+  Gotcha: the scratchpad's `site_live/cur` reference copy must be
+  re-extracted after every push to main, or "off is bit-identical"
+  checks compare against a stale preset (cost a false alarm here).
   **The Trap test master** (Bradley's song, not shipped anywhere):
   SILK preset, low −1, mid +2.5, high +6.5, codec restore 35%, maximizer
   +6 dB / −2.0 dBTP → −9.2 LUFS (orig −16.0), presence 2.5→3.1%, air
