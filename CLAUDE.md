@@ -646,6 +646,33 @@ real secrets there. `.wrangler/` (local D1 state) is also gitignored.
   live-only but nothing sets it any more. **This changes every bounce
   (louder, matching the monitor) — earlier bounces were 1.2–1.8 dB
   softer than what was approved by ear.**
+  **Transient shaper fixed + SSP · RADIO READY preset (commit `013d999`)**
+  — Bradley: master "hissy high… doesn't sound as good as the original."
+  (1) `setStageParams` divided `P.trAtk/P.trSus` by 100 a second time
+  (sliders already store −1..1) → shaper ran at 1%. (2) Its detector
+  (per-cycle peak follower vs 20 ms average) lifted whole tracks ~6 dB
+  once it ran; rebuilt as a linked transient designer (instant-attack/
+  120 ms follower vs 25 ms-attack copy, 1 dB threshold; sustain 300 vs
+  40 ms release, 3 dB threshold) — steady tones ±0.16 dB, drums +1.9 dB
+  crest at +50%. Note: before a limiter its extra peaks are mostly eaten
+  (+40% on The Trap's full chain barely moved end crest). (3) Diagnosis
+  harness (scratchpad `render_variants.js` + `analyze_variants.py`):
+  renders variants through `getABPair`, scores at matched loudness —
+  stereo-energy band diffs, coherence (nonlinearity), 40–150 Hz crest
+  (punch), and hiss = intro 8–16 kHz 10th-pct floor rise minus intro
+  loudness rise. Findings on The Trap: SILK scoops mids (−1 dB) and adds
+  +3.0 dB relative hiss (high shelf, valve drive 22 = +2.7 dB of hiss
+  floor, compression lifting the quiet intro); my old test master
+  (+6.5 high, codec 35%) +11.5 dB hiss; the denoiser's hiss compressors
+  made it worse (coherence down, presence up). (4) New first preset
+  `radio`: width 108, drive 8, low +1, mid +3.5, high +.5, comp −5,
+  maximizer 3.5 / −2.0 / 250, attack +40 → presence +1.7, hiss +0.4,
+  sub +0.25, TP −0.8 dBTP, +5.4 dB; beats SILK on two synthetic songs
+  too (SILK hit +1.3 dBTP on `structured_song.wav`). Presets may now carry
+  `mx: [drive, ceil, rel]` and `trAtk`; picking another preset afterwards
+  leaves the maximizer on. Live = export on `radio`: corr 1.000000,
+  −72.5 dB difference (align on the original first; the maximizer adds
+  ~700 samples of latency, which a ±600 search misses).
   **The Trap test master** (Bradley's song, not shipped anywhere):
   SILK preset, low −1, mid +2.5, high +6.5, codec restore 35%, maximizer
   +6 dB / −2.0 dBTP → −9.2 LUFS (orig −16.0), presence 2.5→3.1%, air
