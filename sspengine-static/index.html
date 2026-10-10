@@ -3651,6 +3651,13 @@
                     </div>
                     <div class="ctl">
                         <div class="row">
+                            <span>STEREO SPREAD · OPENS UP A NEAR-MONO MIX · MONO-SAFE</span>
+                            <b id="vSpread">0%</b>
+                        </div>
+                        <input type="range" id="sSpread" min="0" max="100" value="0">
+                    </div>
+                    <div class="ctl">
+                        <div class="row">
                             <span>GLUE COMP · THRESH</span>
                             <b id="vComp">0 dB</b>
                         </div>
@@ -5002,6 +5009,7 @@
         offset = 0;
     const P = {
         width: 1,
+        spread: 0,
         drive: 0,
         low: 0,
         mid: 0,
@@ -5366,6 +5374,8 @@
             ramp(n.tr.node.parameters.get('attack'), P.trAtk);
             ramp(n.tr.node.parameters.get('sustain'), P.trSus)
         }
+        if (n.spread)
+            ramp(n.spread.amt.gain, P.spread * .5);
         const subOn = P.subDb > 0;
         ramp(n.sub.f.gain, P.subDb);
         ramp(n.sub.byp.gain, subOn ? 0 : 1);
@@ -5655,6 +5665,60 @@
     function makeTransient(a) {
         return bypassBlock(a)
     }
+    /* Stereo spread: new side signal made from the mix's own center, above
+       the vocal body. The mid above ~700 Hz is delayed 11 ms and smeared
+       through an all-pass, then added to the left and taken out of the
+       right in equal measure -- so L+R (mono) is untouched, the kick, bass
+       and vocal body stay centered, and hats, synth tops, reverbs and
+       vocal air open out. M/S width can only scale the side a mix already
+       has, and a nearly mono mix (The Trap: side 11.5 dB under the center)
+       has little to scale. amt is k: 0 = off, full slider = 0.5. */
+    function makeSpread(a) {
+        const inp = a.createGain(),
+            out = a.createGain(),
+            sp = a.createChannelSplitter(2),
+            mid = a.createGain(),
+            hp1 = a.createBiquadFilter(),
+            hp2 = a.createBiquadFilter(),
+            dl = a.createDelay(.05),
+            ap = a.createBiquadFilter(),
+            air = a.createBiquadFilter(),
+            amt = a.createGain(),
+            inv = a.createGain(),
+            mg = a.createChannelMerger(2);
+        inp.connect(out);
+        mid.gain.value = .5;
+        inp.connect(sp);
+        sp.connect(mid, 0);
+        sp.connect(mid, 1);
+        for (const h of [hp1, hp2]) {
+            h.type = 'highpass';
+            h.frequency.value = 700;
+            h.Q.value = .707
+        }
+        dl.delayTime.value = .011;
+        ap.type = 'allpass';
+        ap.frequency.value = 2400;
+        ap.Q.value = .6;
+        // twice as much spread up top (cymbals, air, reverb tails) as in
+        // the upper mids, where it would start to color the vocal
+        air.type = 'highshelf';
+        air.frequency.value = 5000;
+        air.gain.value = 6;
+        amt.gain.value = 0;
+        inv.gain.value = -1;
+        mid.connect(hp1);
+        hp1.connect(hp2);
+        hp2.connect(dl);
+        dl.connect(ap);
+        ap.connect(air);
+        air.connect(amt);
+        amt.connect(mg, 0, 0);
+        amt.connect(inv);
+        inv.connect(mg, 0, 1);
+        mg.connect(out);
+        return { inp, out, amt }
+    }
     function makeSub(a) {
         const b = bypassBlock(a);
         b.f = a.createBiquadFilter();
@@ -5837,6 +5901,7 @@
         N.dn = makeDenoise(a);
         N.de = makeDeEss(a);
         N.haas = makeHaas(a);
+        N.spread = makeSpread(a);
         N.tr = makeTransient(a);
         N.sub = makeSub(a);
         N.codec = makeCodec(a);
@@ -5943,7 +6008,8 @@
         N.sendHP.Q.value = .707;
         N.sideOnly.connect(N.sendHP);
         N.wideOut = a.createGain();
-        N.wideSum.connect(N.haas.inp);
+        N.wideSum.connect(N.spread.inp);
+        N.spread.out.connect(N.haas.inp);
         /* Haas/ER sends come from N.sendHP (sideOnly, highpassed further
            still), not N.wMerge (mid+side, would carry a dead-center vocal
            at full strength) and not the bass N.wLow carries into
@@ -6585,6 +6651,12 @@
         if (AC)
             N.sW.gain.setTargetAtTime(P.width, AC.currentTime, .03)
     });
+    bindSlider('sSpread', 'vSpread', v => v + '%', v => {
+        P.spread = v / 100;
+        if (v)
+            ctx();
+        applyStages()
+    });
     bindSlider('sComp', 'vComp', v => v + ' dB', v => {
         P.comp = v;
         if (AC)
@@ -6974,7 +7046,9 @@
            mixed nearly mono (side 11.5 dB under the center) and 108 left it
            measurably no wider than the original (Bradley: "why isn't it
            wider and noticeable?"); 150 opens the side 3.3 dB above 150 Hz,
-           bass stays centered, and it scored better on hiss and punch too. */
+           bass stays centered, and it scored better on hiss and punch too.
+           Spread 60: opens the top octave about 2 dB more from the mix's
+           own center (mono untouched, each speaker's tone within 0.7 dB). */
         radio: {
             width: 150,
             drive: 8,
@@ -6984,7 +7058,8 @@
             comp: -5,
             out: 0,
             mx: [3.5, -2, 250],
-            trAtk: 40
+            trAtk: 40,
+            spread: 60
         },
         dre: {
             width: 95,
@@ -7077,6 +7152,8 @@
         }
         if (p.trAtk !== undefined)
             map.push(['sTrAtk', p.trAtk]);
+        if (p.spread !== undefined)
+            map.push(['sSpread', p.spread]);
         for (const [id, v] of map) {
             const s = $(id);
             s.value = v;
@@ -8418,6 +8495,7 @@
             dn: makeDenoise(oc),
             de: makeDeEss(oc),
             haas: makeHaas(oc),
+            spread: P.spread ? makeSpread(oc) : null,
             tr: makeTransient(oc),
             sub: makeSub(oc),
             codec: makeCodec(oc),
@@ -8570,6 +8648,10 @@
             hp.Q.value = .707;
             off.mb.out.connect(hp);
             highsForSends = hp;
+        }
+        if (off.spread) {
+            post.connect(off.spread.inp);
+            post = off.spread.out
         }
         post.connect(off.haas.inp);
         highsForSends.connect(off.haas.sendInp);
@@ -8953,7 +9035,7 @@
        same thing twice. Read off the settings, not measured: the safety
        stage touches a hot original even on FLAT. */
     function consoleIsFlat() {
-        return P.width === 1 && !P.drive && !P.low && !P.mid && !P.high && !P.comp && !P.out &&
+        return P.width === 1 && !P.spread && !P.drive && !P.low && !P.mid && !P.high && !P.comp && !P.out &&
             !P.dnOn && !P.deOn && !P.haasMix && !P.erMix && !P.trAtk && !P.trSus && !P.subDb &&
             !P.codec && !P.mxOn && !P.mbOn && !P.glueOn && !P.warmChar && (!P.room || P.room === 'off' || !P.roomMix)
     }
