@@ -3651,10 +3651,10 @@
                     </div>
                     <div class="ctl">
                         <div class="row">
-                            <span>STEREO SPREAD · OPENS UP A NEAR-MONO MIX · MONO-SAFE</span>
+                            <span>STEREO SPREAD · OPENS UP A NEAR-MONO MIX · MONO-SAFE · 60% SUBTLE, 200% BIG</span>
                             <b id="vSpread">0%</b>
                         </div>
-                        <input type="range" id="sSpread" min="0" max="100" value="0">
+                        <input type="range" id="sSpread" min="0" max="200" value="0">
                     </div>
                     <div class="ctl">
                         <div class="row">
@@ -5672,7 +5672,11 @@
        and vocal body stay centered, and hats, synth tops, reverbs and
        vocal air open out. M/S width can only scale the side a mix already
        has, and a nearly mono mix (The Trap: side 11.5 dB under the center)
-       has little to scale. amt is k: 0 = off, full slider = 0.5. */
+       has little to scale. amt is k = slider / 200: 0 = off, the RADIO
+       READY preset's 60% = 0.3, the slider's 200% = 1.0. Measured on The
+       Trap: top octave +2.2 dB wider at 60, +9 dB at 200 (wider than the
+       center); each speaker's top end brighter by 0.7 / 3.9 dB; loudness
+       and peaks unchanged at every setting. Past ~150 it's an effect. */
     function makeSpread(a) {
         const inp = a.createGain(),
             out = a.createGain(),
