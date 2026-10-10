@@ -703,6 +703,12 @@ real secrets there. `.wrangler/` (local D1 state) is also gitignored.
   Gotcha: the scratchpad's `site_live/cur` reference copy must be
   re-extracted after every push to main, or "off is bit-identical"
   checks compare against a stale preset (cost a false alarm here).
+  **Spread range doubled (commit `934607a`)**: `#sSpread` max 200, same
+  k = slider/200 scale, so RADIO's 60 is bit-identical. The Trap: top
+  octave +2.2 (60) / +4.5 (100) / +6.5 (140) / +9.0 dB (200); per-speaker
+  top end +0.7 / 1.6 / 2.6 / 3.9 dB brighter (the added side copy adds
+  HF energy to each speaker); loudness/peaks unchanged; past ~150 it's
+  an effect, not background.
   **The Trap test master** (Bradley's song, not shipped anywhere):
   SILK preset, low −1, mid +2.5, high +6.5, codec restore 35%, maximizer
   +6 dB / −2.0 dBTP → −9.2 LUFS (orig −16.0), presence 2.5→3.1%, air
