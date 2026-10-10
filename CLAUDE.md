@@ -673,6 +673,21 @@ real secrets there. `.wrangler/` (local D1 state) is also gitignored.
   leaves the maximizer on. Live = export on `radio`: corr 1.000000,
   −72.5 dB difference (align on the original first; the maximizer adds
   ~700 samples of latency, which a ±600 search misses).
+  **RADIO READY widened (commit `4a559a9`)** — Bradley on ADAM monitors via
+  a UA Volt 4: "why isn't it wider and noticeable?" The Trap is nearly
+  mono (side/mid −11.5 dB, L/R corr 0.867); width 108 measured no wider
+  (−11.0 / 0.854). Now width 150, low +1.5: side/mid −8.3 dB, corr 0.745,
+  <150 Hz still centered; matched-loudness presence +2.3, hiss +0.02,
+  punch −0.40, +5.6 dB. M/S width only scales side content a mix already
+  has — a truly mono source would need a decorrelated-side "stereoize"
+  stage (side += k·allpass/delay(HP'd mid), mono-safe since L+R is
+  untouched), not built yet. Immersive (width 168 + Haas/ER/room) took
+  The Trap to side/mid −5.6 dB, corr 0.57. Speaker-output recordings of
+  console states: scratchpad `diag_live_presets.js` (taps `N.an`).
+  Measured SILK→RADIO (old 108 version) difference as heard: −1 dB
+  overall, sub −1.7, air −2.6, presence +0.7 — real but subtle; the
+  LOUDNESS-MATCHED A/B toggle (`#tglMatch`) makes BOOM on/off nearly
+  identical (master −0.7 dB vs original).
   **The Trap test master** (Bradley's song, not shipped anywhere):
   SILK preset, low −1, mid +2.5, high +6.5, codec restore 35%, maximizer
   +6 dB / −2.0 dBTP → −9.2 LUFS (orig −16.0), presence 2.5→3.1%, air
