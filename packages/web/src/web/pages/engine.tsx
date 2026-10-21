@@ -12,6 +12,7 @@ import { AiLicensingModule } from "../components/engine/modules/ai-licensing-mod
 import { TaxSettlementTerminal } from "../components/engine/modules/tax-settlement-terminal";
 import { MultitaskModule } from "../components/engine/modules/multitask-module";
 import { AuthorshipModule } from "../components/engine/modules/authorship-module";
+import { CreditLayerModule } from "../components/engine/modules/credit-layer-module";
 import { InvestorModule } from "../components/engine/modules/investor-module";
 import { SpaltyAssistant } from "../components/spalty-assistant";
 
@@ -66,6 +67,7 @@ export default function Engine() {
               {activeModule === "investor" && <InvestorModule />}
               {activeModule === "multitask" && <MultitaskModule />}
               {activeModule === "authorship" && <AuthorshipModule />}
+              {activeModule === "credit" && <CreditLayerModule />}
               {activeModule === "gaming" && <GamingModule />}
               {activeModule === "film" && <FilmModule />}
               {activeModule === "music" && <MusicModule />}
