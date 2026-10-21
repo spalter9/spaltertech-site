@@ -1,1 +1,4 @@
 *.mp4 filter=lfs diff=lfs merge=lfs -text
+# The landing trailer is committed as a plain file, not an LFS pointer (sspengine-static
+# is deployed as-is). Exempt it from the LFS rule so git stops reporting it as modified.
+sspengine-static/media/ssp-trailer.mp4 -filter -diff -merge binary
