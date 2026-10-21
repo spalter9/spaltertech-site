@@ -1314,6 +1314,63 @@
         opacity: .5
     }
 
+    /* ---------- WALKTHROUGH VIDEO ---------- */
+    #btnWalkthrough {
+        border-color: var(--amber);
+        color: var(--amber)
+    }
+
+    #wtModal {
+        position: fixed;
+        inset: 0;
+        z-index: 120;
+        background: rgba(3, 3, 7, .94);
+        display: none;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 12px;
+        padding: max(16px, env(safe-area-inset-top)) 16px max(16px, env(safe-area-inset-bottom))
+    }
+
+    #wtModal.show {
+        display: flex
+    }
+
+    #wtModal .wtHead {
+        width: min(1280px, 100%);
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        font-family: var(--disp);
+        font-size: 12px;
+        letter-spacing: .2em;
+        color: var(--bone)
+    }
+
+    #wtModal .wtClose {
+        flex: none;
+        background: transparent;
+        color: var(--dim);
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        padding: 10px 14px;
+        font-size: 11px;
+        letter-spacing: .14em
+    }
+
+    #wtModal video {
+        display: block;
+        width: min(1280px, 100%);
+        max-height: calc(100vh - 110px);
+        aspect-ratio: 16 / 9;
+        background: #000;
+        border: 1px solid rgba(255, 182, 56, .28);
+        border-radius: 12px;
+        box-shadow: 0 0 60px rgba(255, 182, 56, .12)
+    }
+
     #abScreen {
         position: fixed;
         inset: 0;
@@ -3510,6 +3567,7 @@
                     <div class="tag">SURREAL ENGINE · MASTERING GRADE · FLOAT32 FORENSIC PIPELINE</div>
                 </div>
                 <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+                    <button class="pill" id="btnWalkthrough" title="A 4-minute narrated tour of the console: loading a track, the meters, presets, every Valve Pipeline control, A/B listening, the engineer stages, bouncing, and The Examiner.">▶ WATCH THE WALKTHROUGH · 4 MIN</button>
                     <button class="pill" id="voiceTgl">
                         <span class="led" id="voiceLed"></span>
                          SPALTY VOICE
@@ -3517,6 +3575,16 @@
                     <button class="pill" id="btnSaveSession" title="Save every track in your Track Rack, plus your Valve Pipeline and Surreal Stage settings — recall them anytime, even after closing this tab or restarting your computer.">⤓ SAVE SESSION</button>
                     <button class="pill" id="btnRestoreSession" style="display:none;border-color:var(--amber);color:var(--amber)" title="Restore your last saved session.">⤒ RESTORE SESSION</button>
                 </div>
+            </div>
+
+            <div id="wtModal" role="dialog" aria-modal="true" aria-label="Master Trust Engine walkthrough video">
+                <div class="wtHead">
+                    <span>MASTER TRUST ENGINE · THE GUIDED WALKTHROUGH</span>
+                    <button type="button" class="wtClose" id="wtClose">✕ CLOSE</button>
+                </div>
+                <video id="wtVideo" controls playsinline preload="none" poster="media/engine-walkthrough-poster.jpg">
+                    <source src="media/engine-walkthrough.mp4" type="video/mp4">
+                </video>
             </div>
 
             <!-- INGEST -->
@@ -9972,6 +10040,36 @@
         });
         return el
     }
+    /* Walkthrough video: a narrated tour of this console, opened over it.
+       The console's own playback stops first so the two never play at once. */
+    (function() {
+        const modal = $('wtModal'),
+            video = $('wtVideo');
+        // Lift the player out of the console's stacking context so it covers
+        // everything, the floating Spalty button included.
+        document.body.appendChild(modal);
+        function close() {
+            video.pause();
+            modal.classList.remove('show');
+            document.removeEventListener('keydown', onKey)
+        }
+        function onKey(e) {
+            if (e.key === 'Escape')
+                close()
+        }
+        $('btnWalkthrough').addEventListener('click', () => {
+            stopAutoAB();
+            stopAll();
+            modal.classList.add('show');
+            document.addEventListener('keydown', onKey);
+            video.play().catch(() => {})
+        });
+        $('wtClose').addEventListener('click', close);
+        modal.addEventListener('click', e => {
+            if (e.target === modal)
+                close()
+        })
+    })();
     $('abScreenOpen').addEventListener('click', async () => {
         if (renderBusy) {
             toast('DECK BUSY — ONE PRINT AT A TIME');

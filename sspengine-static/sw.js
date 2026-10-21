@@ -4,7 +4,7 @@
 // separation, sessions) — those are live by design and must always hit the
 // network. Bump CACHE_NAME on any shell change so old installs pick up the
 // new version instead of getting stuck on a stale copy.
-const CACHE_NAME = 'mte-shell-v1';
+const CACHE_NAME = 'mte-shell-v2';
 const SHELL_FILES = ['/', '/manifest.json', '/icon-192.png', '/icon-512.png', '/apple-touch-icon.png'];
 
 self.addEventListener('install', (event) => {
@@ -30,8 +30,9 @@ self.addEventListener('fetch', (event) => {
   const isApi = isSameOrigin && url.pathname.startsWith('/api/');
 
   // Never intercept API calls or cross-origin requests (fonts, CDN scripts,
-  // the Anthropic fallback) — those must always be live.
-  if (isApi || !isSameOrigin) return;
+  // the Anthropic fallback) — those must always be live. Videos under /media/
+  // stream with range requests and are far too big for the shell cache.
+  if (isApi || !isSameOrigin || url.pathname.startsWith('/media/')) return;
 
   // Network-first for the app shell: prefer the live copy, fall back to the
   // cached one only when offline, so a stale cache is never shown while
