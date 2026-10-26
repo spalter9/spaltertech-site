@@ -45,6 +45,9 @@
         letter-spacing: .14em;
     }
     .nav .co { color: var(--dim); }
+    .nav .navLogo { border-bottom: 0; }
+    .nav .navLogo img { display: block; width: 150px; height: auto; filter: drop-shadow(0 0 18px rgba(255, 182, 56, .3)); }
+    @media (max-width: 600px) { .nav .navLogo img { width: 112px; } }
     .nav a { color: var(--dim); text-decoration: none; border-bottom: 1px dotted var(--line); }
     .nav a:hover { color: var(--amber); }
 
@@ -226,7 +229,7 @@
 <body>
 <main>
     <div class="nav">
-        <span class="co">SPALTER TECH</span>
+        <a class="navLogo" href="index.html"><img src="mastertrust-emblem.png" alt="Master Trust"></a>
         <a href="index.html">MASTER TRUST ↗</a>
     </div>
 
