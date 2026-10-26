@@ -5,10 +5,15 @@
  * static page's `speak()` calls this first and only falls back to the
  * browser's built-in speechSynthesis ("computer voice") when this request
  * fails — so a 404/500 here silently degrades every visitor to the robot
- * voice. Requires ELEVENLABS_API_KEY and ELEVENLABS_VOICE_ID to be set as
- * environment variables on the Cloudflare Pages project (Settings →
- * Environment variables) — they are not read from any file in this repo.
+ * voice. Requires ELEVENLABS_API_KEY as an environment variable on the
+ * Cloudflare Pages project (Settings → Variables and Secrets). Spalty's voice
+ * is ElevenLabs' "Adam Stone" library voice by default; ELEVENLABS_VOICE_ID
+ * overrides it. The voice must be in the API key's account ("Add to my voices"
+ * in the ElevenLabs Voice Library), or ElevenLabs rejects the call.
  */
+
+// "Adam Stone – Smooth, Deep, and Relaxed" (British), picked as Spalty's voice.
+const DEFAULT_VOICE_ID = "auq43ws1oslv0tO4BDa7";
 
 interface Env {
   ELEVENLABS_API_KEY?: string;
@@ -18,9 +23,9 @@ interface Env {
 export const onRequestPost: PagesFunction<Env> = async (context) => {
   const { request, env } = context;
   const apiKey = env.ELEVENLABS_API_KEY;
-  const voiceId = env.ELEVENLABS_VOICE_ID;
+  const voiceId = env.ELEVENLABS_VOICE_ID || DEFAULT_VOICE_ID;
 
-  if (!apiKey || !voiceId) {
+  if (!apiKey) {
     return new Response(JSON.stringify({ error: "Spalty voice is not configured" }), {
       status: 503,
       headers: { "Content-Type": "application/json" },
