@@ -2275,6 +2275,46 @@
         margin-bottom: 36px
     }
 
+    .howHead {
+        font-family: var(--disp);
+        font-size: 12px;
+        letter-spacing: .28em;
+        color: var(--amber);
+        text-align: center;
+        margin-bottom: 14px
+    }
+
+    .howRow {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 14px;
+        margin-bottom: 36px
+    }
+
+    @media (max-width: 760px) {
+        .howRow {
+            grid-template-columns: 1fr
+        }
+    }
+
+    .pillar.how {
+        padding: 12px 12px 16px
+    }
+
+    .pillar.how video {
+        display: block;
+        width: 100%;
+        aspect-ratio: 16 / 9;
+        background: #000;
+        border-radius: 10px;
+        margin-bottom: 12px
+    }
+
+    .pillar.how h3,
+    .pillar.how p {
+        padding: 0 6px
+    }
+
     .pillars {
         display: grid;
         grid-template-columns: repeat(3, 1fr);
@@ -2981,6 +3021,30 @@
             <video controls playsinline preload="metadata" poster="media/ssp-trailer-poster.jpg" style="display:block;width:100%;aspect-ratio:16/9;background:#000">
                 <source src="media/ssp-trailer.mp4" type="video/mp4">
             </video>
+        </div>
+        <div class="howHead">SEE HOW IT WORKS</div>
+        <div class="howRow">
+            <div class="pillar how">
+                <video controls playsinline preload="none" poster="media/explainer-ssp-poster.jpg">
+                    <source src="media/explainer-ssp.mp4" type="video/mp4">
+                </video>
+                <h3>The Sovereign Settlement Protocol</h3>
+                <p>How every payment is split, paid in dollars, and proven on the record. 1½ min.</p>
+            </div>
+            <div class="pillar how">
+                <video controls playsinline preload="none" poster="media/explainer-examiner-poster.jpg">
+                    <source src="media/explainer-examiner.mp4" type="video/mp4">
+                </video>
+                <h3>The Examiner</h3>
+                <p>How it measures how much of a record a person actually made. 1½ min.</p>
+            </div>
+            <div class="pillar how">
+                <video controls playsinline preload="none" poster="media/explainer-surreal-poster.jpg">
+                    <source src="media/explainer-surreal.mp4" type="video/mp4">
+                </video>
+                <h3>The Surreal Engine</h3>
+                <p>Mastering and restoration in your browser, with an honest A/B. 1¼ min.</p>
+            </div>
         </div>
         <div class="pillars">
             <div class="pillar">
