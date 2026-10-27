@@ -1,6 +1,8 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
+    <!-- Pages live at /engine/, /investors/, /overview/, /videos/; keep relative asset paths resolving from the root. -->
+    <base href="/">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Master Trust Engine</title>
     <link rel="manifest" href="/manifest.json">
@@ -3017,7 +3019,7 @@
             <span class="grad">Securing the Digital Economy.</span>
         </h1>
         <div class="sub">Streaming changed how music is heard. Master Trust changes how it is owned, protected, and paid — the new way the industry does business. Master Trust is the operating system for the digital economy, and the Sovereign Settlement Protocol (SSP) is its settlement layer — the rails that move the money and prove it moved honestly. Enterprises across music, gaming, and social media bleed billions into manual accounting, delayed payouts, and administrative tax-reporting nightmares. We built the definitive infrastructure layer to solve it at the root. There is no subscription and this is not a consumer app: Master Trust is institutional software — the security and settlement system for the new record industry and every digital economy beyond it. Anything digital can be ingested into the protocol — and every record that enters is examined first. The Examiner proves how much of a work a person actually made, and that evidence is what the whole protocol settles on.</div>
-        <div style="max-width:720px;margin:0 auto 40px;border-radius:14px;overflow:hidden;border:1px solid rgba(255,182,56,.28);box-shadow:0 0 60px rgba(255,182,56,.12)">
+        <div id="videos" style="scroll-margin-top:24px;max-width:720px;margin:0 auto 40px;border-radius:14px;overflow:hidden;border:1px solid rgba(255,182,56,.28);box-shadow:0 0 60px rgba(255,182,56,.12)">
             <video controls playsinline preload="metadata" poster="media/ssp-trailer-poster.jpg" style="display:block;width:100%;aspect-ratio:16/9;background:#000">
                 <source src="media/ssp-trailer.mp4" type="video/mp4">
             </video>
@@ -4936,15 +4938,48 @@
             if (!was)
                 c.classList.add('open');
         }));
-        function show(id) {
-            ['landing', 'framework', 'invGate', 'invRoom'].forEach(x => $(x).style.display = 'none');
+        /* Each page has its own address so it can be linked, bookmarked and
+           reloaded: sspengine.com/engine/, /investors/, /overview/, /videos/.
+           Cloudflare Pages serves this same index.html for those paths;
+           route() maps the address to the matching view. */
+        const PAGE_PATH = { landing: '/', framework: '/overview/', lock: '/engine/', invGate: '/investors/', invRoom: '/investors/' };
+        const PATH_PAGE = { '/': 'landing', '/overview/': 'framework', '/engine/': 'lock', '/investors/': 'invGate', '/videos/': 'videos' };
+        function show(id, path, fromHistory) {
+            ['landing', 'framework', 'invGate', 'invRoom', 'lock', 'app'].forEach(x => $(x).style.display = 'none');
             if (id === 'lock') {
-                $('lock').style.display = 'flex'
+                // Once the engine is unlocked, /engine/ goes straight back to it.
+                if ($('app').dataset.unlocked)
+                    $('app').style.display = 'block';
+                else
+                    $('lock').style.display = 'flex'
             } else {
                 $(id).style.display = 'block'
             }
-            window.scrollTo(0, 0)
+            window.scrollTo(0, 0);
+            path = path || PAGE_PATH[id];
+            if (!fromHistory && path && location.pathname !== path)
+                history.pushState(null, '', path)
         }
+        function showVideos(fromHistory) {
+            show('landing', '/videos/', fromHistory);
+            setTimeout(() => $('videos').scrollIntoView({
+                behavior: 'smooth'
+            }), 60)
+        }
+        function route() {
+            let p = location.pathname.replace(/\/index\.html$/, '/');
+            if (!p.endsWith('/'))
+                p += '/';
+            if (!PATH_PAGE[p])
+                p = '/';
+            if (location.pathname !== p)
+                history.replaceState(null, '', p + location.search + location.hash);
+            if (PATH_PAGE[p] === 'videos')
+                showVideos(true);
+            else
+                show(PATH_PAGE[p], p, true)
+        }
+        window.addEventListener('popstate', route);
         $('enterEngine').addEventListener('click', () => show('lock'));
         $('navEngine').addEventListener('click', () => show('lock'));
         $('navFw').addEventListener('click', () => show('framework'));
@@ -5055,6 +5090,7 @@
             invEntry = ''
         });
         $('invExit').addEventListener('click', () => show('landing'));
+        route();
     })();
 
     /* ================= SITE LOCK (code 1967, gates the entire site) ================= */
@@ -5122,6 +5158,7 @@
                     if (entry === CODE) {
                         $('lock').style.display = 'none';
                         $('app').style.display = 'block';
+                        $('app').dataset.unlocked = '1';
                         toast('ACCESS GRANTED · MASTER TRUST ENGINE ONLINE');
                     }
                     else {
