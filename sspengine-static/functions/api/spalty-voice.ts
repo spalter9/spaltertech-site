@@ -22,8 +22,8 @@ interface Env {
 
 export const onRequestPost: PagesFunction<Env> = async (context) => {
   const { request, env } = context;
-  const apiKey = env.ELEVENLABS_API_KEY;
-  const voiceId = env.ELEVENLABS_VOICE_ID || DEFAULT_VOICE_ID;
+  const apiKey = env.ELEVENLABS_API_KEY?.trim();
+  const voiceId = env.ELEVENLABS_VOICE_ID?.trim() || DEFAULT_VOICE_ID;
 
   if (!apiKey) {
     return new Response(JSON.stringify({ error: "Spalty voice is not configured" }), {
@@ -41,19 +41,27 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
     });
   }
 
-  const upstream = await fetch(`https://api.elevenlabs.io/v1/text-to-speech/${voiceId}`, {
-    method: "POST",
-    headers: {
-      "xi-api-key": apiKey,
-      "Content-Type": "application/json",
-      Accept: "audio/mpeg",
-    },
-    body: JSON.stringify({
-      text,
-      model_id: "eleven_turbo_v2_5",
-      voice_settings: { stability: 0.5, similarity_boost: 0.75 },
-    }),
-  });
+  let upstream: Response;
+  try {
+    upstream = await fetch(`https://api.elevenlabs.io/v1/text-to-speech/${voiceId}`, {
+      method: "POST",
+      headers: {
+        "xi-api-key": apiKey,
+        "Content-Type": "application/json",
+        Accept: "audio/mpeg",
+      },
+      body: JSON.stringify({
+        text,
+        model_id: "eleven_turbo_v2_5",
+        voice_settings: { stability: 0.5, similarity_boost: 0.75 },
+      }),
+    });
+  } catch (err) {
+    return new Response(
+      JSON.stringify({ error: "Could not reach ElevenLabs", detail: String(err).slice(0, 300) }),
+      { status: 502, headers: { "Content-Type": "application/json" } },
+    );
+  }
 
   if (!upstream.ok) {
     const detail = await upstream.text().catch(() => "");
