@@ -94,6 +94,16 @@ const SEGMENTS: Array<typeof schema.dataRoomSegments.$inferInsert> = [
     clearance: "privileged",
     sortOrder: 9,
   },
+  {
+    code: "10",
+    title: "WHO IS SPALTY — VIDEO OVERVIEW",
+    kind: "VIDEO",
+    summary: "Spalty is built as a mirror of the platform's creator: thirty years of music-industry judgment, distilled into an always-on voice guide.",
+    body: "Spalty is the Sovereign Sign Protocol's resident guide — part Claude-powered reasoning, part cloned human voice — walking anyone through the MasterTrust, the Surrealizer Engine, and the SSP ledger the way its creator would explain it himself.",
+    status: "available",
+    clearance: "privileged",
+    sortOrder: 10,
+  },
 ];
 
 const ESCROW: Array<typeof schema.escrowAssets.$inferInsert> = [

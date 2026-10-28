@@ -189,6 +189,24 @@ function BriefingModule() {
         </div>
       </div>
 
+      {/* Who Is Spalty — the voice guide, in depth */}
+      <div className="mt-14 grid gap-6 lg:grid-cols-[minmax(0,1.6fr)_minmax(0,1fr)] lg:items-center">
+        <div className="lg:order-2">
+          <p className="eyebrow">Narrated · 1:17</p>
+          <h3 className="font-display text-2xl mt-2">Who Is Spalty</h3>
+          <p className="text-muted text-sm mt-2 leading-relaxed">
+            Spalty is built as a mirror of the platform's creator — thirty years of music-industry judgment, distilled into an always-on voice guide. How he thinks, how he speaks, and why he matters to SSP.
+          </p>
+        </div>
+        <div className="lg:order-1 card-surface p-2">
+          <VideoPlayer
+            sources={[{ src: "/videos/who-is-spalty-16x9.mp4", type: "video/mp4" }]}
+            poster="/videos/who-is-spalty-poster.jpg"
+            ratio="16 / 9"
+          />
+        </div>
+      </div>
+
       {/* Main event — large feature player (third) */}
       <div className="mt-14 mb-3 flex items-center gap-2.5">
         <span className="font-mono text-[10px] uppercase tracking-[0.2em] text-gold">Feature Presentation</span>
