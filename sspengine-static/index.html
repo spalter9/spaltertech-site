@@ -1362,6 +1362,31 @@
         letter-spacing: .14em
     }
 
+    #wsModal {
+        position: fixed;
+        inset: 0;
+        z-index: 120;
+        background: rgba(3, 3, 7, .94);
+        display: none;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 12px;
+        padding: max(16px, env(safe-area-inset-top)) 16px max(16px, env(safe-area-inset-bottom))
+    }
+
+    #wsModal.show {
+        display: flex
+    }
+
+    #wsModal video {
+        display: block;
+        width: min(1280px, 100%);
+        max-height: calc(100vh - 110px);
+        aspect-ratio: 16 / 9;
+        background: #000;
+    }
+
     #wtModal video {
         display: block;
         width: min(1280px, 100%);
@@ -3641,6 +3666,7 @@
                 </div>
                 <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
                     <button class="pill" id="btnWalkthrough" title="A 4-minute narrated tour of the console: loading a track, the meters, presets, every Valve Pipeline control, A/B listening, the engineer stages, bouncing, and The Examiner.">▶ WATCH THE WALKTHROUGH · 4 MIN</button>
+                    <button class="pill" id="btnWhoIsSpalty" title="Who Spalty is, how he thinks, and why he's part of the Master Trust — built as a mirror of the founder's thirty years in the industry.">▶ WHO IS SPALTY</button>
                     <button class="pill" id="voiceTgl">
                         <span class="led" id="voiceLed"></span>
                          SPALTY VOICE
@@ -3657,6 +3683,16 @@
                 </div>
                 <video id="wtVideo" controls playsinline preload="none" poster="media/engine-walkthrough-poster.jpg">
                     <source src="media/engine-walkthrough.mp4" type="video/mp4">
+                </video>
+            </div>
+
+            <div id="wsModal" role="dialog" aria-modal="true" aria-label="Who is Spalty video">
+                <div class="wtHead">
+                    <span>WHO IS SPALTY</span>
+                    <button type="button" class="wtClose" id="wsClose">✕ CLOSE</button>
+                </div>
+                <video id="wsVideo" controls playsinline preload="none" poster="media/who-is-spalty-poster.jpg">
+                    <source src="media/who-is-spalty.mp4" type="video/mp4">
                 </video>
             </div>
 
@@ -10176,6 +10212,33 @@
         modal.addEventListener('click', e => {
             if (e.target === modal)
                 close()
+            })
+    })();
+    /* Who Is Spalty video — same lift-and-overlay pattern as the walkthrough above. */
+    (function() {
+        const modal = $('wsModal'),
+            video = $('wsVideo');
+        document.body.appendChild(modal);
+        function close() {
+            video.pause();
+            modal.classList.remove('show');
+            document.removeEventListener('keydown', onKey)
+        }
+        function onKey(e) {
+            if (e.key === 'Escape')
+                close()
+        }
+        $('btnWhoIsSpalty').addEventListener('click', () => {
+            stopAutoAB();
+            stopAll();
+            modal.classList.add('show');
+            document.addEventListener('keydown', onKey);
+            video.play().catch(() => {})
+        });
+        $('wsClose').addEventListener('click', close);
+        modal.addEventListener('click', e => {
+            if (e.target === modal)
+                close()
         })
     })();
     $('abScreenOpen').addEventListener('click', async () => {
@@ -11327,9 +11390,10 @@
         } catch (e) {}
         syncVoiceLeds();
         toast(voiceOn ? 'SPALTY VOICE ON' : 'SPALTY VOICE OFF');
-        if (!voiceOn)
+        if (!voiceOn) {
             speechSynthesis.cancel();
-        else
+            try { spaltyAudioSource && spaltyAudioSource.stop() } catch (e) {}
+        } else
             speak('Voice check. Spalty on the board. Valves are warm, ledger is clean — let\'s make something undeniable.')
     }
     $('voiceTgl').addEventListener('click', () => {
@@ -11348,41 +11412,50 @@
         $('spaltyLog').scrollTop = 1e6;
         return d
     }
-    let curAudio = null,
-        curAudioUrl = null,
-        chipKeepAlive = null,
-        audioUnlocked = false,
-        audioUnlockPromise = null;
-    /* iOS Safari only grants an <audio> element playback permission when .play() is called
-       synchronously inside a real tap — a permission that does NOT transfer to a fresh
-       `new Audio()`, and is gone by the time an awaited fetch() resolves. So this keeps one
-       element for the widget's lifetime, "unlocks" it with a silent clip on the first tap
-       that could lead to speech, and speak() below only ever swaps that same element's src.
-       unlockVoice()'s own pause/reset runs asynchronously (after its play() promise settles),
-       so speak() must await that same promise before touching the element itself — otherwise
-       the unlock's cleanup can land after real speech has already started and cut it off. */
-    function voiceEl() {
-        if (!curAudio) {
-            curAudio = new Audio();
-            curAudio.preload = 'auto'
+    let chipKeepAlive = null,
+        spaltyAudioCtx = null,
+        spaltyAudioGain = null,
+        spaltyAudioSource = null,
+        lastSpaltyBuffer = null;
+    /* Was an <audio>-element priming trick: iOS Safari only grants that element playback
+       permission when .play() is called synchronously inside a real tap, a permission that
+       does NOT reliably survive the fetch() round trip (chat, then TTS) that sits between a
+       tap and a reply actually needing to speak — flaky in a way that could work on one visit
+       and fail silently into the chipSpeak() fallback on the next, with no way to tell why.
+       A Web Audio AudioContext instead has a binary state — suspended or running — and once a
+       user gesture resumes it, it stays running for the page's life regardless of later async
+       delays, so there's no gesture-to-fetch race left to lose. Resumed on the very first
+       interaction anywhere on the page (see the window-level listener below it), not just a
+       tap on Spalty, so it's almost always already unlocked by the time a reply needs to speak. */
+    function spaltyCtx() {
+        if (!spaltyAudioCtx) {
+            spaltyAudioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            spaltyAudioGain = spaltyAudioCtx.createGain();
+            spaltyAudioGain.connect(spaltyAudioCtx.destination)
         }
-        return curAudio
+        return spaltyAudioCtx
     }
     function unlockVoice() {
-        if (audioUnlocked || audioUnlockPromise) return audioUnlockPromise;
-        const a = voiceEl();
-        a.src = 'data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEARKwAAIhYAQACABAAZGF0YQAAAAA=';
-        a.muted = true;
-        audioUnlockPromise = a.play().then(() => {
-            a.pause();
-            a.currentTime = 0;
-            a.muted = false;
-            audioUnlocked = true
-        }).catch(() => {
-            a.muted = false;
-            audioUnlocked = true
-        });
-        return audioUnlockPromise
+        const ctx = spaltyCtx();
+        if (ctx.state === 'suspended') ctx.resume().catch(() => {});
+        return Promise.resolve()
+    }
+    (function() {
+        const tryUnlock = () => unlockVoice();
+        const opts = { capture: true, passive: true };
+        window.addEventListener('pointerdown', tryUnlock, opts);
+        window.addEventListener('touchend', tryUnlock, opts);
+        window.addEventListener('keydown', tryUnlock, opts)
+    })();
+    function playSpaltyBuffer(buffer) {
+        const ctx = spaltyCtx();
+        try { spaltyAudioSource && spaltyAudioSource.stop() } catch (e) {}
+        const src = ctx.createBufferSource();
+        src.buffer = buffer;
+        src.connect(spaltyAudioGain);
+        src.start();
+        spaltyAudioSource = src;
+        return src
     }
     /* Ranks the browser's built-in voices and picks the best-sounding MALE one available —
        this is the fallback when /api/spalty-voice (the ElevenLabs-backed Function) is
@@ -11477,9 +11550,8 @@
     async function speak(t) {
         if (!voiceOn)
             return;
-        if (audioUnlockPromise) await audioUnlockPromise;
-        const a = voiceEl();
-        a.pause();
+        unlockVoice();
+        try { spaltyAudioSource && spaltyAudioSource.stop() } catch (e) {}
         /* Try the real ElevenLabs voice fresh on every line — a single bad line (rate
            limit, transient 5xx) must not doom the rest of the session to the robot voice,
            so this never latches a "give up on premium" flag; it just falls back per-call. */
@@ -11494,16 +11566,16 @@
                 })
             });
             if (r.ok) {
-                const b = await r.blob();
-                if (curAudioUrl) URL.revokeObjectURL(curAudioUrl);
-                curAudioUrl = URL.createObjectURL(b);
-                a.src = curAudioUrl;
-                try {
-                    await a.play();
+                const ab = await r.arrayBuffer();
+                const ctx = spaltyCtx();
+                const buffer = await ctx.decodeAudioData(ab);
+                lastSpaltyBuffer = buffer;
+                if (ctx.state === 'suspended') { try { await ctx.resume() } catch (e) {} }
+                if (ctx.state === 'running') {
+                    playSpaltyBuffer(buffer);
                     return
-                } catch (playErr) {
-                    reportVoiceFailure('playback blocked: ' + ((playErr && playErr.message) || playErr));
                 }
+                reportVoiceFailure('playback blocked: audio context suspended');
             } else {
                 const detail = await r.json().catch(() => ({}));
                 reportVoiceFailure('HTTP ' + r.status + ' — ' + (detail.detail || detail.error || 'ElevenLabs call failed'));
