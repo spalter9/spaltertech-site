@@ -39,6 +39,23 @@ export function SpaltyAssistant() {
   const mutedRef = useRef(muted);
   mutedRef.current = muted;
 
+  // Resume audio playback on the very first interaction anywhere on the
+  // page — not just a tap on Spalty itself. By the time anyone actually
+  // opens the panel and gets a reply, audio has almost always already been
+  // unlocked for a while, so there's no gesture-to-fetch race left to lose.
+  useEffect(() => {
+    const tryUnlock = () => voice.unlock();
+    const opts: AddEventListenerOptions = { capture: true, passive: true };
+    window.addEventListener("pointerdown", tryUnlock, opts);
+    window.addEventListener("touchend", tryUnlock, opts);
+    window.addEventListener("keydown", tryUnlock, opts);
+    return () => {
+      window.removeEventListener("pointerdown", tryUnlock, opts);
+      window.removeEventListener("touchend", tryUnlock, opts);
+      window.removeEventListener("keydown", tryUnlock, opts);
+    };
+  }, [voice.unlock]);
+
   const send = useCallback(
     (text: string) => {
       const trimmed = text.trim();
