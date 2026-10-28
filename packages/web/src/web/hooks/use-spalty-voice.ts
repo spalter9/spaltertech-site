@@ -51,6 +51,7 @@ export function useSpaltyVoice() {
     if (!elementRef.current) {
       const audio = new Audio();
       audio.preload = "auto";
+      audio.playsInline = true;
       audio.addEventListener("ended", () => {
         setState((s) => ({ ...s, speaking: false }));
         onEndedRef.current?.();
@@ -59,6 +60,13 @@ export function useSpaltyVoice() {
       audio.addEventListener("playing", () =>
         setState((s) => ({ ...s, speaking: true, blocked: false })),
       );
+      // A handful of mobile browsers (notably in-app/PWA WebKit) are flaky about
+      // honoring a gesture-primed unlock on an element that's never in the
+      // document — it can work on one entry into a page and silently fail on
+      // the next. Keeping the element attached (but invisible) makes the prime
+      // reliable instead of a coin flip.
+      audio.style.display = "none";
+      document.body.appendChild(audio);
       elementRef.current = audio;
     }
     return elementRef.current;
@@ -176,6 +184,7 @@ export function useSpaltyVoice() {
     return () => {
       abortRef.current?.abort();
       elementRef.current?.pause();
+      elementRef.current?.remove();
       if (urlRef.current) URL.revokeObjectURL(urlRef.current);
     };
   }, []);

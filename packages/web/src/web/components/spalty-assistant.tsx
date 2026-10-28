@@ -250,6 +250,12 @@ export function SpaltyAssistant() {
             <form
               onSubmit={(e) => {
                 e.preventDefault();
+                // A second, independent chance to prime playback on this
+                // gesture — opening the panel already tries, but on some
+                // mobile browsers that first prime doesn't stick, and this
+                // is the next real tap/click available before the reply
+                // needs to speak.
+                voice.unlock();
                 send(input);
               }}
               className="flex items-center gap-2 border-t border-obsidian-line p-3"
