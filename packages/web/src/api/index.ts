@@ -24,22 +24,14 @@ export const router = {
   // Current session user + allowlist status, or null.
   // Drives the Data Room gate on the client: not signed in → login;
   // signed in but not allowlisted → "access pending"; allowlisted → dashboard.
-  // OPEN ACCESS (temporary): the gate is disabled, so `me` never touches the
-  // database (it previously ran an allowlist lookup that could hang if the DB
-  // dropped its connection). Return the session user when present, otherwise a
-  // guest — always allowed. To re-lock, restore the DB-backed handler below.
-  me: withUser.handler(async ({ context }) => {
-    if (!context.user) {
-      return { id: "guest", email: "guest@open-access", name: "Guest", allowed: true };
-    }
-    return { ...context.user, allowed: true };
-  }),
-  /* LOCKED VERSION — restore for login + allowlist:
   me: withUser.handler(async ({ context }) => {
     if (!context.user) return null;
-    return { ...context.user, allowed: await isAllowed(context.user.email) };
+    const [row] = await db
+      .select({ role: schema.allowlist.role })
+      .from(schema.allowlist)
+      .where(eq(schema.allowlist.email, context.user.email.trim().toLowerCase()));
+    return { ...context.user, allowed: Boolean(row), role: row?.role ?? null };
   }),
-  */
   masterTrust,
   ssp,
   surealizer,

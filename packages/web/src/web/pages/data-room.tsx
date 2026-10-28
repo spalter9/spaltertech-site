@@ -4,7 +4,7 @@ import { motion, AnimatePresence } from "motion/react";
 import {
   Loader2, FileText, Video, Presentation, Workflow, DollarSign, Link2, BarChart3,
   Play, ShieldCheck, Fingerprint, AudioWaveform, Bot, Lock as LockIcon, ArrowLeft, CheckCircle2,
-  X, ArrowRight,
+  X, ArrowRight, Eye,
 } from "lucide-react";
 import { Nav } from "../components/nav";
 import { Crest } from "../components/brand";
@@ -16,9 +16,10 @@ import { CampaignPlan } from "../components/campaign";
 import { Defensibility } from "../components/defensibility";
 import { AccuracyStory } from "../components/accuracy";
 import { authClient } from "../lib/auth";
+import Login from "./login";
 import {
   useMe, useSegments, useEscrow, useSettleAsset, useLedger, useSspStats, useTripwire,
-  useTriggerTripwire, useStemJobs, useAnalyze,
+  useTriggerTripwire, useStemJobs, useAnalyze, useLogView, useActivity,
 } from "../queries/pillars";
 
 const KIND_ICON: Record<string, typeof FileText> = {
@@ -37,6 +38,11 @@ const SECTIONS = [
   { id: "surrealizer", label: "Surrealizer Engine" },
   { id: "proforma", label: "Pro Forma" },
 ];
+const SECTIONS_ADMIN = [
+  ...SECTIONS.slice(0, 5),
+  { id: "activity", label: "Investor Activity" },
+  ...SECTIONS.slice(5),
+];
 
 const usd = (n: number) => n.toLocaleString("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 2 });
 
@@ -50,10 +56,8 @@ export default function DataRoom() {
       </div>
     );
   }
-  // OPEN ACCESS (temporary): login + allowlist gate disabled by request.
-  // To re-lock, restore:
-  //   if (!me.data) return <Login />;
-  //   if (!me.data.allowed) return <AccessPending email={me.data.email} />;
+  if (!me.data) return <Login />;
+  if (!me.data.allowed) return <AccessPending email={me.data.email} />;
 
   return (
     <div className="min-h-screen bg-obsidian text-bone">
@@ -68,7 +72,7 @@ export default function DataRoom() {
               <div>
                 <p className="eyebrow">The MasterTrust · Privileged</p>
                 <h1 className="font-display text-3xl md:text-4xl mt-1">Data Room</h1>
-                <p className="text-muted text-sm mt-1">{me.data && me.data.id !== "guest" ? `Signed in as ${me.data.email}` : "Guest · Open Access"}</p>
+                <p className="text-muted text-sm mt-1">Signed in as {me.data.email}</p>
               </div>
             </div>
             <div className="flex items-center gap-5">
@@ -85,7 +89,7 @@ export default function DataRoom() {
         {/* Sticky section nav */}
         <div className="sticky top-20 z-40 backdrop-blur-md bg-obsidian/85 border-b border-obsidian-line">
           <div className="mx-auto max-w-[1200px] px-6 flex gap-6 overflow-x-auto">
-            {SECTIONS.map((s) => (
+            {(me.data.role === "admin" ? SECTIONS_ADMIN : SECTIONS).map((s) => (
               <a key={s.id} href={`#${s.id}`} className="py-4 font-mono text-[11px] uppercase tracking-[0.18em] text-muted hover:text-gold whitespace-nowrap transition-colors">
                 {s.label}
               </a>
@@ -120,6 +124,7 @@ export default function DataRoom() {
             <AccuracyStory />
           </section>
           <DataRoomModule />
+          {me.data.role === "admin" && <ActivityModule />}
           <VaultModule />
           <LedgerModule />
           <SurrealizerModule />
@@ -291,6 +296,8 @@ function DataRoomModule() {
 }
 
 function SegmentModal({ segment, onClose }: { segment: Segment | null; onClose: () => void }) {
+  const logView = useLogView();
+
   useEffect(() => {
     if (!segment) return;
     const onKey = (e: KeyboardEvent) => e.key === "Escape" && onClose();
@@ -301,6 +308,12 @@ function SegmentModal({ segment, onClose }: { segment: Segment | null; onClose: 
       document.body.style.overflow = "";
     };
   }, [segment, onClose]);
+
+  useEffect(() => {
+    if (!segment) return;
+    logView.mutate({ code: segment.code, title: segment.title });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [segment?.id]);
 
   const jump = segment ? JUMP_FOR[segment.kind] : undefined;
   const Icon = segment ? (KIND_ICON[segment.kind] ?? FileText) : FileText;
@@ -374,6 +387,54 @@ function SegmentModal({ segment, onClose }: { segment: Segment | null; onClose: 
         </motion.div>
       )}
     </AnimatePresence>
+  );
+}
+
+/* ── Module: Investor Activity (admin-only) ────────────────── */
+function ActivityModule() {
+  const activity = useActivity();
+  const timeFmt = (d: string | Date) =>
+    new Date(d).toLocaleString("en-US", { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" });
+
+  return (
+    <section id="activity" className="scroll-mt-32">
+      <ModuleHead
+        tag="Admin — Visibility"
+        title="Investor Activity"
+        desc="Every time an investor opens a Data Room disclosure, it's logged here — who, which document, and when. Visible only to admins."
+      />
+      <div className="card-surface overflow-hidden">
+        <div className="overflow-x-auto">
+          <table className="w-full font-mono text-xs min-w-[640px]">
+            <thead>
+              <tr className="text-gold border-b border-obsidian-line">
+                {["Investor", "Document", "Viewed"].map((h) => (
+                  <th key={h} className="text-left font-medium px-4 py-3.5 uppercase tracking-[0.12em] text-[10px]">{h}</th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {activity.isLoading && (
+                <tr><td colSpan={3} className="px-4 py-10 text-center text-muted"><Loader2 className="animate-spin inline text-gold" size={18} /></td></tr>
+              )}
+              {activity.data?.length === 0 && (
+                <tr><td colSpan={3} className="px-4 py-10 text-center text-muted">No document views logged yet.</td></tr>
+              )}
+              {activity.data?.map((a, i) => (
+                <tr key={a.id} className={i % 2 ? "bg-obsidian-raised/40" : ""}>
+                  <td className="px-4 py-3.5 text-bone">
+                    {a.userName || a.userEmail}
+                    {a.userName && <span className="text-muted"> · {a.userEmail}</span>}
+                  </td>
+                  <td className="px-4 py-3.5 text-gold flex items-center gap-1.5"><Eye size={12} /> {a.docTitle}</td>
+                  <td className="px-4 py-3.5 text-muted">{timeFmt(a.viewedAt)}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
   );
 }
 

@@ -30,23 +30,22 @@ export const authed = base.use(async ({ context, next }) => {
   return next({ context: { user: session.user, session: session.session } });
 });
 
+/** The allowlist row's role for `email`, or null if not on the allowlist. */
+export async function allowlistRole(email: string | null | undefined): Promise<string | null> {
+  if (!email) return null;
+  const [row] = await db
+    .select({ role: schema.allowlist.role })
+    .from(schema.allowlist)
+    .where(eq(schema.allowlist.email, email.trim().toLowerCase()));
+  return row?.role ?? null;
+}
+
 /**
  * Data Room lockdown — requires an authenticated session AND an allowlisted
  * email. Signed-in but unapproved users get FORBIDDEN and see the
  * "access pending" screen on the client. Guards all privileged legal/financial
  * data so the Data Room can never leak, even to a self-registered account.
  */
-// OPEN ACCESS (temporary): the Data Room gate is disabled by request — no
-// login and no allowlist required. The privileged data is served to everyone.
-// To re-lock, restore the commented block below.
-export const authedAllowed = base.use(async ({ context, next }) => {
-  const session = await auth.api.getSession({ headers: context.headers });
-  return next({
-    context: { user: session?.user ?? null, session: session?.session ?? null },
-  });
-});
-
-/* LOCKED VERSION — restore to require login + allowlist:
 export const authedAllowed = base.use(async ({ context, next }) => {
   const session = await auth.api.getSession({ headers: context.headers });
   if (!session) throw new ORPCError("UNAUTHORIZED");
@@ -55,4 +54,14 @@ export const authedAllowed = base.use(async ({ context, next }) => {
   }
   return next({ context: { user: session.user, session: session.session } });
 });
-*/
+
+/** Data Room admin lockdown — authenticated, allowlisted, AND role "admin". */
+export const authedAdmin = base.use(async ({ context, next }) => {
+  const session = await auth.api.getSession({ headers: context.headers });
+  if (!session) throw new ORPCError("UNAUTHORIZED");
+  const role = await allowlistRole(session.user.email);
+  if (role !== "admin") {
+    throw new ORPCError("FORBIDDEN", { message: "Admin access required" });
+  }
+  return next({ context: { user: session.user, session: session.session } });
+});
