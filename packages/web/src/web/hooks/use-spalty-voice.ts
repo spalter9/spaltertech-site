@@ -3,16 +3,20 @@ import { useCallback, useEffect, useRef, useState } from "react";
 /**
  * Spalty's speaking voice.
  *
- * The subtle part is browser autoplay policy. A browser grants playback
- * permission to an *element* that a user gesture started, not to the page — so
- * creating a fresh `new Audio()` for every reply gets exactly one utterance
- * through (the one still inside the click's grace window) and then goes silent,
- * with the rejection swallowed. That is the "it speaks the first answer then
- * only texts" failure.
- *
- * So this holds one element for the life of the widget, unlocks it on the first
- * real user gesture, and afterwards only swaps its `src`. When playback is
- * refused anyway, it says so instead of degrading silently.
+ * Built on the Web Audio API instead of an <audio> element on purpose. An
+ * HTMLMediaElement's "may this play without a gesture" grant is tied to the
+ * timing of a specific play() call relative to the gesture that started it —
+ * reliable in a synchronous click handler, flaky once a fetch (chat round
+ * trip, then the TTS round trip) sits in between, which is exactly Spalty's
+ * path. A browser AudioContext instead has a binary state — suspended or
+ * running — and once a user gesture resumes it, it stays running for the
+ * rest of the page's life, regardless of what happens asynchronously
+ * afterwards. So instead of priming one element on one specific tap (opening
+ * the panel) and hoping that grant survives two network round trips, this
+ * resumes the context on the very first interaction *anywhere on the page*
+ * — see the window-level listener registered by the widget — so by the time
+ * a reply is ready to speak, audio has almost always been unlocked for a
+ * while already.
  */
 
 export type VoiceState = {
@@ -20,19 +24,20 @@ export type VoiceState = {
   speaking: boolean;
   /** Fetching the audio for a reply. */
   loading: boolean;
-  /** The browser refused playback — the UI should offer a tap to enable it. */
+  /** The context is still suspended — the UI should offer a tap to enable it. */
   blocked: boolean;
   /** The server has no voice configured; stay text-only without complaining. */
   unavailable: boolean;
 };
 
-const SILENT_WAV =
-  "data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEARKwAAIhYAQACABAAZGF0YQAAAAA=";
+type AudioContextCtor = typeof AudioContext;
 
 export function useSpaltyVoice() {
-  const elementRef = useRef<HTMLAudioElement | null>(null);
-  const urlRef = useRef<string | null>(null);
-  const unlockedRef = useRef(false);
+  const ctxRef = useRef<AudioContext | null>(null);
+  const gainRef = useRef<GainNode | null>(null);
+  const sourceRef = useRef<AudioBufferSourceNode | null>(null);
+  /** The last decoded reply, kept so a blocked playback can be retried without refetching. */
+  const lastBufferRef = useRef<AudioBuffer | null>(null);
   const abortRef = useRef<AbortController | null>(null);
   /** Guards against an earlier, slower reply speaking over a newer one. */
   const generationRef = useRef(0);
@@ -47,60 +52,69 @@ export function useSpaltyVoice() {
   const onEndedRef = useRef<(() => void) | null>(null);
   onEndedRef.current = onEnded;
 
-  const element = useCallback(() => {
-    if (!elementRef.current) {
-      const audio = new Audio();
-      audio.preload = "auto";
-      audio.addEventListener("ended", () => {
-        setState((s) => ({ ...s, speaking: false }));
-        onEndedRef.current?.();
-      });
-      audio.addEventListener("pause", () => setState((s) => ({ ...s, speaking: false })));
-      audio.addEventListener("playing", () =>
-        setState((s) => ({ ...s, speaking: true, blocked: false })),
-      );
-      elementRef.current = audio;
+  const ctx = useCallback(() => {
+    if (!ctxRef.current) {
+      const Ctor: AudioContextCtor =
+        window.AudioContext ?? (window as unknown as { webkitAudioContext: AudioContextCtor }).webkitAudioContext;
+      const context = new Ctor();
+      const gain = context.createGain();
+      gain.connect(context.destination);
+      gainRef.current = gain;
+      ctxRef.current = context;
     }
-    return elementRef.current;
+    return ctxRef.current;
   }, []);
 
   /**
-   * Prime the element inside a user gesture.
-   *
-   * Playing a moment of silence is what actually marks the element as
-   * user-activated; every later `src` swap then inherits that permission.
+   * Resume the context. Safe and cheap to call from any gesture, repeatedly
+   * — a no-op once the context is already running.
    */
   const unlock = useCallback(() => {
-    if (unlockedRef.current) return;
-    const audio = element();
-    audio.src = SILENT_WAV;
-    audio.muted = true;
-    void audio
-      .play()
-      .then(() => {
-        audio.pause();
-        audio.currentTime = 0;
-        audio.muted = false;
-        unlockedRef.current = true;
-        setState((s) => ({ ...s, blocked: false }));
-      })
-      .catch(() => {
-        audio.muted = false;
-        // Not fatal: the first real utterance may still be allowed.
-      });
-  }, [element]);
+    const context = ctx();
+    if (context.state === "suspended") {
+      void context.resume().then(
+        () => setState((s) => ({ ...s, blocked: false })),
+        () => {
+          /* Still suspended — a later attempt, or the blocked banner, will catch it. */
+        },
+      );
+    }
+  }, [ctx]);
 
   const stop = useCallback(() => {
     abortRef.current?.abort();
     abortRef.current = null;
     generationRef.current += 1;
-    const audio = elementRef.current;
-    if (audio) {
-      audio.pause();
-      audio.currentTime = 0;
+    try {
+      sourceRef.current?.stop();
+    } catch {
+      /* Already stopped/finished — fine. */
     }
+    sourceRef.current = null;
     setState((s) => ({ ...s, speaking: false, loading: false }));
   }, []);
+
+  const playBuffer = useCallback(
+    (buffer: AudioBuffer) => {
+      const context = ctx();
+      try {
+        sourceRef.current?.stop();
+      } catch {
+        /* Already stopped/finished — fine. */
+      }
+      const source = context.createBufferSource();
+      source.buffer = buffer;
+      source.connect(gainRef.current!);
+      source.onended = () => {
+        setState((s) => ({ ...s, speaking: false }));
+        onEndedRef.current?.();
+      };
+      source.start();
+      sourceRef.current = source;
+      setState((s) => ({ ...s, loading: false, speaking: true, blocked: false }));
+    },
+    [ctx],
+  );
 
   const speak = useCallback(
     async (text: string) => {
@@ -113,8 +127,6 @@ export function useSpaltyVoice() {
       abortRef.current = controller;
       const generation = (generationRef.current += 1);
 
-      const audio = element();
-      audio.pause();
       setState((s) => ({ ...s, loading: true }));
 
       try {
@@ -135,48 +147,63 @@ export function useSpaltyVoice() {
           return;
         }
 
-        const blob = await res.blob();
+        const arrayBuffer = await res.arrayBuffer();
         if (generation !== generationRef.current) return;
 
-        if (urlRef.current) URL.revokeObjectURL(urlRef.current);
-        urlRef.current = URL.createObjectURL(blob);
-        audio.src = urlRef.current;
+        const context = ctx();
+        const buffer = await context.decodeAudioData(arrayBuffer);
+        if (generation !== generationRef.current) return;
+        lastBufferRef.current = buffer;
 
-        setState((s) => ({ ...s, loading: false }));
-        await audio.play();
-        setState((s) => ({ ...s, speaking: true, blocked: false }));
+        // Try once more here — a resume kicked off elsewhere may have landed
+        // mid-fetch — before giving up and asking the user directly.
+        if (context.state === "suspended") {
+          try {
+            await context.resume();
+          } catch {
+            /* Handled by the state check below. */
+          }
+        }
+
+        if (context.state !== "running") {
+          setState((s) => ({ ...s, loading: false, blocked: true }));
+          return;
+        }
+
+        playBuffer(buffer);
       } catch (err) {
         if ((err as Error)?.name === "AbortError") return;
-        // A rejected play() is the autoplay policy talking. Surface it so the
-        // user can grant it with one tap rather than wondering why it stopped.
-        const blocked = (err as Error)?.name === "NotAllowedError";
-        setState((s) => ({ ...s, loading: false, speaking: false, blocked }));
+        setState((s) => ({ ...s, loading: false, speaking: false }));
       }
     },
-    [element],
+    [ctx, playBuffer],
   );
 
   /** Re-run the last utterance after the user taps to allow sound. */
   const resume = useCallback(async () => {
-    unlockedRef.current = true;
-    const audio = elementRef.current;
-    if (!audio?.src) {
-      setState((s) => ({ ...s, blocked: false }));
-      return;
-    }
+    const context = ctx();
     try {
-      await audio.play();
-      setState((s) => ({ ...s, blocked: false, speaking: true }));
+      await context.resume();
     } catch {
+      /* Handled below. */
+    }
+    if (context.state === "running") {
+      setState((s) => ({ ...s, blocked: false }));
+      if (lastBufferRef.current) playBuffer(lastBufferRef.current);
+    } else {
       setState((s) => ({ ...s, blocked: true }));
     }
-  }, []);
+  }, [ctx, playBuffer]);
 
   useEffect(() => {
     return () => {
       abortRef.current?.abort();
-      elementRef.current?.pause();
-      if (urlRef.current) URL.revokeObjectURL(urlRef.current);
+      try {
+        sourceRef.current?.stop();
+      } catch {
+        /* Already stopped/finished — fine. */
+      }
+      void ctxRef.current?.close();
     };
   }, []);
 
