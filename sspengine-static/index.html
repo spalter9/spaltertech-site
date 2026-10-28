@@ -4277,6 +4277,7 @@
                 <button id="btnExamine" style="width:100%;margin-top:12px;border:1px solid var(--blue);border-radius:8px;padding:13px;font-family:var(--disp);font-size:11px;letter-spacing:.22em;color:var(--blue);background:#101114">◎ RUN THE EXAMINER</button>
                 <div id="examResult" style="display:none;margin-top:14px">
                     <div style="background:rgba(6,7,12,.8);border:1px solid var(--line);border-radius:10px;padding:12px">
+                        <div id="examTrackName" class="sk" style="color:var(--dim);margin-bottom:8px"></div>
                         <div style="display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:8px">
                             <div>
                                 <div id="examVerdict" style="font-family:var(--disp);font-size:14px;color:var(--bone)"></div>
@@ -4292,6 +4293,7 @@
                         </div>
                     </div>
                     <dl id="examFeatures" style="margin-top:10px;background:#0b0c0e;border:1px solid var(--line);border-radius:8px;overflow:hidden"></dl>
+                    <button id="btnExamPdf" style="width:100%;margin-top:10px;border:1px solid var(--dim);border-radius:8px;padding:11px;font-family:var(--disp);font-size:10px;letter-spacing:.18em;color:var(--bone);background:#101114">⬇ DOWNLOAD PDF REPORT</button>
                     <div class="note">Real signal measurements — pitch drift, timing deviation, spectral flatness, and stereo phase correlation — computed by splitting the mix into three frequency bands with standard filters, not by separating instruments. Nothing here is a black-box AI score, and the same file always produces the same numbers. Not legal advice; the U.S. Copyright Office decides every application on its own.</div>
                 </div>
                 <div style="height:1px;background:var(--line);margin:16px 0 12px"></div>
@@ -4382,6 +4384,7 @@
     <div class="toast" id="toast"></div>
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/lamejs/1.2.0/lame.min.js" onerror="window.__noMp3=true"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js" onerror="window.__noPdf=true"></script>
     <script>
     /* SSP sovereign QR engine — self-contained ISO 18004, zero external dependencies */
     /* SSP self-contained QR generator — ISO/IEC 18004, byte mode, ECC level M, v1-10, auto mask */
@@ -10472,8 +10475,12 @@
         return t === 'verified' ? 'var(--green)' : t === 'danger' ? 'var(--red)' : 'var(--amber)'
     }
 
+    /* Holds the data behind whatever is currently on screen, so the PDF
+       button can build a report without re-running the analysis. */
+    let lastExamReport = null;
     function renderExamResult(bandLabel, verdict, status, tone, index, features) {
         $('examResult').style.display = 'block';
+        $('examTrackName').textContent = 'TRACK · ' + (window.__srcName || 'Untitled track');
         $('examVerdict').textContent = verdict;
         $('examVerdict').style.color = toneColor(tone);
         $('examBandLbl').textContent = bandLabel + ' BAND · ' + new Date().toLocaleTimeString();
@@ -10547,6 +10554,16 @@
                 tone
             } = await analyzeBuffer(filtered);
             renderExamResult(examBand.toUpperCase(), verdict, status, tone, index, featureDefs);
+            lastExamReport = {
+                trackName: window.__srcName || 'Untitled track',
+                bandLabel: examBand.toUpperCase(),
+                verdict,
+                status,
+                tone,
+                index,
+                features: featureDefs,
+                timestamp: new Date()
+            };
             const reportTxt = 'MASTER TRUST ENGINE EXAMINER · ' + examBand.toUpperCase() + ' BAND\n' + verdict + ' (' + status + ') · index ' + (index == null ? 'n/a' : index) + '/100\n' + featureDefs.map(f => f.label + ': ' + f.read).join('\n') + '\n\nMeasured on a sampled window of the loaded track, entirely in this browser. Not legal advice; the U.S. Copyright Office decides every application on its own.';
             const reportBytes = new TextEncoder().encode(reportTxt);
             const hash = await sha256(reportBytes);
@@ -10563,6 +10580,123 @@
         }
     }
     $('btnExamine').addEventListener('click', runExaminer);
+    /* PDF export of the on-screen band-mode result — same numbers already
+       shown, laid out as a document someone can file or hand to a third
+       party. Built client-side (jsPDF), nothing leaves the browser. */
+    async function downloadExamPdf() {
+        if (!lastExamReport) {
+            toast('RUN THE EXAMINER FIRST');
+            return
+        }
+        if (window.__noPdf || !window.jspdf) {
+            toast('PDF LIBRARY FAILED TO LOAD — CHECK YOUR CONNECTION');
+            return
+        }
+        const R = lastExamReport;
+        const { jsPDF } = window.jspdf;
+        const doc = new jsPDF({ unit: 'pt', format: 'letter' });
+        const pageW = doc.internal.pageSize.getWidth();
+        const marginX = 56;
+        let y = 64;
+
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(10);
+        doc.setTextColor(150, 110, 40);
+        doc.text('THE MASTER TRUST', marginX, y);
+        doc.setFontSize(8);
+        doc.setTextColor(120);
+        doc.text('SOVEREIGN SIGN PROTOCOL · PROVENANCE AUDIT', pageW - marginX, y, { align: 'right' });
+        y += 26;
+
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(20);
+        doc.setTextColor(20);
+        doc.text('The Examiner — Provenance Audit Report', marginX, y);
+        y += 28;
+
+        doc.setDrawColor(210);
+        doc.line(marginX, y, pageW - marginX, y);
+        y += 24;
+
+        const field = (label, value) => {
+            doc.setFont('helvetica', 'bold');
+            doc.setFontSize(9);
+            doc.setTextColor(120);
+            doc.text(label.toUpperCase(), marginX, y);
+            doc.setFont('helvetica', 'normal');
+            doc.setFontSize(12);
+            doc.setTextColor(20);
+            doc.text(String(value), marginX, y + 15);
+            y += 36
+        };
+        field('Track', R.trackName);
+        field('Analyzed', R.timestamp.toLocaleString());
+        field('Band tested', R.bandLabel + (R.bandLabel === 'LOW' ? ' (bass-forward)' : R.bandLabel === 'MID' ? ' (vocal-forward)' : ' (air / cymbals)'));
+
+        const toneRGB = R.tone === 'verified' ? [30, 140, 90] : R.tone === 'danger' ? [190, 60, 60] : [180, 130, 30];
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(9);
+        doc.setTextColor(120);
+        doc.text('VERDICT', marginX, y);
+        doc.setFontSize(15);
+        doc.setTextColor(...toneRGB);
+        doc.text(R.verdict + '  ·  ' + R.status + '  ·  ' + (R.index == null ? '—' : R.index) + ' / 100', marginX, y + 18);
+        y += 44;
+
+        doc.setDrawColor(210);
+        doc.line(marginX, y, pageW - marginX, y);
+        y += 24;
+
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(11);
+        doc.setTextColor(20);
+        doc.text('Measurements', marginX, y);
+        y += 20;
+
+        R.features.forEach(f => {
+            doc.setFont('helvetica', 'bold');
+            doc.setFontSize(10.5);
+            doc.setTextColor(20);
+            doc.text(f.label, marginX, y);
+            doc.setFont('helvetica', 'normal');
+            doc.setFontSize(9);
+            doc.setTextColor(120);
+            doc.text('weight ' + f.weight.toFixed(2), pageW - marginX, y, { align: 'right' });
+            y += 15;
+            doc.setFontSize(10);
+            doc.setTextColor(70);
+            const wrapped = doc.splitTextToSize(f.read, pageW - marginX * 2);
+            doc.text(wrapped, marginX, y);
+            y += wrapped.length * 13 + 12;
+        });
+
+        y += 6;
+        doc.setDrawColor(210);
+        doc.line(marginX, y, pageW - marginX, y);
+        y += 20;
+
+        doc.setFont('helvetica', 'normal');
+        doc.setFontSize(8.5);
+        doc.setTextColor(130);
+        const disclaimer = 'Real signal measurements — pitch drift, timing deviation, spectral flatness, and stereo phase correlation — computed by splitting the mix into frequency bands with standard filters, not by separating instruments. Nothing here is a black-box AI score, and the same file always produces the same numbers. This report is not legal advice; the U.S. Copyright Office decides every application on its own.';
+        const discWrapped = doc.splitTextToSize(disclaimer, pageW - marginX * 2);
+        doc.text(discWrapped, marginX, y);
+        y += discWrapped.length * 11 + 16;
+
+        const reportTxt = 'MASTER TRUST ENGINE EXAMINER · ' + R.bandLabel + ' BAND · ' + R.trackName + '\n' + R.verdict + ' (' + R.status + ') · index ' + (R.index == null ? 'n/a' : R.index) + '/100\n' + R.features.map(f => f.label + ': ' + f.read).join('\n');
+        try {
+            const hash = await sha256(new TextEncoder().encode(reportTxt));
+            doc.setFont('courier', 'normal');
+            doc.setFontSize(7.5);
+            doc.setTextColor(160);
+            doc.text('SHA-256  ' + hash, marginX, y);
+        } catch (e) {}
+
+        const safeName = (R.trackName || 'track').replace(/[^a-z0-9_-]+/gi, '_').slice(0, 60);
+        doc.save(safeName + '_EXAMINER_' + R.bandLabel + '.pdf');
+        toast('PDF REPORT DOWNLOADED')
+    }
+    $('btnExamPdf').addEventListener('click', () => { void downloadExamPdf() });
     /* shared analysis core (band mode and stem mode): 20 s sampled window → five real measurements → weighted index */
     async function analyzeBuffer(filtered) {
         const sr = filtered.sampleRate;
