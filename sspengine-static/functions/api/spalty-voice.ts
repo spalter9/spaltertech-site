@@ -7,13 +7,14 @@
  * fails — so a 404/500 here silently degrades every visitor to the robot
  * voice. Requires ELEVENLABS_API_KEY as an environment variable on the
  * Cloudflare Pages project (Settings → Variables and Secrets). Spalty's voice
- * is ElevenLabs' "Adam Stone" library voice by default; ELEVENLABS_VOICE_ID
+ * is ElevenLabs' "Jim" library voice by default; ELEVENLABS_VOICE_ID
  * overrides it. The voice must be in the API key's account ("Add to my voices"
  * in the ElevenLabs Voice Library), or ElevenLabs rejects the call.
  */
 
-// "Adam Stone – Smooth, Deep, and Relaxed" (British), picked as Spalty's voice.
-const DEFAULT_VOICE_ID = "auq43ws1oslv0tO4BDa7";
+// "Jim – confident and informative corporate narration" (East Coast/Brooklyn
+// vibe), picked as Spalty's voice.
+const DEFAULT_VOICE_ID = "JjqNMa6BEYmyQYRCdHCa";
 
 interface Env {
   ELEVENLABS_API_KEY?: string;
