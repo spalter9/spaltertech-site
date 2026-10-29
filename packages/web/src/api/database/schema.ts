@@ -17,6 +17,20 @@ export const allowlist = sqliteTable("allowlist", {
 });
 
 /* ─────────────────────────────────────────────────────────────
+   DATA ROOM ACTIVITY — per-investor document view log
+   One row per segment an allowlisted investor opens, so admins can
+   see who has (and hasn't) reviewed which disclosure.
+   ───────────────────────────────────────────────────────────── */
+export const documentViews = sqliteTable("document_views", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  userEmail: text("user_email").notNull(), // stored lowercased
+  userName: text("user_name"),
+  docCode: text("doc_code").notNull(), // data-room segment code, e.g. "01"
+  docTitle: text("doc_title").notNull(),
+  viewedAt: integer("viewed_at", { mode: "timestamp" }).notNull().$defaultFn(() => new Date()),
+});
+
+/* ─────────────────────────────────────────────────────────────
    PILLAR 1 — THE MASTERTRUST (Legal)
    Data Room segments + cryptographic escrow vault
    ───────────────────────────────────────────────────────────── */

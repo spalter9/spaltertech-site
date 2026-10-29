@@ -26,6 +26,13 @@ export function useSettleAsset() {
   );
 }
 
+export function useLogView() {
+  return useMutation(orpc.masterTrust.logView.mutationOptions());
+}
+export function useActivity() {
+  return useQuery(orpc.masterTrust.listActivity.queryOptions());
+}
+
 /* Pillar 2 — SSP */
 export function useLedger() {
   return useQuery(orpc.ssp.ledger.queryOptions({ input: { limit: 40 } }));

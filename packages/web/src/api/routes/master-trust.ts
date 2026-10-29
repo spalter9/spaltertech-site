@@ -1,7 +1,7 @@
 import { z } from "zod";
-import { asc, eq } from "drizzle-orm";
+import { asc, desc, eq } from "drizzle-orm";
 import { ORPCError } from "@orpc/server";
-import { authedAllowed } from "../middleware/auth";
+import { authedAllowed, authedAdmin } from "../middleware/auth";
 import { db } from "../database";
 import * as schema from "../database/schema";
 
@@ -70,4 +70,23 @@ export const masterTrust = {
       }
       return updated;
     }),
+
+  // Log that the current investor opened a segment — fire-and-forget from
+  // the client when the segment modal opens.
+  logView: authedAllowed
+    .input(z.object({ code: z.string(), title: z.string() }))
+    .handler(async ({ input, context }) => {
+      await db.insert(schema.documentViews).values({
+        userEmail: context.user.email.trim().toLowerCase(),
+        userName: context.user.name ?? null,
+        docCode: input.code,
+        docTitle: input.title,
+      });
+      return { logged: true };
+    }),
+
+  // Admin-only: who has looked at what, most recent first.
+  listActivity: authedAdmin.handler(() =>
+    db.select().from(schema.documentViews).orderBy(desc(schema.documentViews.viewedAt)).limit(200),
+  ),
 };
