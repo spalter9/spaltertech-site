@@ -33,6 +33,26 @@ export function useActivity() {
   return useQuery(orpc.masterTrust.listActivity.queryOptions());
 }
 
+export function useAllowlist() {
+  return useQuery(orpc.masterTrust.listAllowlist.queryOptions());
+}
+export function useAddInvestor() {
+  const qc = useQueryClient();
+  return useMutation(
+    orpc.masterTrust.addInvestor.mutationOptions({
+      onSuccess: () => qc.invalidateQueries({ queryKey: orpc.masterTrust.listAllowlist.key() }),
+    }),
+  );
+}
+export function useRemoveInvestor() {
+  const qc = useQueryClient();
+  return useMutation(
+    orpc.masterTrust.removeInvestor.mutationOptions({
+      onSuccess: () => qc.invalidateQueries({ queryKey: orpc.masterTrust.listAllowlist.key() }),
+    }),
+  );
+}
+
 /* Pillar 2 — SSP */
 export function useLedger() {
   return useQuery(orpc.ssp.ledger.queryOptions({ input: { limit: 40 } }));
