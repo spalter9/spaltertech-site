@@ -4,7 +4,7 @@ import { motion, AnimatePresence } from "motion/react";
 import {
   Loader2, FileText, Video, Presentation, Workflow, DollarSign, Link2, BarChart3,
   Play, ShieldCheck, Fingerprint, AudioWaveform, Bot, Lock as LockIcon, ArrowLeft, CheckCircle2,
-  X, ArrowRight, Eye,
+  X, ArrowRight, Eye, UserPlus, Trash2,
 } from "lucide-react";
 import { Nav } from "../components/nav";
 import { Crest } from "../components/brand";
@@ -20,6 +20,7 @@ import Login from "./login";
 import {
   useMe, useSegments, useEscrow, useSettleAsset, useLedger, useSspStats, useTripwire,
   useTriggerTripwire, useStemJobs, useAnalyze, useLogView, useActivity,
+  useAllowlist, useAddInvestor, useRemoveInvestor,
 } from "../queries/pillars";
 
 const KIND_ICON: Record<string, typeof FileText> = {
@@ -403,6 +404,10 @@ function ActivityModule() {
         title="Investor Activity"
         desc="Every time an investor opens a Data Room disclosure, it's logged here — who, which document, and when. Visible only to admins."
       />
+
+      <AllowlistManager />
+
+      <h3 className="font-display text-xl mt-12 mb-4">Document Views</h3>
       <div className="card-surface overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full font-mono text-xs min-w-[640px]">
@@ -435,6 +440,122 @@ function ActivityModule() {
         </div>
       </div>
     </section>
+  );
+}
+
+/* ── Sub-module: allowlist (invite / revoke investors) ─────── */
+function AllowlistManager() {
+  const allowlist = useAllowlist();
+  const addInvestor = useAddInvestor();
+  const removeInvestor = useRemoveInvestor();
+  const [email, setEmail] = useState("");
+  const [note, setNote] = useState("");
+  const [role, setRole] = useState<"member" | "admin">("member");
+  const [error, setError] = useState<string | null>(null);
+
+  function submit(e: React.FormEvent) {
+    e.preventDefault();
+    setError(null);
+    if (!email.trim()) return;
+    addInvestor.mutate(
+      { email: email.trim(), note: note.trim() || undefined, role },
+      {
+        onSuccess: () => {
+          setEmail("");
+          setNote("");
+          setRole("member");
+        },
+        onError: (err) => setError(err instanceof Error ? err.message : "Could not add investor"),
+      },
+    );
+  }
+
+  return (
+    <div className="card-surface p-6">
+      <div className="flex items-center gap-2 mb-5">
+        <UserPlus size={16} className="text-gold" />
+        <span className="font-mono text-[10px] uppercase tracking-[0.18em] text-gold">Invite an investor</span>
+      </div>
+
+      <form onSubmit={submit} className="flex flex-col sm:flex-row gap-3 items-stretch sm:items-end mb-6">
+        <label className="flex-1">
+          <span className="font-mono text-[10px] uppercase tracking-[0.18em] text-muted">Email</span>
+          <input
+            type="email"
+            aria-label="Email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            placeholder="investor@firm.com"
+            required
+            className="mt-1.5 w-full bg-obsidian border border-obsidian-line focus:border-gold outline-none px-4 py-3 text-sm text-bone transition-colors"
+          />
+        </label>
+        <label className="flex-1">
+          <span className="font-mono text-[10px] uppercase tracking-[0.18em] text-muted">Note (optional)</span>
+          <input
+            value={note}
+            aria-label="Note"
+            onChange={(e) => setNote(e.target.value)}
+            placeholder="e.g. Warner Chappell counsel"
+            className="mt-1.5 w-full bg-obsidian border border-obsidian-line focus:border-gold outline-none px-4 py-3 text-sm text-bone transition-colors"
+          />
+        </label>
+        <label>
+          <span className="font-mono text-[10px] uppercase tracking-[0.18em] text-muted">Role</span>
+          <select
+            value={role}
+            aria-label="Role"
+            onChange={(e) => setRole(e.target.value as "member" | "admin")}
+            className="mt-1.5 w-full bg-obsidian border border-obsidian-line focus:border-gold outline-none px-4 py-3 text-sm text-bone transition-colors"
+          >
+            <option value="member">Member</option>
+            <option value="admin">Admin</option>
+          </select>
+        </label>
+        <button
+          type="submit"
+          disabled={addInvestor.isPending || !email.trim()}
+          className="flex items-center justify-center gap-2 bg-gold text-obsidian font-mono text-xs uppercase tracking-[0.2em] px-6 py-3 hover:bg-gold-bright transition-colors disabled:opacity-50"
+        >
+          {addInvestor.isPending ? <Loader2 size={14} className="animate-spin" /> : <UserPlus size={14} />} Add
+        </button>
+      </form>
+      {error && <p className="text-danger text-xs font-mono mb-4">{error}</p>}
+
+      <div className="overflow-x-auto">
+        <table className="w-full font-mono text-xs min-w-[520px]">
+          <thead>
+            <tr className="text-gold border-b border-obsidian-line">
+              {["Email", "Note", "Role", ""].map((h) => (
+                <th key={h} className="text-left font-medium px-4 py-3 uppercase tracking-[0.12em] text-[10px]">{h}</th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {allowlist.isLoading && (
+              <tr><td colSpan={4} className="px-4 py-8 text-center text-muted"><Loader2 className="animate-spin inline text-gold" size={16} /></td></tr>
+            )}
+            {allowlist.data?.map((a, i) => (
+              <tr key={a.id} className={i % 2 ? "bg-obsidian-raised/40" : ""}>
+                <td className="px-4 py-3 text-bone">{a.email}</td>
+                <td className="px-4 py-3 text-muted">{a.note || "—"}</td>
+                <td className="px-4 py-3 uppercase text-gold">{a.role}</td>
+                <td className="px-4 py-3 text-right">
+                  <button
+                    onClick={() => removeInvestor.mutate({ id: a.id })}
+                    disabled={removeInvestor.isPending}
+                    aria-label={`Remove ${a.email}`}
+                    className="text-muted hover:text-danger transition-colors disabled:opacity-50"
+                  >
+                    <Trash2 size={14} />
+                  </button>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
   );
 }
 

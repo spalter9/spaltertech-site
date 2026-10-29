@@ -89,4 +89,36 @@ export const masterTrust = {
   listActivity: authedAdmin.handler(() =>
     db.select().from(schema.documentViews).orderBy(desc(schema.documentViews.viewedAt)).limit(200),
   ),
+
+  // Admin-only: current allowlist (who can sign in to the Data Room).
+  listAllowlist: authedAdmin.handler(() =>
+    db.select().from(schema.allowlist).orderBy(desc(schema.allowlist.addedAt)),
+  ),
+
+  // Admin-only: invite a new investor by email.
+  addInvestor: authedAdmin
+    .input(z.object({ email: z.string().email(), note: z.string().optional(), role: z.enum(["admin", "member"]).default("member") }))
+    .handler(async ({ input }) => {
+      const email = input.email.trim().toLowerCase();
+      const [existing] = await db.select({ id: schema.allowlist.id }).from(schema.allowlist).where(eq(schema.allowlist.email, email));
+      if (existing) throw new ORPCError("CONFLICT", { message: "Already on the allowlist" });
+      const [row] = await db
+        .insert(schema.allowlist)
+        .values({ email, note: input.note?.trim() || null, role: input.role })
+        .returning();
+      return row;
+    }),
+
+  // Admin-only: revoke an investor's access.
+  removeInvestor: authedAdmin
+    .input(z.object({ id: z.number() }))
+    .handler(async ({ input, context }) => {
+      const [row] = await db.select().from(schema.allowlist).where(eq(schema.allowlist.id, input.id));
+      if (!row) throw new ORPCError("NOT_FOUND", { message: "Not on the allowlist" });
+      if (row.email === context.user.email.trim().toLowerCase()) {
+        throw new ORPCError("BAD_REQUEST", { message: "Can't remove your own access" });
+      }
+      await db.delete(schema.allowlist).where(eq(schema.allowlist.id, input.id));
+      return { removed: true };
+    }),
 };
