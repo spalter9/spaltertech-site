@@ -170,7 +170,7 @@ function BriefingModule() {
         </div>
         <div className="lg:order-1 card-surface p-2">
           <VideoPlayer
-            sources={[{ src: "/videos/mt-landing-16x9-v4.mp4", type: "video/mp4" }]}
+            sources={[{ src: "/api/data-room/video/mt-landing-16x9-v4.mp4", type: "video/mp4" }]}
             poster="/videos/mt-landing-poster.jpg"
             ratio="16 / 9"
           />
@@ -188,7 +188,7 @@ function BriefingModule() {
         </div>
         <div className="card-surface p-2">
           <VideoPlayer
-            sources={[{ src: "/videos/ssp-directive-16x9-v2.mp4", type: "video/mp4" }]}
+            sources={[{ src: "/api/data-room/video/ssp-directive-16x9-v2.mp4", type: "video/mp4" }]}
             poster="/videos/ssp-directive-poster.jpg"
             ratio="16 / 9"
           />
@@ -206,7 +206,7 @@ function BriefingModule() {
         </div>
         <div className="lg:order-1 card-surface p-2">
           <VideoPlayer
-            sources={[{ src: "/videos/who-is-spalty-16x9.mp4", type: "video/mp4" }]}
+            sources={[{ src: "/api/data-room/video/who-is-spalty-16x9.mp4", type: "video/mp4" }]}
             poster="/videos/who-is-spalty-poster.jpg"
             ratio="16 / 9"
           />
@@ -221,7 +221,7 @@ function BriefingModule() {
       </div>
       <div className="card-surface p-2 sm:p-3">
         <VideoPlayer
-          sources={[{ src: "/videos/mt-main-16x9.mp4", type: "video/mp4" }]}
+          sources={[{ src: "/api/data-room/video/mt-main-16x9.mp4", type: "video/mp4" }]}
           poster="/videos/mt-main-poster.jpg"
           ratio="16 / 9"
         />

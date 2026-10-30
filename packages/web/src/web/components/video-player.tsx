@@ -181,6 +181,9 @@ export function VideoPlayer({ sources, poster, className = "", ratio = "16 / 9" 
         preload="metadata"
         className="absolute inset-0 h-full w-full object-contain bg-black"
         onClick={togglePlay}
+        onContextMenu={(e) => e.preventDefault()}
+        controlsList="nodownload noremoteplayback"
+        disablePictureInPicture
       >
         {sources.map((s) => (
           <source key={s.src} src={s.src} type={s.type ?? "video/mp4"} />
