@@ -126,7 +126,7 @@ export default function Pillar() {
       {/* Header */}
       <div className="relative border-b border-obsidian-line overflow-hidden pt-20">
         <div className="absolute inset-0 bg-grid opacity-40" />
-        <div className="absolute inset-0" style={{ background: "radial-gradient(ellipse at 50% -10%, rgba(197,160,89,0.12), transparent 55%)" }} />
+        <div className="absolute inset-0" style={{ background: "radial-gradient(ellipse at 50% -10%, rgba(109,139,255,0.12), transparent 55%)" }} />
         <div className="relative mx-auto max-w-[1100px] px-6 py-16 md:py-24">
           <div className="flex items-center gap-3 font-mono text-[11px] uppercase tracking-[0.18em] text-muted mb-8">
             <Link to="/" className="hover:text-bone transition-colors">Home</Link>

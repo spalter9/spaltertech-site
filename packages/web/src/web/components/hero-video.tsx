@@ -64,8 +64,8 @@ export function HeroVideo({ src, poster, rounded = false }: { src: string; poste
       ref={wrapRef}
       className={`group relative w-full overflow-hidden bg-black ${
         rounded
-          ? "rounded-3xl border border-gold/30 shadow-[0_0_100px_-30px_rgba(197,160,89,0.45)]"
-          : "border border-obsidian-line shadow-[0_0_80px_-30px_rgba(197,160,89,0.5)]"
+          ? "rounded-3xl border border-gold/30 shadow-[0_0_100px_-30px_rgba(109,139,255,0.45)]"
+          : "border border-obsidian-line shadow-[0_0_80px_-30px_rgba(109,139,255,0.5)]"
       }`}
       style={{ aspectRatio: "16 / 9" }}
     >

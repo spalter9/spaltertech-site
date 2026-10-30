@@ -114,7 +114,7 @@ export default function Investors() {
         <div
           className="absolute inset-0"
           aria-hidden="true"
-          style={{ background: "radial-gradient(ellipse at 50% -10%, rgba(197,160,89,0.14), transparent 55%)" }}
+          style={{ background: "radial-gradient(ellipse at 50% -10%, rgba(109,139,255,0.14), transparent 55%)" }}
         />
         <div className="relative mx-auto max-w-[1100px] px-6 py-16 md:py-24">
           <span className="inline-block rounded-full border border-gold/25 bg-gold/10 px-4 py-1.5 font-mono text-[0.7rem] font-semibold uppercase tracking-[0.22em] text-gold">
@@ -134,7 +134,7 @@ export default function Investors() {
             <Link
               to="/sovereign-protocol"
               className="group flex items-center gap-2 rounded-xl bg-gradient-to-r from-gold to-gold-bright px-7 py-3.5 font-mono text-xs font-bold uppercase tracking-[0.18em] text-obsidian transition-opacity hover:opacity-90"
-              style={{ boxShadow: "0 0 44px -14px rgba(197,160,89,0.6)" }}
+              style={{ boxShadow: "0 0 44px -14px rgba(109,139,255,0.6)" }}
             >
               <ScanLine size={13} /> Watch the Examiner
             </Link>
@@ -375,7 +375,7 @@ export default function Investors() {
         <div
           className="absolute inset-0"
           aria-hidden="true"
-          style={{ background: "radial-gradient(ellipse at 50% 120%, rgba(197,160,89,0.12), transparent 55%)" }}
+          style={{ background: "radial-gradient(ellipse at 50% 120%, rgba(109,139,255,0.12), transparent 55%)" }}
         />
         <div className="relative mx-auto flex max-w-[1100px] flex-col items-center px-6 text-center">
           <Crest size={52} />

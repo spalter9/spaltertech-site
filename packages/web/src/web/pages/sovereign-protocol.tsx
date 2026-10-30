@@ -798,7 +798,7 @@ export default function SovereignProtocol() {
           aria-hidden
           style={{
             background:
-              "radial-gradient(ellipse at 50% -10%, rgba(197,160,89,0.12), transparent 55%)",
+              "radial-gradient(ellipse at 50% -10%, rgba(109,139,255,0.12), transparent 55%)",
           }}
         />
 

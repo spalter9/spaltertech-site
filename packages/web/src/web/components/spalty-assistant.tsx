@@ -355,7 +355,7 @@ export function SpaltyAssistant() {
         aria-label={open ? "Close Spalty" : "Open Spalty, the voice guide"}
         aria-expanded={open}
         className="ml-auto grid h-14 w-14 place-items-center rounded-full border border-gold/50 bg-obsidian-raised text-gold transition-transform hover:-translate-y-0.5 hover:bg-gold hover:text-obsidian"
-        style={{ boxShadow: "0 0 40px -14px rgba(197,160,89,0.7)" }}
+        style={{ boxShadow: "0 0 40px -14px rgba(109,139,255,0.7)" }}
       >
         {open ? <X size={20} /> : <AudioWaveform size={20} />}
       </button>

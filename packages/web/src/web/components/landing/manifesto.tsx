@@ -17,59 +17,55 @@ const TENETS = [
 
 export function Manifesto() {
   return (
-    <section
-      id="manifesto"
-      className="relative py-28 border-t border-obsidian-line bg-obsidian-raised/40 overflow-hidden"
-    >
-      <div
-        className="absolute inset-0"
-        style={{ background: "radial-gradient(ellipse at 80% 0%, rgba(197,160,89,0.08), transparent 50%)" }}
-      />
-      <div className="relative mx-auto max-w-[1200px] px-6 grid lg:grid-cols-[minmax(0,1.05fr)_minmax(0,1fr)] gap-16 lg:gap-20 items-start">
-        {/* Vision statement */}
-        <div>
-          <p className="eyebrow">The Manifesto</p>
-          <motion.h2
-            initial={{ opacity: 0, y: 24 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true, margin: "-80px" }}
-            transition={{ duration: 0.7 }}
-            className="font-display text-4xl md:text-5xl lg:text-[3.4rem] mt-3 leading-[1.04]"
-          >
-            The old regime of creative ownership was built for paper.{" "}
-            <span className="gold-text">We are building for the machine age.</span>
-          </motion.h2>
-          <div className="mt-8 space-y-5 text-muted leading-relaxed max-w-xl">
-            <p>
-              For a century, the value of a creative work has been trapped behind opaque ledgers,
-              slow intermediaries, and disputes over who did what. In an era where a single model
-              can ingest a lifetime of work in seconds, that architecture is not just outdated — it
-              is a liability.
-            </p>
-            <p>
-              Spalter Tech treats media as programmable capital. We fuse forensic audio science,
-              cryptographic proof, and on-chain settlement into one sovereign standard: a system
-              where ownership is provable, provenance is permanent, and every contribution is seen
-              and paid. This is the infrastructure the next generation of creators, catalogs, and
-              institutions will be built on.
-            </p>
-          </div>
+    <section id="manifesto" className="relative overflow-hidden py-28 md:py-36">
+      <div className="aurora-blob -right-40 top-10 h-[30rem] w-[30rem] bg-[#3a4fd6]/40" aria-hidden />
+      <div className="relative mx-auto max-w-6xl px-6">
+        <p className="eyebrow">The Manifesto</p>
+        <motion.h2
+          initial={{ opacity: 0, y: 28 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true, margin: "-80px" }}
+          transition={{ duration: 0.8 }}
+          className="mt-5 max-w-5xl font-sora text-3xl font-semibold leading-[1.08] tracking-tight sm:text-5xl lg:text-6xl"
+        >
+          <span className="text-bone/45">The old regime of creative ownership was built for paper.</span>{" "}
+          <span className="gold-text">We are building for the machine age.</span>
+        </motion.h2>
+
+        <div className="mt-12 grid gap-8 text-muted leading-relaxed md:grid-cols-2 md:gap-14">
+          <p>
+            For a century, the value of a creative work has been trapped behind opaque ledgers,
+            slow intermediaries, and disputes over who did what. In an era where a single model
+            can ingest a lifetime of work in seconds, that architecture is not just outdated — it
+            is a liability.
+          </p>
+          <p>
+            Spalter Tech treats media as programmable capital. We fuse forensic audio science,
+            cryptographic proof, and on-chain settlement into one sovereign standard: a system
+            where ownership is provable, provenance is permanent, and every contribution is seen
+            and paid. This is the infrastructure the next generation of creators, catalogs, and
+            institutions will be built on.
+          </p>
         </div>
 
-        {/* Tenets */}
-        <div className="lg:pt-14 space-y-px bg-obsidian-line">
+        <div className="mt-16 grid gap-5 md:grid-cols-3">
           {TENETS.map((t, i) => (
             <motion.div
               key={t.k}
-              initial={{ opacity: 0, x: 20 }}
-              whileInView={{ opacity: 1, x: 0 }}
+              initial={{ opacity: 0, y: 30 }}
+              whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true, margin: "-60px" }}
-              transition={{ duration: 0.55, delay: i * 0.1 }}
-              className="bg-obsidian p-7 border-l-2 border-gold/70"
+              transition={{ duration: 0.6, delay: i * 0.12 }}
+              className="card-surface group relative overflow-hidden rounded-3xl p-8 hover:-translate-y-1.5"
             >
-              <div className="font-mono text-gold text-xs">{`0${i + 1}`}</div>
-              <h3 className="font-display text-2xl mt-2">{t.k}</h3>
-              <p className="text-muted text-sm mt-2 leading-relaxed">{t.d}</p>
+              <span className="text-outline pointer-events-none absolute -right-2 -top-6 font-sora text-[9rem] font-bold leading-none transition-all duration-500 group-hover:text-gold/20">
+                {i + 1}
+              </span>
+              <div className="relative">
+                <div className="mb-10 h-1 w-12 rounded-full bg-gradient-to-r from-gold-bright to-gold" />
+                <h3 className="font-sora text-xl font-semibold leading-snug">{t.k}</h3>
+                <p className="mt-3 text-sm leading-relaxed text-muted">{t.d}</p>
+              </div>
             </motion.div>
           ))}
         </div>

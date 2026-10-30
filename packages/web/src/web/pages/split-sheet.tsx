@@ -96,7 +96,7 @@ export default function SplitSheet() {
           aria-hidden
           style={{
             background:
-              "radial-gradient(ellipse at 25% -10%, rgba(197,160,89,0.10), transparent 55%)",
+              "radial-gradient(ellipse at 25% -10%, rgba(109,139,255,0.10), transparent 55%)",
           }}
         />
 

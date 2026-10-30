@@ -795,7 +795,7 @@ function AccessPending({ email }: { email: string }) {
       <div className="absolute inset-0 bg-grid opacity-40" />
       <div
         className="absolute inset-0"
-        style={{ background: "radial-gradient(ellipse at 50% 30%, rgba(197,160,89,0.10), transparent 55%)" }}
+        style={{ background: "radial-gradient(ellipse at 50% 30%, rgba(109,139,255,0.10), transparent 55%)" }}
       />
       <motion.div
         initial={{ opacity: 0, y: 20 }}

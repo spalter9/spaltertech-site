@@ -102,7 +102,7 @@ function Doctrine() {
       <div
         className="absolute inset-0"
         aria-hidden="true"
-        style={{ background: "radial-gradient(ellipse at 85% 0%, rgba(197,160,89,0.10), transparent 55%)" }}
+        style={{ background: "radial-gradient(ellipse at 85% 0%, rgba(109,139,255,0.10), transparent 55%)" }}
       />
       <div className="relative flex flex-col gap-6 md:flex-row md:items-start md:gap-10">
         <div className="grid h-14 w-14 shrink-0 place-items-center rounded-xl border border-gold/40 bg-gold/[0.06] text-gold">

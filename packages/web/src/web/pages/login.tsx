@@ -40,7 +40,7 @@ export default function Login() {
   return (
     <div className="min-h-screen bg-obsidian text-bone grid place-items-center relative overflow-hidden px-6">
       <div className="absolute inset-0 bg-grid opacity-40" />
-      <div className="absolute inset-0" style={{ background: "radial-gradient(ellipse at 50% 30%, rgba(197,160,89,0.12), transparent 55%)" }} />
+      <div className="absolute inset-0" style={{ background: "radial-gradient(ellipse at 50% 30%, rgba(109,139,255,0.12), transparent 55%)" }} />
 
       <Link to="/" className="absolute top-6 left-6 flex items-center gap-2 font-mono text-[11px] uppercase tracking-[0.18em] text-muted hover:text-bone transition-colors">
         <ArrowLeft size={14} /> Home
@@ -118,7 +118,7 @@ function Field({ label, value, onChange, type, placeholder, required }: {
         required={required}
         placeholder={placeholder}
         onChange={(e) => onChange(e.target.value)}
-        className="mt-1.5 w-full rounded-xl bg-obsidian border border-obsidian-line focus:border-gold focus:shadow-[0_0_0_3px_rgba(197,160,89,0.12)] outline-none px-4 py-3 text-sm text-bone font-body transition-colors"
+        className="mt-1.5 w-full rounded-xl bg-obsidian border border-obsidian-line focus:border-gold focus:shadow-[0_0_0_3px_rgba(109,139,255,0.12)] outline-none px-4 py-3 text-sm text-bone font-body transition-colors"
       />
     </label>
   );

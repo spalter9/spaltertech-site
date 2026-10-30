@@ -69,7 +69,7 @@ export default function SurrealStudio() {
           aria-hidden
           style={{
             background:
-              "radial-gradient(ellipse at 50% -10%, rgba(197,160,89,0.12), transparent 55%)",
+              "radial-gradient(ellipse at 50% -10%, rgba(109,139,255,0.12), transparent 55%)",
           }}
         />
 
@@ -200,7 +200,7 @@ export default function SurrealStudio() {
                           value={p.id}
                           checked={profileId === p.id}
                           onChange={() => setProfileId(p.id as DspProfileId)}
-                          className="mt-1 accent-[#c5a059]"
+                          className="mt-1 accent-[#6d8bff]"
                         />
                         <div>
                           <p className="font-display text-lg text-bone">{p.label}</p>

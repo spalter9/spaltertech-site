@@ -100,13 +100,13 @@ export function Standards() {
       <div
         className="absolute inset-0"
         aria-hidden="true"
-        style={{ background: "radial-gradient(ellipse at 20% 0%, rgba(197,160,89,0.07), transparent 55%)" }}
+        style={{ background: "radial-gradient(ellipse at 20% 0%, rgba(109,139,255,0.07), transparent 55%)" }}
       />
 
       <div className="relative mx-auto max-w-[1200px] px-6">
         <div className="max-w-2xl">
           <p className="eyebrow">Interoperability</p>
-          <h2 className="mt-3 font-display text-4xl leading-[1.05] md:text-5xl">
+          <h2 className="mt-3 font-sora font-semibold tracking-tight text-4xl leading-[1.05] md:text-5xl">
             Sovereign, <span className="gold-text">not a walled garden.</span>
           </h2>
           <p className="mt-4 leading-relaxed text-muted">
@@ -134,7 +134,7 @@ export function Standards() {
                   {s.code}
                 </span>
               </div>
-              <h3 className="mt-6 font-display text-2xl leading-tight text-bone">{s.name}</h3>
+              <h3 className="mt-6 font-sora font-semibold tracking-tight text-2xl leading-tight text-bone">{s.name}</h3>
               <p className="mt-2 text-sm leading-relaxed text-muted">{s.body}</p>
             </motion.div>
           ))}

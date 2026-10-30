@@ -52,17 +52,53 @@ const PILLARS: Pillar[] = [
   },
 ];
 
+/** Decorative SVG art per pillar — rings, waveform, linked nodes. */
+function PillarArt({ i }: { i: number }) {
+  return (
+    <svg
+      viewBox="0 0 200 200"
+      className={`pointer-events-none absolute opacity-50 transition-opacity duration-500 group-hover:opacity-90 ${i === 0 ? "-bottom-10 -right-6 h-80 w-80" : "-right-8 -top-8 h-56 w-56"}`}
+      aria-hidden
+    >
+      {i === 0 && (
+        <g fill="none" stroke="#8fe9ff" strokeWidth="1">
+          {[30, 52, 74, 96].map((r, k) => (
+            <circle key={r} cx="130" cy="70" r={r} strokeOpacity={0.55 - k * 0.1} strokeDasharray={k % 2 ? "3 6" : undefined} />
+          ))}
+          <path d="M130 40 l22 10 v22 c0 14 -10 24 -22 30 c-12 -6 -22 -16 -22 -30 v-22 z" stroke="#6d8bff" strokeOpacity="0.9" />
+        </g>
+      )}
+      {i === 1 && (
+        <g fill="#8fe9ff">
+          {Array.from({ length: 16 }).map((_, k) => {
+            const h = 14 + Math.abs(Math.sin(k * 0.9)) * 52;
+            return <rect key={k} x={20 + k * 10} y={70 - h / 2} width="4" height={h} rx="2" opacity={0.25 + (k % 5) * 0.14} />;
+          })}
+        </g>
+      )}
+      {i === 2 && (
+        <g stroke="#8fe9ff" strokeOpacity="0.5" fill="none">
+          <path d="M40 120 L100 60 L160 100 L130 30 M100 60 L110 140 L40 120" />
+          {[[40, 120], [100, 60], [160, 100], [130, 30], [110, 140]].map(([x, y]) => (
+            <circle key={`${x}${y}`} cx={x} cy={y} r="5" fill="#6d8bff" stroke="#8fe9ff" strokeOpacity="0.9" />
+          ))}
+        </g>
+      )}
+    </svg>
+  );
+}
+
 export function Pillars() {
   const { data: liveCopy } = usePillarCopy();
   const liveBySlug = new Map(liveCopy?.pillars.map((p) => [p.slug, p]) ?? []);
 
   return (
-    <section id="pillars" className="relative py-28 border-t border-obsidian-line">
-      <div className="absolute inset-0 bg-grid opacity-30" />
-      <div className="relative mx-auto max-w-[1200px] px-6">
+    <section id="pillars" className="relative overflow-hidden py-28 md:py-36">
+      <div className="aurora-blob -left-40 top-40 h-[30rem] w-[30rem] bg-[#8f5bff]/25" aria-hidden />
+      <div className="relative mx-auto max-w-6xl px-6">
         <div className="max-w-2xl">
           <p className="eyebrow">The Core Ecosystem</p>
-          <h2 className="font-display text-4xl md:text-5xl mt-3 leading-[1.05]">
+          <h2 className="font-sora text-3xl font-semibold tracking-tight sm:text-5xl mt-4 leading-[1.05]">
             Three pillars. <span className="gold-text">One sovereign standard.</span>
           </h2>
           <p className="text-muted mt-4 leading-relaxed">
@@ -71,7 +107,7 @@ export function Pillars() {
           </p>
         </div>
 
-        <div className="grid md:grid-cols-3 gap-6 mt-14">
+        <div className="mt-14 grid gap-5 md:grid-cols-6">
           {PILLARS.map((p, i) => {
             const live = liveBySlug.get(p.slug);
             const tag = live?.tag ?? p.tag;
@@ -79,6 +115,7 @@ export function Pillars() {
             return (
               <motion.div
                 key={p.slug}
+                className={i === 0 ? "md:col-span-4" : "md:col-span-2"}
                 initial={{ opacity: 0, y: 30 }}
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true, margin: "-80px" }}
@@ -86,18 +123,19 @@ export function Pillars() {
               >
                 <Link
                   to={`/pillar/${p.slug}`}
-                  className="group card-surface p-8 flex flex-col h-full hover:-translate-y-1"
+                  className="group card-surface relative flex h-full flex-col overflow-hidden rounded-3xl p-8 hover:-translate-y-1"
                 >
-                  <div className="flex items-center justify-between">
-                    <div className="w-12 h-12 grid place-items-center border border-gold/40 text-gold transition-colors group-hover:bg-gold group-hover:text-obsidian">
+                  <PillarArt i={i} />
+                  <div className="relative flex items-center justify-between">
+                    <div className="grid h-12 w-12 place-items-center rounded-2xl border border-gold/40 bg-gold/10 text-gold-bright transition-colors group-hover:bg-gold group-hover:text-obsidian">
                       <p.icon size={22} />
                     </div>
                     <span className="font-mono text-3xl text-obsidian-line group-hover:text-gold/30 transition-colors">
                       {p.index}
                     </span>
                   </div>
-                  <p className="eyebrow mt-6">{tag}</p>
-                  <h3 className="font-display text-2xl mt-2 leading-tight">{p.name}</h3>
+                  <p className="eyebrow relative mt-6">{tag}</p>
+                  <h3 className="font-sora text-2xl font-semibold mt-2 leading-tight">{p.name}</h3>
                   <p className="text-muted text-sm leading-relaxed mt-4 flex-1">{body}</p>
                   <ul className="mt-6 space-y-2">
                     {p.points.map((pt) => (
@@ -119,23 +157,21 @@ export function Pillars() {
               </motion.div>
             );
           })}
-        </div>
-
         {/* Compliance & Settlement infrastructure band */}
         <motion.div
           initial={{ opacity: 0, y: 24 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true, margin: "-80px" }}
           transition={{ duration: 0.6 }}
-          className="mt-6"
+          className="md:col-span-4"
         >
           <Link
             to="/infrastructure"
-            className="group card-surface p-8 md:p-10 flex flex-col lg:flex-row lg:items-center gap-8 hover:-translate-y-0.5"
+            className="group card-surface flex h-full flex-col gap-8 rounded-3xl p-8 hover:-translate-y-0.5 md:p-10 lg:flex-row lg:items-center"
           >
             <div className="flex-1">
               <p className="eyebrow">The Infrastructure Layer</p>
-              <h3 className="font-display text-2xl md:text-3xl mt-2 leading-tight">
+              <h3 className="font-sora text-2xl font-semibold md:text-3xl mt-2 leading-tight">
                 Compliance &amp; <span className="gold-text">frictionless fiat settlement.</span>
               </h3>
               <p className="text-muted text-sm leading-relaxed mt-3 max-w-2xl">
@@ -160,6 +196,7 @@ export function Pillars() {
             </div>
           </Link>
         </motion.div>
+        </div>
       </div>
     </section>
   );

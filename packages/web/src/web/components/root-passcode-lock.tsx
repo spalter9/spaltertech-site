@@ -129,7 +129,7 @@ export function RootPasscodeLock({ children }: { children: ReactNode }) {
           aria-hidden="true"
           style={{
             background:
-              "radial-gradient(ellipse at 50% -10%, rgba(197,160,89,0.18), transparent 55%)",
+              "radial-gradient(ellipse at 50% -10%, rgba(109,139,255,0.18), transparent 55%)",
           }}
         />
 
@@ -155,7 +155,7 @@ export function RootPasscodeLock({ children }: { children: ReactNode }) {
               className="relative w-full max-w-md space-y-7 rounded-2xl border border-obsidian-line bg-obsidian-raised p-8 text-center md:p-10"
               style={{
                 boxShadow:
-                  "0 0 80px -32px rgba(197,160,89,0.55), 0 24px 60px -30px rgba(0,0,0,0.9)",
+                  "0 0 80px -32px rgba(109,139,255,0.55), 0 24px 60px -30px rgba(0,0,0,0.9)",
               }}
             >
               <div className="space-y-4">
@@ -163,7 +163,7 @@ export function RootPasscodeLock({ children }: { children: ReactNode }) {
                   <div
                     className="absolute inset-0 blur-2xl"
                     aria-hidden="true"
-                    style={{ background: "radial-gradient(circle, rgba(197,160,89,0.3), transparent 65%)" }}
+                    style={{ background: "radial-gradient(circle, rgba(109,139,255,0.3), transparent 65%)" }}
                   />
                   <img
                     src="/images/mastertrust-emblem.png"
@@ -185,7 +185,7 @@ export function RootPasscodeLock({ children }: { children: ReactNode }) {
                 aria-hidden="true"
                 style={{
                   background:
-                    "linear-gradient(to right, transparent, rgba(197,160,89,0.45), transparent)",
+                    "linear-gradient(to right, transparent, rgba(109,139,255,0.45), transparent)",
                 }}
               />
 
@@ -216,7 +216,7 @@ export function RootPasscodeLock({ children }: { children: ReactNode }) {
                   style={
                     error
                       ? undefined
-                      : { boxShadow: "inset 0 0 24px -14px rgba(197,160,89,0.5)" }
+                      : { boxShadow: "inset 0 0 24px -14px rgba(109,139,255,0.5)" }
                   }
                 />
 
