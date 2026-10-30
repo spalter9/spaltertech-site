@@ -18,14 +18,15 @@
   --font-mono: "IBM Plex Mono", monospace;
   --font-body: "Manrope", sans-serif;
 
-  --shadow-gold-sm: 0 0 24px -10px rgba(197, 160, 89, 0.55);
-  --shadow-gold-md: 0 0 44px -14px rgba(197, 160, 89, 0.65);
+  --shadow-gold-sm: 0 0 24px -10px rgba(var(--gold-rgb), 0.55);
+  --shadow-gold-md: 0 0 44px -14px rgba(var(--gold-rgb), 0.65);
   --shadow-lift: 0 18px 50px -24px rgba(0, 0, 0, 0.95);
   --ease-out-expo: cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 :root {
   --radius: 0.5rem;
+  --gold-rgb: 197, 160, 89;
 }
 
 @layer base {
@@ -45,7 +46,7 @@
     overflow-x: hidden;
     /* Ambient depth: faint gold bloom top-left, cool shadow bottom-right */
     background-image:
-      radial-gradient(60rem 40rem at 8% -6%, rgba(197, 160, 89, 0.07), transparent 60%),
+      radial-gradient(60rem 40rem at 8% -6%, rgba(var(--gold-rgb), 0.07), transparent 60%),
       radial-gradient(50rem 36rem at 100% 100%, rgba(138, 109, 52, 0.06), transparent 60%);
     background-attachment: fixed;
   }
@@ -162,12 +163,12 @@
   .btn-ghost {
     padding: 1rem 2rem;
     color: var(--color-gold);
-    background: rgba(197, 160, 89, 0.04);
+    background: rgba(var(--gold-rgb), 0.04);
     border: 1px solid color-mix(in srgb, var(--color-gold) 38%, transparent);
   }
   .btn-ghost:hover {
     transform: translateY(-2px);
-    background: rgba(197, 160, 89, 0.12);
+    background: rgba(var(--gold-rgb), 0.12);
     border-color: var(--color-gold);
     box-shadow: var(--shadow-gold-sm);
   }
@@ -200,7 +201,7 @@
   .nav-link.is-active { color: var(--color-gold); }
   .section-rule {
     height: 1px;
-    background: linear-gradient(to right, transparent, rgba(197, 160, 89, 0.4), transparent);
+    background: linear-gradient(to right, transparent, rgba(var(--gold-rgb), 0.4), transparent);
   }
 }
 
@@ -227,8 +228,8 @@
 }
 .bg-grid {
   background-image:
-    linear-gradient(to right, rgba(197, 160, 89, 0.05) 1px, transparent 1px),
-    linear-gradient(to bottom, rgba(197, 160, 89, 0.05) 1px, transparent 1px);
+    linear-gradient(to right, rgba(var(--gold-rgb), 0.05) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(var(--gold-rgb), 0.05) 1px, transparent 1px);
   background-size: 64px 64px;
   -webkit-mask-image: radial-gradient(ellipse at 50% 30%, #000 25%, transparent 78%);
   mask-image: radial-gradient(ellipse at 50% 30%, #000 25%, transparent 78%);
@@ -240,7 +241,7 @@
   border-radius: 9999px;
   background: radial-gradient(circle at 50% 35%, #141414, #050505);
   border: 1.5px solid var(--color-gold);
-  box-shadow: inset 0 0 12px rgba(0, 0, 0, 0.8), 0 0 0 3px rgba(197, 160, 89, 0.12);
+  box-shadow: inset 0 0 12px rgba(0, 0, 0, 0.8), 0 0 0 3px rgba(var(--gold-rgb), 0.12);
   display: grid;
   place-items: center;
 }
@@ -270,4 +271,60 @@
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
   }
+}
+
+/* ------------------------------------------------------------------
+   Engine theme — "Aurora". Re-points the shared gold tokens at an
+   indigo→cyan palette so every existing utility (text-gold, bg-gold/10,
+   btn-gold, card-surface…) recolours inside .theme-engine only.
+   ------------------------------------------------------------------ */
+.theme-engine {
+  --color-obsidian: #060a14;
+  --color-obsidian-raised: #0c1322;
+  --color-obsidian-line: #1a2540;
+  --color-gold: #6d8bff;
+  --color-gold-bright: #8fe9ff;
+  --color-gold-deep: #3a4fd6;
+  --color-bone: #eef2fb;
+  --color-muted: #8893ab;
+  --color-verified: #34d399;
+  --color-danger: #f0616d;
+  --gold-rgb: 109, 139, 255;
+  --shadow-lift: 0 22px 60px -28px rgba(2, 6, 20, 0.95);
+}
+.theme-engine ::selection { background: var(--color-gold); color: #fff; }
+.theme-engine .gold-text {
+  background-image: linear-gradient(100deg, #8fe9ff 0%, #6d8bff 40%, #b18cff 75%, #8fe9ff 100%);
+  background-size: 220% 100%;
+}
+.theme-engine .btn-gold {
+  color: #04101f;
+  background: linear-gradient(135deg, #8fe9ff, #6d8bff 60%, #8f7bff);
+}
+.theme-engine .card-surface {
+  background:
+    linear-gradient(180deg, rgba(143, 233, 255, 0.045), transparent 42%),
+    rgba(12, 19, 34, 0.78);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+}
+.theme-engine .glass { background: rgba(8, 13, 26, 0.72); }
+.theme-engine .bg-grid {
+  background-image:
+    linear-gradient(to right, rgba(109, 139, 255, 0.07) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(109, 139, 255, 0.07) 1px, transparent 1px);
+}
+.theme-engine input[type="range"] { accent-color: var(--color-gold); }
+
+@keyframes aurora-drift {
+  0%, 100% { transform: translate3d(0, 0, 0) scale(1); }
+  50% { transform: translate3d(4%, 6%, 0) scale(1.12); }
+}
+.aurora-blob {
+  position: absolute;
+  border-radius: 9999px;
+  filter: blur(90px);
+  opacity: 0.5;
+  animation: aurora-drift 18s ease-in-out infinite;
+  pointer-events: none;
 }

@@ -77,7 +77,7 @@ export function MultitaskModule() {
 
   return (
     <div className="space-y-6">
-      <div className="card-surface rounded-2xl border-gold/30 p-5 sm:p-6 shadow-[0_0_40px_-18px_rgba(197,160,89,0.45)]">
+      <div className="card-surface rounded-2xl border-gold/30 p-5 sm:p-6 shadow-[0_0_40px_-18px_rgba(var(--gold-rgb),0.45)]">
         <div className="mb-4 flex flex-wrap items-start justify-between gap-3">
           <div>
             <p className="eyebrow">Multitask · Concurrent Rails</p>

@@ -20,18 +20,21 @@ export default function Engine() {
   const [activeModule, setActiveModule] = useState<EngineModuleId>("investor");
 
   return (
-    <div className="min-h-screen bg-obsidian text-bone">
+    <div className="theme-engine min-h-screen bg-obsidian text-bone">
       <Nav />
 
       <div className="relative overflow-hidden pt-20">
         <div className="absolute inset-0 bg-grid opacity-40" aria-hidden />
+        <div className="aurora-blob -left-32 -top-24 h-[28rem] w-[28rem] bg-[#3a4fd6]/60" aria-hidden />
         <div
-          className="absolute inset-0"
+          className="aurora-blob -right-24 top-40 h-[26rem] w-[26rem] bg-[#8fe9ff]/25"
+          style={{ animationDelay: "-6s" }}
           aria-hidden
-          style={{
-            background:
-              "radial-gradient(ellipse at 50% -10%, rgba(197,160,89,0.12), transparent 55%)",
-          }}
+        />
+        <div
+          className="aurora-blob left-1/3 top-[34rem] h-[24rem] w-[24rem] bg-[#8f5bff]/25"
+          style={{ animationDelay: "-11s" }}
+          aria-hidden
         />
 
         <div className="relative mx-auto flex w-full max-w-7xl flex-col gap-6 px-4 py-8 sm:px-6 lg:px-8">

@@ -17,7 +17,7 @@ const ACCENT = {
 function MetricCard({ metric }: { metric: LiveMetric }) {
   const Icon = ICONS[metric.id as keyof typeof ICONS] ?? Activity;
   return (
-    <div className="card-surface rounded-xl px-4 py-3.5">
+    <div className="card-surface rounded-2xl px-5 py-4 hover:-translate-y-0.5">
       <div className="mb-2 flex items-center gap-2">
         <span
           className={`inline-flex h-7 w-7 items-center justify-center rounded-lg border ${ACCENT[metric.accent]}`}
@@ -28,7 +28,7 @@ function MetricCard({ metric }: { metric: LiveMetric }) {
           {metric.label}
         </p>
       </div>
-      <p className="font-display text-xl sm:text-2xl tracking-tight text-bone">{metric.value}</p>
+      <p className="font-sora text-xl font-semibold tabular-nums tracking-tight text-bone sm:text-2xl">{metric.value}</p>
       {metric.hint && <p className="mt-1 text-xs text-gold/90">{metric.hint}</p>}
     </div>
   );

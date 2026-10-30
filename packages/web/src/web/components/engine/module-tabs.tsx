@@ -50,12 +50,12 @@ export function ModuleTabs({ active, onChange }: ModuleTabsProps) {
             id={`tab-${tab.id}`}
             onClick={() => onChange(tab.id)}
             className={[
-              "inline-flex shrink-0 items-center gap-2 rounded-xl border px-3.5 py-2.5 text-sm font-medium transition-all duration-200",
+              "inline-flex shrink-0 items-center gap-2 rounded-full border px-4 py-2.5 text-sm font-medium transition-all duration-200",
               "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gold/50",
               selected
                 ? tab.id === "multitask"
-                  ? "border-gold bg-gradient-to-r from-gold/20 to-gold/5 text-gold"
-                  : "border-gold/45 bg-gold/10 text-gold"
+                  ? "border-gold bg-gradient-to-r from-gold/25 to-gold-bright/10 text-gold-bright shadow-[0_0_30px_-10px_rgba(var(--gold-rgb),0.8)]"
+                  : "border-gold/50 bg-gold/15 text-gold-bright shadow-[0_0_26px_-12px_rgba(var(--gold-rgb),0.8)]"
                 : "border-obsidian-line bg-obsidian-raised/50 text-muted hover:border-gold/30 hover:text-bone",
             ].join(" ")}
           >
