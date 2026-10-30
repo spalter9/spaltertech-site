@@ -1,0 +1,8 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "framework": null,
+  "installCommand": "cd ../.. && ELECTRON_SKIP_BINARY_DOWNLOAD=1 bun install",
+  "buildCommand": "ELECTRON_SKIP_BINARY_DOWNLOAD=1 bun run build",
+  "outputDirectory": "dist",
+  "rewrites": [{ "source": "/(.*)", "destination": "/index.html" }]
+}
