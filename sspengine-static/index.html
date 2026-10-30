@@ -2256,6 +2256,46 @@
         background: rgba(255, 182, 56, .06)
     }
 
+
+    /* ============ VIEW-ONLY DOCUMENT READER ============ */
+    #docViewer {
+        display: none;
+        position: fixed;
+        inset: 0;
+        z-index: 100000;
+        flex-direction: column;
+        background: #07080c;
+        -webkit-user-select: none;
+        user-select: none;
+        -webkit-touch-callout: none
+    }
+    #docViewer.open { display: flex }
+    #docViewer .dvBar {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 12px 16px;
+        border-bottom: 1px solid rgba(255, 182, 56, .3);
+        background: #0c0d12
+    }
+    #docViewer .dvTitle { flex: 1; min-width: 0; font-size: 12px; letter-spacing: .08em; color: var(--bone); white-space: nowrap; overflow: hidden; text-overflow: ellipsis }
+    #docViewer .dvTag { font-size: 9px; letter-spacing: .18em; color: var(--amber); border: 1px solid rgba(255, 182, 56, .4); border-radius: 999px; padding: 5px 10px; white-space: nowrap }
+    #docViewer #dvClose { border: 1px solid var(--dim); color: var(--bone); border-radius: 8px; padding: 9px 14px; font-size: 10px; letter-spacing: .16em; background: #101114 }
+    #docViewer .dvScroll { position: relative; flex: 1; overflow: auto; padding: 22px 12px 60px }
+    #docViewer #dvPaper { position: relative; max-width: 820px; margin: 0 auto; background: #f6f4ee; color: #1a1a1a; border-radius: 10px; padding: 10px 6px; box-shadow: 0 20px 60px rgba(0, 0, 0, .6) }
+    #docViewer .dvMark {
+        position: absolute;
+        inset: 0;
+        pointer-events: none;
+        z-index: 3;
+        opacity: .5;
+        background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='340' height='220'><text x='20' y='120' transform='rotate(-24 170 110)' font-family='Arial' font-size='15' font-weight='700' letter-spacing='2' fill='rgba(150,100,10,0.2)'>CONFIDENTIAL · SSP DATA ROOM · VIEW ONLY</text></svg>")
+    }
+    @media print {
+        body > * { display: none !important }
+        body::before { content: "Printing is disabled for confidential Data Room materials."; display: block !important; padding: 40px; font: 16px Arial }
+    }
+
     #landing .badge {
         display: inline-flex;
         align-items: center;
@@ -3593,7 +3633,7 @@
                 <button id="invExit">◀ BACK TO PROTOCOL</button>
             </span>
         </div>
-        <div class="sub" style="margin-bottom:24px">Documentation suite for institutional due diligence.</div>
+        <div class="sub" style="margin-bottom:24px">Documentation suite for institutional due diligence. Documents are confidential and view-only — they cannot be downloaded, copied or printed.</div>
         <div style="text-align:center;border:1px solid rgba(255,182,56,.28);border-radius:14px;padding:18px 20px;margin-bottom:24px;background:rgba(255,182,56,.05)">
             <div style="font-family:var(--disp);font-weight:700;font-size:clamp(24px,4vw,34px);color:var(--amber)">$45M–$60M</div>
             <div style="font-size:11px;letter-spacing:.16em;color:var(--dim);margin-top:4px">PROJECTED ANNUAL RECURRING REVENUE BY YEAR 3 · DEPLOYED &amp; VERIFIED ON-CHAIN</div>
@@ -3601,44 +3641,44 @@
         <div class="docCard">
             <div class="t">
                 <h3>Master Trust — Investor Memorandum</h3>
-                <p>The full thesis: the friction problem, Master Trust, the pillars, the expansion modules. Opens in any browser — print to PDF from there.</p>
+                <p>The full thesis: the friction problem, Master Trust, the pillars, the expansion modules. View-only — not available to download or print.</p>
             </div>
-            <button class="get" data-doc="memo">⬇ GET</button>
+            <button class="get" data-doc="memo">▶ VIEW</button>
         </div>
         <div class="docCard">
             <div class="t">
                 <h3>Financial Model · Spreadsheet</h3>
-                <p>Five-year projection framework across all three verticals. Illustrative template — swap in the master spreadsheet when ready.</p>
+                <p>Five-year projection framework across all three verticals. Illustrative template. View-only — not available to download.</p>
             </div>
-            <button class="get" data-doc="model">⬇ GET</button>
+            <button class="get" data-doc="model">▶ VIEW</button>
         </div>
         <div class="docCard">
             <div class="t">
                 <h3>The Campaign · Plan of Attack</h3>
-                <p>The step-by-step game plan: four phases, each with its move, its target, its objective, and the counter already answered — plus the capital ladder that funds each square. Opens in any browser — print to PDF.</p>
+                <p>The step-by-step game plan: four phases, each with its move, its target, its objective, and the counter already answered — plus the capital ladder that funds each square. View-only — not available to download or print.</p>
             </div>
-            <button class="get" data-doc="campaign">⬇ GET</button>
+            <button class="get" data-doc="campaign">▶ VIEW</button>
         </div>
         <div class="docCard">
             <div class="t">
                 <h3>The Examiner &amp; Engine Brief</h3>
-                <p>What the evidence layer is, why it decides what can be registered and paid, and every stage of the engine explained for a non-engineer. Opens in any browser — print to PDF.</p>
+                <p>What the evidence layer is, why it decides what can be registered and paid, and every stage of the engine explained for a non-engineer. View-only — not available to download or print.</p>
             </div>
-            <button class="get" data-doc="examiner">⬇ GET</button>
+            <button class="get" data-doc="examiner">▶ VIEW</button>
         </div>
         <div class="docCard">
             <div class="t">
                 <h3>Technical Architecture Brief</h3>
                 <p>What is actually built: the engine, Sovereign Seal, forensic QC, ownership stamping, settlement simulation.</p>
             </div>
-            <button class="get" data-doc="tech">⬇ GET</button>
+            <button class="get" data-doc="tech">▶ VIEW</button>
         </div>
         <div class="docCard">
             <div class="t">
                 <h3>Master Trust — Architecture Specification</h3>
                 <p>MasterTrust custody, compliance architecture, the Sovereign Settlement Protocol (SSP), in-engine integration, social amplification protocol.</p>
             </div>
-            <button class="get" data-doc="spec">⬇ GET</button>
+            <button class="get" data-doc="spec">▶ VIEW</button>
         </div>
         <div class="docCard">
             <div class="t">
@@ -3646,6 +3686,18 @@
                 <p>Term discussions, cap table, and diligence calls — direct with Spalter Entertainment Technologies.</p>
             </div>
             <a class="get" href="mailto:info@spaltertech.com" style="text-decoration:none;text-align:center">✉ CONTACT</a>
+        </div>
+    </div>
+
+    <!-- ============ VIEW-ONLY DOCUMENT READER ============ -->
+    <div id="docViewer" role="dialog" aria-modal="true" aria-label="Confidential document viewer">
+        <div class="dvBar">
+            <span class="dvTitle" id="dvTitle"></span>
+            <span class="dvTag">VIEW ONLY · CONFIDENTIAL</span>
+            <button id="dvClose">✕ CLOSE</button>
+        </div>
+        <div class="dvScroll">
+            <div id="dvPaper"><div id="dvHost"></div><div class="dvMark"></div></div>
         </div>
     </div>
 
@@ -5080,29 +5132,78 @@
             });
             pad.appendChild(b)
         });
+        function esc(t) { return String(t).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c])) }
+        const DOC_TITLES = { 'SSP-Investor-Memorandum.html': 'Master Trust — Investor Memorandum', 'SSP-Financial-Model-Template.csv': 'Financial Model · Spreadsheet', 'SSP-Technical-Architecture.txt': 'Technical Architecture Brief', 'SSP-Framework-Specification.txt': 'Master Trust — Architecture Specification', 'SSP-Campaign-Plan-of-Attack.html': 'The Campaign · Plan of Attack', 'SSP-Examiner-and-Engine-Brief.html': 'The Examiner & Engine Brief' };
+        let dvRoot = null;
+        function dvBlock(e) { e.preventDefault(); e.stopPropagation(); return false }
+        function dvKeys(e) {
+            const k = (e.key || '').toLowerCase();
+            if ((e.ctrlKey || e.metaKey) && ['s', 'p', 'c', 'x', 'a', 'u'].includes(k) || k === 'printscreen' || e.key === 'F12')
+                dvBlock(e);
+            if (k === 'escape')
+                closeDoc()
+        }
+        function closeDoc() {
+            const v = $('docViewer');
+            v.classList.remove('open');
+            if (dvRoot)
+                dvRoot.innerHTML = '';
+            document.body.style.overflow = '';
+            document.removeEventListener('keydown', dvKeys, true)
+        }
+        /* View-only reader. Nothing is saved to the device: the document is rendered
+           inside the page (in a shadow root so it cannot restyle the app) and the
+           save / print / copy / select / drag / context-menu paths are switched off. */
+        async function viewDoc(blob, name) {
+            const text = await blob.text();
+            const v = $('docViewer'), host = $('dvHost');
+            if (!dvRoot)
+                dvRoot = host.attachShadow({ mode: 'closed' });
+            let inner;
+            const shell = '<style>.doc{font-family:Georgia,serif;max-width:720px;margin:30px auto;padding:0 24px;color:#1a1a1a;line-height:1.7;overflow-wrap:anywhere}.doc h1{letter-spacing:.06em}.doc h2{margin-top:34px;border-bottom:2px solid #d59b2b;padding-bottom:6px}.doc small{color:#777}.doc table{border-collapse:collapse;width:100%;font:12px Arial;margin:14px 0}.doc td,.doc th{border:1px solid #cfc9b8;padding:6px 8px;text-align:right;white-space:nowrap}.doc td:first-child,.doc th:first-child,.doc td:nth-child(2),.doc th:nth-child(2){text-align:left;white-space:normal}.doc th{background:#ece6d2}.doc pre{white-space:pre-wrap;font:12.5px/1.65 Menlo,Consolas,monospace}.wrap{overflow-x:auto}</style>';
+            if (name.endsWith('.html')) {
+                const d = new DOMParser().parseFromString(text, 'text/html');
+                d.querySelectorAll('script,iframe,object,embed,link').forEach(n => n.remove());
+                inner = '<div class="doc">' + d.body.innerHTML + '</div>'
+            }
+            else if (name.endsWith('.csv')) {
+                const rows = text.trim().split('\n').map(r => r.split(','));
+                inner = '<div class="doc"><div class="wrap"><table>' + rows.map((r, i) => '<tr>' + r.map(c => i < 2 ? '<th>' + esc(c) + '</th>' : '<td>' + esc(c) + '</td>').join('') + '</tr>').join('') + '</table></div></div>'
+            }
+            else
+                inner = '<div class="doc"><pre>' + esc(text) + '</pre></div>';
+            dvRoot.innerHTML = shell + inner;
+            $('dvTitle').textContent = DOC_TITLES[name] || 'Confidential document';
+            ['contextmenu', 'copy', 'cut', 'dragstart', 'selectstart'].forEach(ev => v.addEventListener(ev, dvBlock));
+            document.addEventListener('keydown', dvKeys, true);
+            document.body.style.overflow = 'hidden';
+            v.classList.add('open');
+            v.querySelector('.dvScroll').scrollTop = 0
+        }
+        $('dvClose').addEventListener('click', closeDoc);
         function invDoc(kind) {
             const css = '<style>body{font-family:Georgia,serif;max-width:720px;margin:40px auto;padding:0 24px;color:#1a1a1a;line-height:1.7}h1{letter-spacing:.06em}h2{margin-top:34px;border-bottom:2px solid #d59b2b;padding-bottom:6px}small{color:#777}</style>';
             if (kind === 'memo') {
                 const html = '<!DOCTYPE html><html><head><meta charset="utf-8"><title>Master Trust — Investor Memorandum</title>' + css + '</head><body><h1>MASTER TRUST<br><small>Investor Memorandum · Spalter Entertainment Technologies · Powered by the Sovereign Settlement Protocol (SSP)</small></h1><h2>The Thesis</h2><p>Enterprises across music, gaming, and social media bleed billions into manual accounting, delayed payouts, and administrative tax-reporting burdens. Master Trust is the definitive infrastructure layer that solves it at the root — the operating system for the digital economy, built on the Sovereign Settlement Protocol (SSP).</p><h2>The Adoption Thesis — The Next Streaming-Scale Turn</h2><p>Every generation of this industry is reorganized by one infrastructure shift. Streaming settled the question of access; it left the questions of ownership, protection, and payment worse than it found them: per-stream economics shrinking, AI systems trained on catalogs without consent or compensation, black-box royalty accounting, payment cycles measured in months, billions in unmatched and unrecovered royalties, and metadata chaos that strands money permanently. Master Trust is built to be the next turn — adopted the way streaming was adopted: creators and producers first, because it pays them faster and proves what they made; studios and labels next, because it removes their audit and compliance burden; platforms last, because once enough of the catalog is sealed, integrating the standard is cheaper than fighting it. The goal is not a product category. The goal is the way things are done.</p><h2>Pillar 01 — Master Trust Backbone</h2><p>A centralized legal and financial entity that isolates liability, protects intellectual property, and gives corporate partners a single, frictionless integration point.</p><h2>Pillar 02 — Zero-Burden Compliance</h2><p>Absorbs the 1099 and tax-reporting burden for labels, publishers, and platforms while delivering automated tax collection executed at the moment of settlement.</p><h2>Pillar 03 — Cross-Industry Scale</h2><p>The same Sovereign Settlement Protocol (SSP) rails extend across gaming micro-transactions, social commerce split payments, SaaS, freelance networks, and IP licensing.</p><h2>Module A — Gaming</h2><p>A $188B–$350B+ market, 3.5B players, 95%+ digital revenue at 70–90% gross margins: micro-transactions, studio payroll, and contractor payouts route through Master Trust with real-time split settlement at the code level.</p><h2>Module B — Social & Creator Economy</h2><p>A $310B+ trajectory: every tip, subscription, affiliate sale, and ad share processes through Master Trust with splits and withholding executed before funds land.</p><h2>Module C — Global Digital Trade & Public Sector</h2><p>Positioned as Digital Public Infrastructure in the precedent of the Mechanical Licensing Collective, opening public-private funding pathways.</p><h2>The Access Model — Institutional, Not Consumer</h2><p>There is no subscription to join. Master Trust is institutional software: labels, publishers, platforms, studios, and public-sector partners integrate the protocol as their security and settlement infrastructure. Revenue follows enterprise integration and protocol-level settlement — not consumer seat licenses. The protocol is media-agnostic by design: anything digital can be ingested, hashed, sealed under Master Trust, and governed — music today, with the identical rails extending to games, film, publishing, and data.</p><h2>Investor Economics — The Caveat</h2><p>Master Trust does not sell investors a perpetual percentage of creators\u2019 earnings — that is the extraction model this protocol exists to end, and it would defeat the mission it monetizes. Investors are paid the way standard industry deals already work: capital in as an advance (principal), returns as interest-style yield while the principal recoups automatically from the revenue stream, enforced by the same Sovereign Settlement Protocol (SSP) rails that pay everyone else. Once made whole, the investor steps out and the creator\u2019s share steps up \u2014 on the ledger, provably. SSP\u2019s own revenue is the protocol fee on settled volume: infrastructure economics, aligned with creators rather than extracted from them.</p><h2>The Sovereign Settlement Protocol (SSP) — Fiat In, Fiat Out</h2><p>SSP is the settlement layer of Master Trust. Polygon operates strictly behind the scenes as SSP’s transparency and audit layer. Rights holders never hold cryptocurrency: onboarding collects standard banking details through licensed payment partners, and settlements arrive as U.S. dollars in participants\u2019 bank accounts. The blockchain is the receipt, not the currency \u2014 an independently verifiable record of ownership and payment that removes trust-us accounting from the equation. Payment-rail and banking-partner integration is in progress alongside legal review.</p><h2>Anti-Scraping Enforcement \u2014 The AI Training Tollbooth</h2><p>As litigation mounts over tech conglomerates scraping catalogs without consent or compensation, Master Trust introduces a proactive defense layer against unauthorized AI harvesting. The moment a web crawler or LLM scraper attempts to ingest a protected file or its extracted stems for training data, the cryptographic shield flags the intrusion instantly and fires a smart-contract transaction that bills the offending party on contact \u2014 no discovery process, no waiting on courts. Unauthorized scraping is structurally blocked at the protocol level: a platform that wants to train on a protected asset pays the ingestion and licensing fee upfront through the ledger, or is locked out and penalized automatically by the contract itself, turning scraping attempts into a revenue stream for the rights holder instead of a loss.</p><h2>Legacy Catalog Modernization</h2><p>Decades of catalog enter the protocol through a single pipeline: ingestion, forensic QC, cryptographic sealing, and restoration through the Surrealizer stage \u2014 emerging as new modern masters with measured improvement data on every manifest. The catalog does not just get protected; it gets better, and the betterment is documented.</p><h2>The Examiner — The Evidence Layer</h2><p>In the AI era, the first question a label, a publisher, a sync house or the U.S. Copyright Office asks of any record is how much of it a person actually made. The Examiner answers it with evidence rather than opinion. It measures five physical properties of a performance — pitch drift, micro-timing deviation, note-duration variance, spectral flatness and stereo phase correlation — publishes each with the weight it carried, and states a plain verdict: Claimable, Partial claim, or Must exclude. It is deterministic (the same file always yields the same numbers), it runs entirely in the browser, and it is not a black-box AI score: every figure can be repeated and defended. In stem mode the record is first separated into vocals, drums, bass and a residual by a real source-separation model, and each layer is examined on its own — telling human from machine part by part, which is precisely what must be disclosed to register the work. No system can name which person played a part; this one tells person from machine, layer by layer, with numbers.</p><h2>The Financial Trajectory</h2><p>Modeled against a targeted 5% of global streaming ingestion and sync transaction volume, the protocol\u2019s ingestion tolls and ecosystem settlement split project to an estimated $45M\u2013$60M in annual recurring infrastructure revenue by Year 3 \u2014 a Year 3 target, not a guarantee, and one that scales with adoption of the standard rather than any single deal. The same evidence and settlement rails that secure a master recording extend to video and subscription platforms \u2014 YouTube, Netflix, Amazon Prime, Disney+ \u2014 mapping protected assets and isolated voice stems against the ledger in real time and redirecting monetization to the rightful owner automatically.</p><h2>The Product Today</h2><p>Master Trust Engine is live: a 32-bit float mastering console (valve saturation, three-band EQ, mid/side width, glue compression, 3D spatial field with convolution rooms) surrounded by true-bypass Surreal stages — a noise-floor-learning denoiser, split-band de-esser, Haas cross-feed and early reflections, transient shaper, sub bump, codec restore, and a true-peak loudness maximizer with a 4x-oversampled detector. Every stage is verified bit-identical when off, so a trusted master never changes unless the operator changes it. Every export — the four-valve float32 prints and the original / master / mono bounce — is SHA-256 hashed into a forensic ledger the moment it is made, with live true-peak, RMS and clip telemetry. Add waveform-embedded ownership signatures, QR split sessions with cryptographic sealing, and the Examiner at the front door, and the engine produces not just a better record but the receipt for it.</p><h2>Build Status — What Is Live and What Is In Build</h2><p>We would rather investors see the plan than be sold a finished machine, so every system is labeled. <b>Live in the engine today:</b> the 32-bit float mastering chain and Surreal stages, the Examiner in band mode and stem mode (real source separation), the four-valve and three-file exports with the SHA-256 forensic ledger, live output telemetry, QR split-session generation, and the Spalty assistant (chat and voice, on live servers). <b>In build:</b> the Sovereign Seal waveform watermark on the server layer, the batch legacy-catalog pipeline (ingest, QC gate, seal), the attribution engine (fingerprint adapters written, wiring in progress), and the automatic forensic QC gate. <b>Defined but not yet deployed:</b> the MasterTrustEngine.sol reference contract (complete and hardened, deployment follows legal review), the Fair Rules split policy, and the investor recoupment model. <b>Simulations:</b> the settlement ticker and transaction sandbox on the landing page demonstrate the routing mechanics with illustrative data until the payment rails are connected. The technical brief in this data room lists each item in detail.</p><h2>The Campaign — Plan of Attack</h2><p>We are playing chess, not checkers. Every phase is a move with a named target, an objective that counts as taking the square, and the counter-move already held in reserve. Why now: since 2023 the U.S. Copyright Office has required applicants to disclaim AI-generated material and the EU AI Act adds disclosure duties; every rights-holder must now answer a question none of them can — which part was human and which was the machine — and we answer it with measurement, not opinion.</p><p><b>Phase I — The Beachhead (Seed, $3.5M).</b> Make the Examiner the default step before a music copyright registration. First partner approached: DistroKid, the largest independent distributor, moving new releases at the volume where the disclosure problem bites hardest — with Bradley Spalter’s own catalog as the founding proof case, examined, filed and sealed end to end before the first outside conversation. Offer: a defined launch-partner window, first-mover advantage rather than a permanent lock. Objective: DistroKid on a pilot, the methodology published for third-party audit. Counter: “prove the forensics hold up.” Answer: open beats a black box; the skeptic becomes the validator.</p><p><b>Phase II — The Standard (Series A).</b> Turn the working tool into an open, documented protocol bound to the rails the industry trusts — C2PA for provenance, ISRC/ISWC and DDEX for identity — with neutral governance. Targets: standards bodies, the PRO and MLC world, a second-vertical adopter. Objective: Spalter as reference implementation and trusted operator of an open standard. Counter: “why build on one vendor’s system?” Answer: open spec, neutral operation, fully auditable.</p><p><b>Phase III — The Breakout (Series B).</b> Carry the same provenance layer into film, VFX and games, where AI-authorship is a bigger and less solved problem. Targets: a game studio or engine and a film/VFX post house or guild-aligned partner. Objective: one standard spanning music, film and games, arriving proven. Counter: “your music tool won’t fit.” Answer: the primitive is industry-agnostic; the filing layer localizes, the core stays identical.</p><p><b>Phase IV — The Rail (Series B).</b> Once provenance is trusted, the settlement layer — ledger, split escrow, fiat off-ramp — becomes the default rail because it is already attached to the records everyone references. Objective: recurring infrastructure revenue on an installed base whose trust we already own. Counter: “someone will build a cheaper rail.” Answer: an open standard operated neutrally is the ground the industry stands on, not a chokepoint.</p><p><b>Capital ladder.</b> Seed ($3.5M) funds Phase I and produces one public adopter and the first filed catalogs; Series A funds Phase II and produces an open standard others build on; Series B funds Phases III–IV and produces cross-industry adoption and recurring revenue. Each round funds a named phase and produces the proof that unlocks the next. The majors are not the first move; they are the reward for winning it.</p><p><small>This document is informational and not an offer of securities. Figures marked as projections are illustrative.</small></p></body></html>';
-                deliver(new Blob([html], {
+                viewDoc(new Blob([html], {
                     type: 'text/html'
                 }), 'SSP-Investor-Memorandum.html');
             }
             if (kind === 'model') {
                 const csv = 'MASTER TRUST — FINANCIAL MODEL - ILLUSTRATIVE TEMPLATE (replace with actuals)\nVertical,Metric,Year 1,Year 2,Year 3,Year 4,Year 5\nMusic Catalog,Gross Transaction Volume ($M),TBD,TBD,TBD,TBD,TBD\nMusic Catalog,Protocol Fee %,TBD,TBD,TBD,TBD,TBD\nGaming Micro-TX,Gross Transaction Volume ($M),TBD,TBD,TBD,TBD,TBD\nGaming Micro-TX,Protocol Fee %,TBD,TBD,TBD,TBD,TBD\nSocial Creator,Gross Transaction Volume ($M),TBD,TBD,TBD,TBD,TBD\nSocial Creator,Protocol Fee %,TBD,TBD,TBD,TBD,TBD\nConsolidated,Net Protocol Revenue ($M),TBD,TBD,TBD,TBD,TBD\nConsolidated,Operating Costs ($M),TBD,TBD,TBD,TBD,TBD\nConsolidated,EBITDA ($M),TBD,TBD,TBD,TBD,TBD\n';
-                deliver(new Blob([csv], {
+                viewDoc(new Blob([csv], {
                     type: 'text/csv'
                 }), 'SSP-Financial-Model-Template.csv');
             }
             if (kind === 'tech') {
                 const txt = 'MASTER TRUST — TECHNICAL ARCHITECTURE BRIEF\n====================================================\n\nSTATUS BY COMPONENT  (LIVE = working in the engine today · IN BUILD = designed and under construction · nothing below is presented as finished unless marked LIVE)\n1. [LIVE] MASTER TRUST ENGINE CONSOLE - Float32 pipeline, parallel valve saturation, 3-band EQ, glue compression, 3D spatial engine, studio convolution rooms, 10 audio-reactive visualizer modes (incl. WebGL 3D core), loudness-matched A/B, 4-valve Float32 export matrix and original/master/mono bounce with SHA-256 forensic ledger, live true-peak (4x oversampled) / RMS / clip telemetry and 48-band RTA.\n1b. [LIVE] SURREAL STAGES (true-bypass, default off, verified bit-identical when off by headless A/B render) - spectral-gate denoiser with learned noise floor + presence/air hiss compressors; LR4 split-band de-esser; Haas cross-feed + early reflections; differential-envelope transient shaper (AudioWorklet); 50 Hz sub bump; additive HF codec restore; lookahead true-peak maximizer (AudioWorklet, 4 ms lookahead, 4x-oversampled detector, dBTP ceiling, gain-reduction readout). All stages mirrored into offline prints.\n1c. [LIVE] THE EXAMINER - Browser-native provenance audit. Band mode: the track is split into low/mid/high bands with standard filters and five real measurements are taken on a 20 s sampled window - autocorrelation intonation drift (cents from nearest semitone), spectral-flux onset micro-timing deviation (ms from detected grid), inter-onset duration variance, spectral flatness, and stereo phase correlation - combined with disclosed weights (0.30/0.15/0.15/0.20/0.20) into a 0-100 human-performance index and a verdict (Claimable / Partial claim / Must exclude). Deterministic; no audio leaves the device; report saved to the ledger with a SHA-256. Stem mode: the file is separated by LALAL.ai (real neural source separation) into vocals, drums, bass and a computed residual, and each part is examined independently for a per-layer verdict.\n2. [IN BUILD] SERVER MASTERING LAYER (Cloudflare Workers + R2) - Surreal Stage AI-artifact cleanup (bit-identical bypass verified), 8x oversampled tube stage, linear-phase EQ, true-peak limiting at -1 dBTP, deterministic renders.\n3. [IN BUILD - server layer] SOVEREIGN SEAL - Spread-spectrum watermark binding the split-manifest hash into the waveform. Verified 100% self-detection clean and after quantization/level change. Not metadata.\n4. [LIVE: QR generation and split entry · IN BUILD: server-side cryptographic sealing] QR SPLIT SESSIONS - Session QR, contributor split entry, 100% manifest enforcement, cryptographic sealing.\n5. [METERS LIVE · AUTOMATIC GATE IN BUILD] FORENSIC QC GATE - Numeric legality, true-peak, DC offset, phase integrity, spectral balance verified before any hash finalizes.\n6. [IN BUILD] OWNERSHIP STAMPING - Every render writes a provenance container queryable at /api/stamp/{hash}.\n\nLEGACY CATALOG INGESTION [IN BUILD; the restoration stages themselves are LIVE in the engine] - Batch pipeline: ingest -> forensic QC -> Surrealizer restoration (declick, noise-floor conditioning, bandwidth restoration) -> modern mastering chain -> Sovereign Seal cryptographic mark -> provenance stamp. Every restored master ships with measured before/after numbers (noise floor delta, air-band delta, true peak) on its manifest - the claim of a superior new master is printed as data, not adjectives.\n\nFORENSIC STEM ENGINE [LIVE] - Source separation is performed by a real neural model (LALAL.ai, via a server-side bridge; the API key never reaches the browser) into vocals, drums and bass; the residual is computed as the mix minus those stems. Each part is then run through The Examiner. What this establishes is human versus machine per layer, with published measurements; it does not and cannot identify which individual performed a part, and separation quality (including bleed) belongs to the model and is reflected in the numbers.\n\nFAIR RULES ON GENERATED WORKS - When a work is created with a generator: 50% to the music designer, 50% split evenly among the original authors and entities the engine can recover. SSP pays who it can identify; unrecovered shares are listed openly on the manifest as pending identification - never silently absorbed. Capability grows as the tech grows.\n\nINGESTION SCOPE - The registration, sealing, and governance layer is content-agnostic: SHA-256 provenance, split manifests, and Master Trust governance operate on any digital asset. The waveform-embedded Sovereign Seal is the audio adapter (production); equivalent embedding adapters for video, game assets, and documents are roadmap items on the same protocol spine.\n\nSETTLEMENT ARCHITECTURE - Polygon runs behind the scenes as the audit/transparency layer only. No participant wallets, tokens, or crypto exposure: banking details are collected via licensed payment onboarding and settlements land as USD in standard bank accounts. Reference contract (MasterTrustEngine.sol) complete and hardened; not yet deployed.\n\nROADMAP - Chain anchoring (Polygon), live payment rails, Surreal v2 trained model, AcoustID adapter (ACRCloud adapter complete).\n';
-                deliver(new Blob([txt], {
+                viewDoc(new Blob([txt], {
                     type: 'text/plain'
                 }), 'SSP-Technical-Architecture.txt');
             }
             if (kind === 'spec') {
                 const txt = 'MASTER TRUST — ARCHITECTURE\n================================\n01 CORE SECURITY LAYER - MasterTrust custody: ledger anchoring, proof-of-origin, cryptographically verified chain of title; every rights assignment and transaction timestamped and sealed.\n02 REGULATORY STANDARD - Automated reporting pipelines, jurisdictional geofencing, verifiable audit trails, strict access governance for instant cryptographic verification.\n03 SOVEREIGN SETTLEMENT PROTOCOL (SSP) - Master Trust\'s settlement layer, named for what it does. Fiat in, fiat out: Polygon runs behind the scenes as the transparency and audit layer only, no wallets or crypto exposure for rights holders; settlements land as USD through licensed payment partners; SSP\'s protocol fee on settled volume is Master Trust\'s revenue.\n04 INTERACTIVE DISTRIBUTION - In-engine licensing verification, real-time rights validation, automated micro-royalty settlement on player engagement.\n05 REACH & ANALYTICS - Watermarking and provenance trackers in every distributed snippet; viral reach logged, splits calculated, micro-settlements executed.\n\nSpalter Entertainment Technologies - info@spaltertech.com\n';
-                deliver(new Blob([txt], {
+                viewDoc(new Blob([txt], {
                     type: 'text/plain'
                 }), 'SSP-Framework-Specification.txt');
             }
@@ -5118,7 +5219,7 @@
                     '<h2>Capital &amp; the Campaign</h2><p>Every dollar takes a square. The rounds are not a hope for runway — each one funds a named phase and produces the proof that unlocks the next.</p><p><b>Seed — $3.5M — Phase I.</b> Harden the Examiner, land the first anchor adopter and first catalogs, publish the methodology for third-party audit, lock foundational IP. Proof: one adopter live and public; first catalogs examined and filed.</p><p><b>Series A — Growth — Phase II.</b> Open the protocol, align it to C2PA and DDEX, stand up neutral governance, ship SDKs, win a second-vertical adopter. Proof: Spalter operating an open standard others build on.</p><p><b>Series B — Expansion — Phases III–IV.</b> Extend into film and games, then bring the settlement rail to scale on the installed base. Proof: cross-industry adoption and recurring infrastructure revenue.</p><p>Investors are wired into the distribution waterfall: capital returns programmatically as protocol revenue is realized — as an advance recouped by the same rails that pay everyone else, never as a perpetual cut of creators’ earnings.</p>' +
                     '<h2>The Endgame</h2><p>The majors are not the first move. They are the reward for winning it. We do not need the whole board on day one — we need the opening played perfectly, with every counter already answered. That is how the standard is won.</p>' +
                     '<p><small>Targets are named as targets and moves as the plan; nothing here claims traction not yet earned. This document is informational and not an offer of securities.</small></p></body></html>';
-                deliver(new Blob([html], {
+                viewDoc(new Blob([html], {
                     type: 'text/html'
                 }), 'SSP-Campaign-Plan-of-Attack.html');
             }
@@ -5131,7 +5232,7 @@
                     '<h2>The two guarantees</h2><p><b>Bit-identical when off.</b> Every Surreal stage is a true bypass, verified by rendering the previous build and the current build on the same signal and comparing them sample for sample. A master the operator already trusts never changes unless the operator changes it.</p><p><b>A receipt for every render.</b> Nothing leaves the engine without a hash. The record gets better, and the betterment is documented.</p>' +
                     '<h2>Why it matters to the protocol</h2><p>Master Trust settles money on the basis of who owns what. That claim is only as strong as the evidence beneath it. By examining, restoring, hashing and sealing every record at the point of entry, the engine gives the protocol a provenance record created before the first dollar moves. Registrable works get registered. Generated layers get disclosed and paid under the Fair Rules split. Nothing is guessed and nothing is hidden. The Examiner is the front door of the protocol.</p>' +
                     '<p><small>Not legal advice. The U.S. Copyright Office decides every application on its own. This document is informational and not an offer of securities.</small></p></body></html>';
-                deliver(new Blob([html], {
+                viewDoc(new Blob([html], {
                     type: 'text/html'
                 }), 'SSP-Examiner-and-Engine-Brief.html');
             }
