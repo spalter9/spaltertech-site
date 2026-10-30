@@ -31,14 +31,14 @@ export function Hero() {
           className="relative mx-auto flex justify-center"
         >
           <div
-            className="absolute inset-0 blur-3xl"
+            className="absolute inset-0 blur-3xl animate-glow"
             aria-hidden="true"
-            style={{ background: "radial-gradient(circle, rgba(197,160,89,0.28), transparent 65%)" }}
+            style={{ background: "radial-gradient(circle, rgba(197,160,89,0.34), transparent 65%)" }}
           />
           <img
             src="/images/mastertrust-emblem.png"
             alt="The Master Trust emblem"
-            className="relative w-44 md:w-56"
+            className="relative w-44 md:w-56 animate-float drop-shadow-[0_20px_40px_rgba(0,0,0,0.6)]"
           />
         </motion.div>
 
@@ -47,7 +47,7 @@ export function Hero() {
           initial={{ opacity: 0, y: 24 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.8, delay: 0.1 }}
-          className="text-center space-y-4 max-w-3xl mx-auto"
+          className="text-center space-y-4 max-w-4xl mx-auto"
         >
           {/* Pill-style eyebrow */}
           <span className="inline-block font-mono text-gold text-[0.7rem] font-semibold tracking-[0.22em] uppercase bg-gold/10 border border-gold/25 px-4 py-1.5 rounded-full">
@@ -107,23 +107,22 @@ export function Hero() {
         <div className="flex flex-col sm:flex-row items-center justify-center gap-4 pt-4">
           <Link
             to="/data-room"
-            className="group w-full sm:w-auto flex items-center justify-center gap-2 px-8 py-4 rounded-xl bg-gradient-to-r from-gold to-gold-bright text-obsidian font-mono text-xs font-bold uppercase tracking-[0.18em] hover:opacity-90 transition-opacity"
-            style={{ boxShadow: "0 0 44px -14px rgba(197,160,89,0.6)" }}
+            className="btn-gold group w-full sm:w-auto"
           >
             <Lock size={13} /> Enter The Data Room
           </Link>
           <a
             href="#manifesto"
-            className="w-full sm:w-auto text-center px-8 py-4 rounded-xl bg-obsidian-raised border border-gold/30 text-gold font-mono text-xs font-bold uppercase tracking-[0.18em] hover:bg-gold/10 transition-colors"
+            className="btn-ghost w-full sm:w-auto"
           >
             Read The Manifesto
           </a>
         </div>
 
         {/* Trust signals */}
-        <div className="grid grid-cols-2 gap-8 md:grid-cols-4 md:gap-12 max-w-3xl mx-auto">
+        <div className="grid grid-cols-2 gap-4 md:grid-cols-4 md:gap-5 max-w-3xl mx-auto">
           {STATS.map((s) => (
-            <div key={s.k} className="flex flex-col items-center gap-2">
+            <div key={s.k} className="card-surface flex flex-col items-center gap-2 rounded-2xl px-4 py-5">
               <s.icon size={20} className="text-gold" />
               <div className="font-display text-xl md:text-2xl">{s.v}</div>
               <div className="font-mono text-[10px] uppercase tracking-[0.22em] text-muted text-center">
