@@ -8,6 +8,7 @@ import {
 } from "lucide-react";
 import { formatUsd, mockAssetHash, truncateHash } from "../../../lib/engine-format";
 import { SectionCard } from "../section-card";
+import { Donut, FlowPipe } from "../viz";
 
 const IRS_RATE = 0.25;
 
@@ -84,11 +85,25 @@ export function TaxSettlementTerminal() {
             <button
               type="button"
               onClick={runSettlement}
-              className="mt-6 inline-flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-gold via-gold-bright to-verified px-4 py-3.5 text-sm font-semibold text-obsidian transition hover:opacity-90 sm:w-auto"
+              className="btn-gold mt-6 w-full sm:w-auto"
             >
               <Landmark className="h-4 w-4" aria-hidden />
               Execute Instant Settlement
             </button>
+
+            <div className="mt-8 rounded-2xl border border-obsidian-line bg-obsidian/40 p-5">
+              <p className="mb-4 font-mono text-[10px] uppercase tracking-[0.18em] text-muted">
+                Where the money goes
+              </p>
+              <Donut
+                slices={[
+                  { label: "IRS Treasury (25%)", value: irs, color: "#8f5bff" },
+                  { label: "Creator / Studio (75%)", value: net, color: "#8fe9ff" },
+                ]}
+                top={formatUsd(gross, 0)}
+                bottom="gross"
+              />
+            </div>
           </div>
 
           <div className="space-y-3" aria-live="polite">
@@ -100,7 +115,7 @@ export function TaxSettlementTerminal() {
               accent="gold"
               active
             />
-            <div className="mx-auto h-6 w-px bg-gradient-to-b from-gold to-gold-bright" />
+            <FlowPipe active />
             <FlowStep
               icon={<Landmark className="h-4 w-4" />}
               label="Smart Contract → IRS Treasury"
@@ -109,7 +124,7 @@ export function TaxSettlementTerminal() {
               accent="gold"
               active={settled}
             />
-            <div className="mx-auto h-6 w-px bg-gradient-to-b from-gold-bright to-verified" />
+            <FlowPipe active={settled} />
             <FlowStep
               icon={<Wallet className="h-4 w-4" />}
               label="Net Clean Liquidity → Creator/Studio"
@@ -192,7 +207,8 @@ function FlowStep({
   return (
     <div
       className={[
-        "rounded-xl border px-4 py-3 transition-all duration-300",
+        "rounded-2xl border px-4 py-3.5 transition-all duration-300",
+        active && "settle-pop",
         active ? `${colors[accent].border} bg-obsidian/50` : "border-obsidian-line bg-obsidian/30 text-muted",
       ].join(" ")}
     >

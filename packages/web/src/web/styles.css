@@ -359,3 +359,16 @@
 /* Page wrappers that painted a solid obsidian fill let the backdrop through */
 .min-h-screen.bg-obsidian { background-color: transparent; }
 body { background-color: var(--color-obsidian); }
+
+@keyframes flow-packet {
+  0% { top: -4px; opacity: 0; }
+  15% { opacity: 1; }
+  85% { opacity: 1; }
+  100% { top: 100%; opacity: 0; }
+}
+.flow-packet { animation: flow-packet 1.05s ease-in infinite; }
+@keyframes settle-pop {
+  0% { transform: scale(0.96); box-shadow: 0 0 0 0 rgba(143, 233, 255, 0.55); }
+  100% { transform: scale(1); box-shadow: 0 0 0 18px rgba(143, 233, 255, 0); }
+}
+.settle-pop { animation: settle-pop 0.9s ease-out; }

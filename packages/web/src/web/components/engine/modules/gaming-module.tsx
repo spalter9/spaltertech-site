@@ -2,6 +2,7 @@ import { useMemo, useState } from "react";
 import { Fingerprint, ShieldCheck, Sparkles } from "lucide-react";
 import { formatUsd, mockAssetHash, truncateHash } from "../../../lib/engine-format";
 import { SectionCard } from "../section-card";
+import { Donut } from "../viz";
 
 const SKIN_PRICE = 4.99;
 const SPLITS = [
@@ -86,6 +87,14 @@ export function GamingModule() {
         title="Real-Time Royalty Split"
         subtitle="Protocol calculates studio, creator, and IRS shares instantly."
       >
+        <div className="mb-5 rounded-2xl border border-obsidian-line bg-obsidian/40 p-5">
+          <Donut
+            size={150}
+            slices={amounts.map((a) => ({ label: a.label, value: a.pct }))}
+            top={formatUsd(SKIN_PRICE)}
+            bottom="per purchase"
+          />
+        </div>
         <ul className="space-y-3">
           {amounts.map((row) => (
             <li

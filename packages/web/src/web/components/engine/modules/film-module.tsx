@@ -1,8 +1,9 @@
 import { useMemo, useState } from "react";
-import { FileAudio, Link2, Upload } from "lucide-react";
+import { Clapperboard, FileAudio, Fingerprint, Landmark, Link2, ScrollText, Upload } from "lucide-react";
 import { formatUsd, mockAssetHash, truncateHash } from "../../../lib/engine-format";
 import { FILM_SPLIT } from "../../../lib/engine-data";
 import { SectionCard } from "../section-card";
+import { Donut } from "../viz";
 
 export function FilmModule() {
   const [gross, setGross] = useState(2_500_000);
@@ -42,7 +43,15 @@ export function FilmModule() {
           />
         </label>
 
-        <ul className="mt-5 space-y-2.5">
+        <div className="mt-5 rounded-2xl border border-obsidian-line bg-obsidian/40 p-5">
+          <Donut
+            slices={distributions.map((d) => ({ label: d.role, value: d.amount }))}
+            top={formatUsd(gross, 0)}
+            bottom="production gross"
+          />
+        </div>
+
+        <ul className="mt-4 space-y-2.5">
           {distributions.map((row) => (
             <li key={row.role} className="rounded-xl border border-obsidian-line bg-obsidian/35 px-3.5 py-3">
               <div className="mb-2 flex items-center justify-between gap-2">
@@ -119,6 +128,43 @@ export function FilmModule() {
               Cue sheet verified · Title chain intact · Sync license eligible
             </p>
           )}
+        </div>
+
+        <div className="mt-5 rounded-2xl border border-obsidian-line bg-obsidian/40 p-5">
+          <p className="mb-4 font-mono text-[10px] uppercase tracking-[0.18em] text-muted">Chain of title</p>
+          <div className="flex items-center">
+            {[
+              { icon: Fingerprint, label: "Fingerprint" },
+              { icon: Clapperboard, label: "Cue" },
+              { icon: ScrollText, label: "License" },
+              { icon: Landmark, label: "Treasury" },
+            ].map((n, i, arr) => (
+              <div key={n.label} className="flex flex-1 items-center last:flex-none">
+                <div className="flex flex-col items-center gap-2">
+                  <span
+                    className={[
+                      "grid h-12 w-12 place-items-center rounded-2xl border transition-all duration-500",
+                      verified
+                        ? "border-verified/60 bg-verified/15 text-verified shadow-[0_0_24px_-6px_rgba(52,211,153,0.8)]"
+                        : "border-obsidian-line bg-obsidian-raised text-muted",
+                    ].join(" ")}
+                    style={{ transitionDelay: verified ? `${i * 160}ms` : "0ms" }}
+                  >
+                    <n.icon className="h-5 w-5" aria-hidden />
+                  </span>
+                  <span className="font-mono text-[9px] uppercase tracking-[0.14em] text-muted">{n.label}</span>
+                </div>
+                {i < arr.length - 1 && (
+                  <div className="relative mx-2 mb-6 h-px flex-1 overflow-hidden bg-obsidian-line">
+                    <div
+                      className="absolute inset-y-0 left-0 bg-verified transition-all duration-500"
+                      style={{ width: verified ? "100%" : "0%", transitionDelay: verified ? `${i * 160 + 120}ms` : "0ms" }}
+                    />
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
         </div>
       </SectionCard>
     </div>
