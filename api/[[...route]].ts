@@ -30,6 +30,29 @@ function getHandler() {
 }
 
 export default async function (req: Request) {
-  const handler = await getHandler();
-  return handler(req);
+  try {
+    const handler = await getHandler();
+    return await handler(req);
+  } catch (err) {
+    // Temporary boot-failure diagnostic: report which env vars are present
+    // (never their values) so a crash can be triaged from the response body
+    // alone. Remove once the API is confirmed stable in production.
+    const present = (name: string) => Boolean(process.env[name]);
+    return new Response(
+      JSON.stringify({
+        error: "boot_failed",
+        message: err instanceof Error ? err.message : String(err),
+        stack: err instanceof Error ? err.stack : undefined,
+        env: {
+          DATABASE_URL: present("DATABASE_URL"),
+          DATABASE_AUTH_TOKEN: present("DATABASE_AUTH_TOKEN"),
+          TURSO_DATABASE_URL: present("TURSO_DATABASE_URL"),
+          TURSO_AUTH_TOKEN: present("TURSO_AUTH_TOKEN"),
+          BETTER_AUTH_SECRET: present("BETTER_AUTH_SECRET"),
+          WEBSITE_URL: present("WEBSITE_URL"),
+        },
+      }),
+      { status: 500, headers: { "content-type": "application/json" } },
+    );
+  }
 }
