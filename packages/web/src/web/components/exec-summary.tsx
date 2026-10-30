@@ -53,7 +53,7 @@ export function ExecSummaryDoc() {
           The Sovereign Sign Protocol™ &amp; Token (SSP)
         </p>
         <p className="text-muted text-sm mt-4 leading-relaxed">
-          <span className="text-bone font-medium">Principals:</span> Bradley Spalter, CEO &amp; Music Designer · Peter Van Barkal, CTO
+          <span className="text-bone font-medium">Team:</span> Founding roster being finalized, funded by this round.
         </p>
         <p className="font-mono text-[11px] uppercase tracking-[0.16em] text-muted mt-4">
           Target: Institutional Positioning · Capital Acquisition · Monetization Strategy · Global Scale
@@ -98,10 +98,10 @@ export function ExecSummaryDoc() {
         with decentralized infrastructure:
       </P>
       <ul className="mt-3 space-y-2">
-        <Bullet label="Bradley Spalter (CEO &amp; Music Designer):">
-          Commercial deployment strategy, industry architecture, and the enterprise integration framework.
+        <Bullet label="Commercial deployment:">
+          Industry architecture and the enterprise integration framework.
         </Bullet>
-        <Bullet label="Peter Van Barkal (CTO):">
+        <Bullet label="Signal engineering:">
           Seamlessly embedding the powerhouse Surreal Audio Engine and The Surreal App infrastructure into the core
           protocol.
         </Bullet>
