@@ -13,7 +13,7 @@
   --color-verified: #34d399;
   --color-danger: #f0616d;
 
-  --font-display: "Cormorant Garamond", Georgia, serif;
+  --font-display: "Sora", ui-sans-serif, system-ui, sans-serif;
   --font-sora: "Sora", sans-serif;
   --font-mono: "IBM Plex Mono", monospace;
   --font-body: "Manrope", sans-serif;
@@ -52,6 +52,8 @@
   }
   h1, h2, h3 {
     text-wrap: balance;
+    font-weight: 600;
+    letter-spacing: -0.02em;
   }
   p {
     text-wrap: pretty;
@@ -108,6 +110,7 @@
   }
   .card-surface {
     position: relative;
+    border-radius: 1.25rem;
     background:
       linear-gradient(180deg, rgba(255, 255, 255, 0.025), transparent 38%),
       var(--color-obsidian-raised);
@@ -349,3 +352,10 @@
 .marquee-track { display: flex; width: max-content; animation: marquee 38s linear infinite; }
 .marquee:hover .marquee-track { animation-play-state: paused; }
 .text-outline { -webkit-text-stroke: 1px rgba(143, 233, 255, 0.35); color: transparent; }
+
+/* Global aurora backdrop — fixed blobs sit behind every page's content */
+.aurora-bg { position: fixed; inset: 0; z-index: -1; overflow: hidden; pointer-events: none; }
+.aurora-bg .aurora-blob { position: absolute; }
+/* Page wrappers that painted a solid obsidian fill let the backdrop through */
+.min-h-screen.bg-obsidian { background-color: transparent; }
+body { background-color: var(--color-obsidian); }
