@@ -1,7 +1,7 @@
 import { Platform } from "react-native";
 
 /**
- * App color tokens. Recolor these to brand the app — every screen and component
+ * App color tokens (Aurora palette, mirrors the web app). Recolor these to brand the app — every screen and component
  * reads from here via `useColors()` (see `hooks/use-colors.ts`), so changing a
  * value here updates the whole app in both light and dark mode.
  *
@@ -10,43 +10,31 @@ import { Platform } from "react-native";
  * `primary`, `muted`, `border`, etc. Values are plain hex/rgba strings — React
  * Native's StyleSheet does not support CSS color functions like `oklch()`.
  */
+const aurora = {
+  background: "#060A14",
+  foreground: "#EEF2FB",
+  card: "#0C1322",
+  cardForeground: "#EEF2FB",
+  primary: "#6D8BFF",
+  primaryForeground: "#04101F",
+  secondary: "#121C33",
+  secondaryForeground: "#EEF2FB",
+  muted: "#121C33",
+  mutedForeground: "#8893AB",
+  accent: "#8FE9FF",
+  accentForeground: "#04101F",
+  border: "#1A2540",
+  destructive: "#F0616D",
+  success: "#34D399",
+  warning: "#F5C451",
+  violet: "#8F5BFF",
+  deep: "#3A4FD6",
+} as const;
+
+/** The brand is dark-first "Aurora" — both schemes use the same palette. */
 export const Colors = {
-  light: {
-    background: "#FFFFFF",
-    foreground: "#171717",
-    card: "#FFFFFF",
-    cardForeground: "#171717",
-    primary: "#1F1F1F",
-    primaryForeground: "#FAFAFA",
-    secondary: "#F5F5F5",
-    secondaryForeground: "#1F1F1F",
-    muted: "#F5F5F5",
-    mutedForeground: "#737373",
-    accent: "#F5F5F5",
-    accentForeground: "#1F1F1F",
-    border: "#E5E5E5",
-    destructive: "#DC2626",
-    success: "#16A34A",
-    warning: "#D97706",
-  },
-  dark: {
-    background: "#0A0A0A",
-    foreground: "#FAFAFA",
-    card: "#1A1A1A",
-    cardForeground: "#FAFAFA",
-    primary: "#E5E5E5",
-    primaryForeground: "#1F1F1F",
-    secondary: "#262626",
-    secondaryForeground: "#FAFAFA",
-    muted: "#262626",
-    mutedForeground: "#A3A3A3",
-    accent: "#262626",
-    accentForeground: "#FAFAFA",
-    border: "#262626",
-    destructive: "#EF4444",
-    success: "#22C55E",
-    warning: "#F59E0B",
-  },
+  light: aurora,
+  dark: aurora,
 } as const;
 
 export type ColorScheme = keyof typeof Colors;
