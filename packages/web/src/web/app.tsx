@@ -21,6 +21,11 @@ import { AgentFeedback } from "@runablehq/website-runtime";
 function App() {
   return (
     <Provider>
+      <div className="aurora-bg" aria-hidden>
+        <div className="aurora-blob -left-40 -top-20 h-[36rem] w-[36rem] bg-[#3a4fd6]/45" />
+        <div className="aurora-blob -right-40 top-1/3 h-[32rem] w-[32rem] bg-[#8fe9ff]/15" style={{ animationDelay: "-7s" }} />
+        <div className="aurora-blob bottom-[-10rem] left-1/4 h-[30rem] w-[30rem] bg-[#8f5bff]/20" style={{ animationDelay: "-12s" }} />
+      </div>
       {/* Stage 1: fullscreen passcode only — no site routes until unlock */}
       <RootPasscodeLock>
         <Switch>

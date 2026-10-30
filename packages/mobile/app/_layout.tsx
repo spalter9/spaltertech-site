@@ -33,7 +33,7 @@ export default function RootLayout() {
       >
         <SafeAreaProvider>
           <QueryClientProvider client={queryClient}>
-            <StatusBar style="auto" />
+            <StatusBar style="light" />
             <Slot />
           </QueryClientProvider>
         </SafeAreaProvider>

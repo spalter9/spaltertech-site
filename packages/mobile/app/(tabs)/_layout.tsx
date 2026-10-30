@@ -8,12 +8,15 @@ export default function TabLayout() {
   return (
     <Tabs
       screenOptions={{
+        tabBarLabelStyle: { fontSize: 11, fontWeight: "600", letterSpacing: 0.4 },
         headerShown: false,
-        tabBarActiveTintColor: colors.primary,
+        tabBarActiveTintColor: colors.accent,
         tabBarInactiveTintColor: colors.mutedForeground,
         tabBarStyle: {
-          backgroundColor: colors.background,
+          backgroundColor: colors.card,
           borderTopColor: colors.border,
+          height: 64,
+          paddingTop: 6,
         },
       }}
     >
@@ -29,9 +32,9 @@ export default function TabLayout() {
       <Tabs.Screen
         name="explore"
         options={{
-          title: "Explore",
+          title: "Engine",
           tabBarIcon: ({ color, size, focused }) => (
-            <Ionicons name={focused ? "compass" : "compass-outline"} size={size} color={color} />
+            <Ionicons name={focused ? "hardware-chip" : "hardware-chip-outline"} size={size} color={color} />
           ),
         }}
       />

@@ -8,15 +8,15 @@ export function EngineHeader() {
     <header className="flex flex-col gap-4 border-b border-obsidian-line pb-5 sm:flex-row sm:items-center sm:justify-between">
       <div className="flex items-start gap-3">
         <div
-          className="mt-0.5 flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-gold/40 bg-gold/10"
+          className="mt-0.5 flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl border border-gold/50 bg-gradient-to-br from-gold/25 to-gold-bright/10 shadow-[0_0_28px_-6px_rgba(var(--gold-rgb),0.7)]"
           aria-hidden
         >
           <span className="font-mono text-xs font-bold tracking-wider text-gold">SSP</span>
         </div>
         <div>
-          <p className="font-display text-lg leading-snug tracking-tight text-bone sm:text-xl md:text-2xl">
+          <p className="font-display text-xl font-semibold leading-snug tracking-tight text-bone sm:text-2xl md:text-3xl">
             Spalter Tech <span className="text-muted">//</span>{" "}
-            Sovereign Sign Protocol Master Engine
+            <span className="gold-text">Sovereign Sign Protocol Master Engine</span>
             <sup className="ml-1 align-super font-mono text-[0.4em] text-gold">TM</sup>
           </p>
           <p className="mt-1 flex items-center gap-2 text-xs text-muted sm:text-sm">

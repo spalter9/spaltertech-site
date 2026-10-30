@@ -21,7 +21,7 @@ export function SectionCard({
     <section
       className={[
         "card-surface rounded-2xl p-5 sm:p-6",
-        glow ? "border-gold/35 shadow-[0_0_40px_-18px_rgba(197,160,89,0.55)]" : "",
+        glow ? "border-gold/35 shadow-[0_0_44px_-16px_rgba(var(--gold-rgb),0.6)]" : "",
         className,
       ].join(" ")}
     >

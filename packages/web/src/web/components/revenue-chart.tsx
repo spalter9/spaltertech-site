@@ -55,8 +55,8 @@ export function RevenueChart({ data }: { data: ChartPoint[] }) {
       <svg viewBox={`0 0 ${W} ${H}`} className="w-full" aria-label="Projected monthly revenue chart">
         <defs>
           <linearGradient id="revfill" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stopColor="#c5a059" stopOpacity="0.34" />
-            <stop offset="100%" stopColor="#c5a059" stopOpacity="0" />
+            <stop offset="0%" stopColor="#6d8bff" stopOpacity="0.34" />
+            <stop offset="100%" stopColor="#6d8bff" stopOpacity="0" />
           </linearGradient>
         </defs>
 
@@ -85,7 +85,7 @@ export function RevenueChart({ data }: { data: ChartPoint[] }) {
         {/* Revenue area + line */}
         <motion.path d={revArea} fill="url(#revfill)"
           initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.8, delay: 0.3 }} />
-        <motion.path d={revPath} fill="none" stroke="#c5a059" strokeWidth={2.2}
+        <motion.path d={revPath} fill="none" stroke="#6d8bff" strokeWidth={2.2}
           initial={{ pathLength: 0 }} animate={{ pathLength: 1 }} transition={{ duration: 1.1, ease: "easeInOut" }} />
         {/* NOI line */}
         <motion.path d={noiPath} fill="none" stroke="#5fb37a" strokeWidth={1.8} strokeDasharray="4 3"
@@ -93,7 +93,7 @@ export function RevenueChart({ data }: { data: ChartPoint[] }) {
 
         {/* End dot */}
         {dots.length > 0 && (
-          <motion.circle cx={dots[dots.length - 1]!.x} cy={dots[dots.length - 1]!.y} r={4} fill="#e4c989"
+          <motion.circle cx={dots[dots.length - 1]!.x} cy={dots[dots.length - 1]!.y} r={4} fill="#8fe9ff"
             initial={{ scale: 0 }} animate={{ scale: 1 }} transition={{ duration: 0.3, delay: 1.2 }} />
         )}
       </svg>

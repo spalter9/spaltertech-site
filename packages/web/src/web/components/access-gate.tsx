@@ -83,7 +83,7 @@ function GateCard({ eyebrow, title, description, focusOnMount, onUnlock }: GateC
           : { duration: 0.42 }
       }
       className="relative bg-obsidian-raised border border-obsidian-line rounded-2xl p-8 md:p-10 max-w-md w-full text-center space-y-7"
-      style={{ boxShadow: "0 0 80px -32px rgba(197,160,89,0.55), 0 24px 60px -30px rgba(0,0,0,0.9)" }}
+      style={{ boxShadow: "0 0 80px -32px rgba(109,139,255,0.55), 0 24px 60px -30px rgba(0,0,0,0.9)" }}
     >
       {/* Branding header */}
       <div className="space-y-4">
@@ -99,7 +99,7 @@ function GateCard({ eyebrow, title, description, focusOnMount, onUnlock }: GateC
       <div
         className="h-px w-full"
         aria-hidden="true"
-        style={{ background: "linear-gradient(to right, transparent, rgba(197,160,89,0.45), transparent)" }}
+        style={{ background: "linear-gradient(to right, transparent, rgba(109,139,255,0.45), transparent)" }}
       />
 
       {/* Passcode form */}
@@ -123,7 +123,7 @@ function GateCard({ eyebrow, title, description, focusOnMount, onUnlock }: GateC
               ? "border-red-500/60 focus:border-red-400"
               : "border-obsidian-line focus:border-gold"
           }`}
-          style={error ? undefined : { boxShadow: "inset 0 0 24px -14px rgba(197,160,89,0.5)" }}
+          style={error ? undefined : { boxShadow: "inset 0 0 24px -14px rgba(109,139,255,0.5)" }}
           required
         />
 
@@ -139,7 +139,7 @@ function GateCard({ eyebrow, title, description, focusOnMount, onUnlock }: GateC
         <button
           type="submit"
           className="font-mono w-full py-3.5 px-6 rounded-xl bg-gold text-obsidian font-semibold uppercase tracking-[0.18em] text-xs hover:bg-gold-bright active:scale-[0.98] transition-all"
-          style={{ boxShadow: "0 0 40px -14px rgba(197,160,89,0.7)" }}
+          style={{ boxShadow: "0 0 40px -14px rgba(109,139,255,0.7)" }}
         >
           Authorize Entry
         </button>
@@ -192,7 +192,7 @@ export function AccessGate() {
         <div
           className="absolute inset-0"
           aria-hidden="true"
-          style={{ background: "radial-gradient(ellipse at 50% -10%, rgba(197,160,89,0.14), transparent 55%)" }}
+          style={{ background: "radial-gradient(ellipse at 50% -10%, rgba(109,139,255,0.14), transparent 55%)" }}
         />
         <GateCard
           eyebrow="Restricted Access"
@@ -225,7 +225,7 @@ export function AccessGateSection({ children }: { children: React.ReactNode }) {
       <div
         className="absolute inset-0"
         aria-hidden="true"
-        style={{ background: "radial-gradient(ellipse at 50% -20%, rgba(197,160,89,0.10), transparent 60%)" }}
+        style={{ background: "radial-gradient(ellipse at 50% -20%, rgba(109,139,255,0.10), transparent 60%)" }}
       />
       <div className="relative mx-auto max-w-[1100px] px-6 py-20 flex justify-center">
         <GateCard

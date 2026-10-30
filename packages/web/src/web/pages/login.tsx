@@ -40,7 +40,7 @@ export default function Login() {
   return (
     <div className="min-h-screen bg-obsidian text-bone grid place-items-center relative overflow-hidden px-6">
       <div className="absolute inset-0 bg-grid opacity-40" />
-      <div className="absolute inset-0" style={{ background: "radial-gradient(ellipse at 50% 30%, rgba(197,160,89,0.12), transparent 55%)" }} />
+      <div className="absolute inset-0" style={{ background: "radial-gradient(ellipse at 50% 30%, rgba(109,139,255,0.12), transparent 55%)" }} />
 
       <Link to="/" className="absolute top-6 left-6 flex items-center gap-2 font-mono text-[11px] uppercase tracking-[0.18em] text-muted hover:text-bone transition-colors">
         <ArrowLeft size={14} /> Home
@@ -50,7 +50,7 @@ export default function Login() {
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.6 }}
-        className="relative w-full max-w-[420px] card-surface p-10"
+        className="relative w-full max-w-[420px] card-surface rounded-2xl p-10"
       >
         <div className="flex flex-col items-center text-center">
           <Crest size={58} />
@@ -61,7 +61,7 @@ export default function Login() {
 
         <button
           onClick={google}
-          className="mt-8 w-full flex items-center justify-center gap-3 py-3 border border-obsidian-line hover:border-gold text-bone font-mono text-xs uppercase tracking-[0.18em] transition-colors"
+          className="mt-8 w-full flex items-center justify-center gap-3 rounded-xl py-3 border border-obsidian-line bg-white/[0.02] hover:border-gold hover:bg-gold/[0.06] text-bone font-mono text-xs uppercase tracking-[0.18em] transition-all"
         >
           <GoogleMark /> Continue with Google
         </button>
@@ -84,7 +84,7 @@ export default function Login() {
           <button
             type="submit"
             disabled={busy}
-            className="w-full flex items-center justify-center gap-2 py-3 bg-gold text-obsidian font-mono text-xs uppercase tracking-[0.2em] hover:bg-gold-bright transition-colors disabled:opacity-60"
+            className="btn-gold w-full !py-3 disabled:opacity-60"
           >
             {busy && <Loader2 size={14} className="animate-spin" />}
             {mode === "signin" ? "Enter Data Room" : "Create Access"}
@@ -118,7 +118,7 @@ function Field({ label, value, onChange, type, placeholder, required }: {
         required={required}
         placeholder={placeholder}
         onChange={(e) => onChange(e.target.value)}
-        className="mt-1.5 w-full bg-obsidian border border-obsidian-line focus:border-gold outline-none px-4 py-3 text-sm text-bone font-body transition-colors"
+        className="mt-1.5 w-full rounded-xl bg-obsidian border border-obsidian-line focus:border-gold focus:shadow-[0_0_0_3px_rgba(109,139,255,0.12)] outline-none px-4 py-3 text-sm text-bone font-body transition-colors"
       />
     </label>
   );

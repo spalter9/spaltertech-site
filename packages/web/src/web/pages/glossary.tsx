@@ -172,7 +172,7 @@ export default function Glossary() {
           aria-hidden
           style={{
             background:
-              "radial-gradient(ellipse at 20% -10%, rgba(197,160,89,0.10), transparent 55%)",
+              "radial-gradient(ellipse at 20% -10%, rgba(109,139,255,0.10), transparent 55%)",
           }}
         />
         <div className="relative mx-auto max-w-[1100px] px-6 py-14 md:py-20">

@@ -8,10 +8,10 @@ import { authClient } from "../lib/auth";
 import { PillarModal, type PillarSlug } from "./pillar-modal";
 import { useGatewayOptional } from "./root-passcode-lock";
 
-const LINKS: { slug: PillarSlug; href: string; label: string; sub: string }[] = [
-  { slug: "master-trust", href: "/pillar/master-trust", label: "Cryptographic Sovereignty", sub: "MasterTrust™" },
-  { slug: "surrealizer", href: "/pillar/surrealizer", label: "Catalog Modernization", sub: "Surrealizer Engine™" },
-  { slug: "ssp", href: "/pillar/ssp", label: "Ecosystem Integration", sub: "Sovereign Sign Protocol™" },
+const LINKS: { slug: PillarSlug; href: string; label: string; short: string; sub: string }[] = [
+  { slug: "master-trust", href: "/pillar/master-trust", label: "Cryptographic Sovereignty", short: "Sovereignty", sub: "MasterTrust™" },
+  { slug: "surrealizer", href: "/pillar/surrealizer", label: "Catalog Modernization", short: "Catalog", sub: "Surrealizer Engine™" },
+  { slug: "ssp", href: "/pillar/ssp", label: "Ecosystem Integration", short: "Ecosystem", sub: "Sovereign Sign Protocol™" },
 ];
 
 export function Nav() {
@@ -21,6 +21,14 @@ export function Nav() {
   const authed = !!me.data;
   const [open, setOpen] = useState(false);
   const [modal, setModal] = useState<PillarSlug | null>(null);
+  const [scrolled, setScrolled] = useState(false);
+
+  useEffect(() => {
+    const onScroll = () => setScrolled(window.scrollY > 12);
+    onScroll();
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => window.removeEventListener("scroll", onScroll);
+  }, []);
 
   // Close the mobile menu on route change and lock body scroll while open.
   useEffect(() => setOpen(false), [loc]);
@@ -32,13 +40,21 @@ export function Nav() {
   }, [open]);
 
   return (
-    <header className="fixed top-0 inset-x-0 z-50 backdrop-blur-xl bg-obsidian/80 border-b border-gold/10">
-      <div className="mx-auto max-w-7xl px-6 h-20 flex items-center justify-between">
-        <Link to="/" className="cursor-pointer">
+    <header
+      className={`fixed top-0 inset-x-0 z-50 glass border-b transition-all duration-500 ${
+        scrolled ? "border-gold/25 shadow-[0_14px_40px_-24px_rgba(0,0,0,0.95)]" : "border-gold/10"
+      }`}
+    >
+      <div
+        className={`mx-auto max-w-[96rem] px-6 flex items-center justify-between transition-all duration-500 ${
+          scrolled ? "h-16" : "h-20"
+        }`}
+      >
+        <Link to="/" className="cursor-pointer shrink-0 mr-6">
           <Monogram compact />
         </Link>
 
-        <nav className="hidden lg:flex min-w-0 flex-1 items-center gap-5 mr-8 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+        <nav className="hidden lg:flex min-w-0 flex-1 items-center gap-5 2xl:gap-7 mr-6 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
           {LINKS.map((l) => (
             <button
               key={l.href}
@@ -46,11 +62,10 @@ export function Nav() {
               onClick={() => setModal(l.slug)}
               aria-label={`${l.label} — ${l.sub}`}
               title={l.sub}
-              className={`group relative font-mono whitespace-nowrap text-[10px] uppercase tracking-[0.14em] transition-colors ${
-                loc === l.href ? "text-gold" : "text-muted hover:text-bone"
-              }`}
+              className={`group relative nav-link ${loc === l.href ? "is-active" : ""}`}
             >
-              {l.label}
+              <span className="hidden 2xl:inline">{l.label}</span>
+              <span className="2xl:hidden">{l.short}</span>
               {/* Tech name surfaced on hover — deep architecture stays discoverable */}
               <span className="pointer-events-none absolute left-1/2 top-full mt-3 -translate-x-1/2 whitespace-nowrap rounded-sm border border-obsidian-line bg-obsidian-raised px-3 py-1.5 font-mono text-[9px] tracking-[0.18em] text-gold opacity-0 translate-y-1 shadow-[0_10px_30px_-15px_rgba(0,0,0,0.9)] transition-all duration-200 group-hover:opacity-100 group-hover:translate-y-0">
                 {l.sub}
@@ -61,9 +76,7 @@ export function Nav() {
             to="/infrastructure"
             aria-label="Compliance & Settlement Infrastructure"
             title="Compliance & Settlement"
-            className={`font-mono whitespace-nowrap text-[10px] uppercase tracking-[0.14em] transition-colors ${
-              loc === "/infrastructure" ? "text-gold" : "text-muted hover:text-bone"
-            }`}
+            className={`nav-link ${loc === "/infrastructure" ? "is-active" : ""}`}
           >
             Compliance
           </Link>
@@ -71,9 +84,7 @@ export function Nav() {
             to="/enterprise"
             aria-label="Enterprise infrastructure for master trusts, labels, and platforms"
             title="Enterprise"
-            className={`font-mono whitespace-nowrap text-[10px] uppercase tracking-[0.14em] transition-colors ${
-              loc === "/enterprise" ? "text-gold" : "text-muted hover:text-bone"
-            }`}
+            className={`nav-link ${loc === "/enterprise" ? "is-active" : ""}`}
           >
             Enterprise
           </Link>
@@ -81,9 +92,7 @@ export function Nav() {
             to="/ssp-framework"
             aria-label="Sovereign Sign Protocol"
             title="Sovereign Sign Protocol™"
-            className={`font-mono whitespace-nowrap text-[10px] uppercase tracking-[0.14em] transition-colors ${
-              loc === "/ssp-framework" ? "text-gold" : "text-muted hover:text-bone"
-            }`}
+            className={`nav-link ${loc === "/ssp-framework" ? "is-active" : ""}`}
           >
             SSP Protocol
           </Link>
@@ -91,9 +100,7 @@ export function Nav() {
             to="/engine"
             aria-label="SSP Master Engine"
             title="SSP Master Engine™"
-            className={`font-mono whitespace-nowrap text-[10px] uppercase tracking-[0.14em] transition-colors ${
-              loc === "/engine" ? "text-gold" : "text-muted hover:text-bone"
-            }`}
+            className={`nav-link ${loc === "/engine" ? "is-active" : ""}`}
           >
             Master Engine
           </Link>
@@ -101,9 +108,7 @@ export function Nav() {
             to="/surreal-studio"
             aria-label="Surreal Engine Float32 Studio"
             title="Surreal Studio™"
-            className={`font-mono whitespace-nowrap text-[10px] uppercase tracking-[0.14em] transition-colors ${
-              loc === "/surreal-studio" ? "text-gold" : "text-muted hover:text-bone"
-            }`}
+            className={`nav-link ${loc === "/surreal-studio" ? "is-active" : ""}`}
           >
             Surreal Studio
           </Link>
@@ -132,19 +137,14 @@ export function Nav() {
               className="hidden sm:inline-flex items-center gap-1.5 rounded-lg border border-obsidian-line px-3 py-2 font-mono text-[10px] uppercase tracking-[0.14em] text-muted transition-colors hover:border-gold/40 hover:text-gold"
               title="Back to Portal Selection"
             >
-              <ArrowLeftRight size={12} /> Gateways
+              <ArrowLeftRight size={12} /> <span className="hidden 2xl:inline">Gateways</span>
             </button>
           )}
           {authed ? (
             <>
               <Link
                 to="/data-room"
-                className={`hidden sm:flex items-center gap-2 whitespace-nowrap rounded-xl px-5 py-2.5 font-mono text-[11px] font-semibold uppercase tracking-[0.18em] transition-opacity ${
-                  loc.startsWith("/data-room")
-                    ? "bg-gradient-to-r from-gold-bright to-gold text-obsidian"
-                    : "bg-gradient-to-r from-gold to-gold-bright text-obsidian hover:opacity-90"
-                }`}
-                style={{ boxShadow: "0 0 30px -10px rgba(197,160,89,0.5)" }}
+                className="btn-gold hidden sm:flex !px-5 !py-2.5 !text-[11px]"
               >
                 <Lock size={13} /> Data Room
               </Link>
@@ -159,8 +159,7 @@ export function Nav() {
           ) : (
             <Link
               to="/data-room"
-              className="hidden sm:flex items-center gap-2 whitespace-nowrap rounded-xl bg-gradient-to-r from-gold to-gold-bright px-5 py-2.5 font-mono text-[11px] font-semibold uppercase tracking-[0.18em] text-obsidian transition-opacity hover:opacity-90"
-              style={{ boxShadow: "0 0 30px -10px rgba(197,160,89,0.5)" }}
+              className="btn-gold hidden sm:flex !px-5 !py-2.5 !text-[11px]"
             >
               <Lock size={13} /> Data Room
             </Link>

@@ -75,7 +75,7 @@ export function Authorship() {
         className="absolute inset-0"
         aria-hidden
         style={{
-          background: "radial-gradient(ellipse at 15% 0%, rgba(197,160,89,0.09), transparent 55%)",
+          background: "radial-gradient(ellipse at 15% 0%, rgba(109,139,255,0.09), transparent 55%)",
         }}
       />
 
@@ -89,7 +89,7 @@ export function Authorship() {
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true, margin: "-80px" }}
               transition={{ duration: 0.7 }}
-              className="mt-3 font-display text-4xl leading-[1.04] md:text-5xl lg:text-[3.4rem]"
+              className="mt-3 font-sora font-semibold tracking-tight text-4xl leading-[1.04] md:text-5xl lg:text-[3.4rem]"
             >
               The Copyright Office will register your record.{" "}
               <span className="gold-text">But only if you can say which parts you made.</span>
@@ -125,7 +125,7 @@ export function Authorship() {
                 transition={{ duration: 0.5, delay: i * 0.08 }}
                 className="border-l-2 border-gold/70 bg-obsidian p-6"
               >
-                <h3 className="font-display text-xl text-bone">{a.who}</h3>
+                <h3 className="font-sora font-semibold tracking-tight text-xl text-bone">{a.who}</h3>
                 <p className="mt-1.5 text-sm leading-relaxed text-muted">{a.need}</p>
               </motion.div>
             ))}
@@ -135,7 +135,7 @@ export function Authorship() {
         {/* How it runs — four steps, because it genuinely is a sequence. */}
         <div className="mt-24">
           <p className="eyebrow">Audio in, audio out</p>
-          <h3 className="mt-3 max-w-2xl font-display text-3xl leading-[1.1] md:text-4xl">
+          <h3 className="mt-3 max-w-2xl font-sora font-semibold tracking-tight text-3xl leading-[1.1] md:text-4xl">
             Coming in, it is examined. Going out, it is sealed.
           </h3>
           <p className="mt-4 max-w-2xl leading-relaxed text-muted">
@@ -167,7 +167,7 @@ export function Authorship() {
                     {s.side}
                   </span>
                 </div>
-                <h4 className="mt-4 font-display text-xl leading-tight text-bone">{s.title}</h4>
+                <h4 className="mt-4 font-sora font-semibold tracking-tight text-xl leading-tight text-bone">{s.title}</h4>
                 <p className="mt-2 text-sm leading-relaxed text-muted">{s.body}</p>
               </motion.div>
             ))}
@@ -178,7 +178,7 @@ export function Authorship() {
         <div className="mt-20 grid gap-10 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.1fr)] lg:gap-16">
           <div>
             <p className="eyebrow">What comes back</p>
-            <h3 className="mt-3 font-display text-3xl leading-[1.1]">
+            <h3 className="mt-3 font-sora font-semibold tracking-tight text-3xl leading-[1.1]">
               A verdict per stem, and the reasoning behind it
             </h3>
             <p className="mt-5 leading-relaxed text-muted">
@@ -206,7 +206,7 @@ export function Authorship() {
               ].map((row) => (
                 <div key={row.stem} className="rounded-xl border border-obsidian-line bg-obsidian/60 p-4">
                   <div className="flex flex-wrap items-center justify-between gap-2">
-                    <span className="font-display text-lg text-bone">{row.stem}</span>
+                    <span className="font-sora font-semibold tracking-tight text-lg text-bone">{row.stem}</span>
                     <span
                       className={`rounded-full border px-2.5 py-0.5 font-mono text-[9px] uppercase tracking-[0.14em] ${
                         row.tone === "verified"

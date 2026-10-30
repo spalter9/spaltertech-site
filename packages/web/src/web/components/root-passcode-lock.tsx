@@ -129,7 +129,7 @@ export function RootPasscodeLock({ children }: { children: ReactNode }) {
           aria-hidden="true"
           style={{
             background:
-              "radial-gradient(ellipse at 50% -10%, rgba(197,160,89,0.18), transparent 55%)",
+              "radial-gradient(ellipse at 50% -10%, rgba(109,139,255,0.18), transparent 55%)",
           }}
         />
 
@@ -155,7 +155,7 @@ export function RootPasscodeLock({ children }: { children: ReactNode }) {
               className="relative w-full max-w-md space-y-7 rounded-2xl border border-obsidian-line bg-obsidian-raised p-8 text-center md:p-10"
               style={{
                 boxShadow:
-                  "0 0 80px -32px rgba(197,160,89,0.55), 0 24px 60px -30px rgba(0,0,0,0.9)",
+                  "0 0 80px -32px rgba(109,139,255,0.55), 0 24px 60px -30px rgba(0,0,0,0.9)",
               }}
             >
               <div className="space-y-4">
@@ -163,7 +163,7 @@ export function RootPasscodeLock({ children }: { children: ReactNode }) {
                   <div
                     className="absolute inset-0 blur-2xl"
                     aria-hidden="true"
-                    style={{ background: "radial-gradient(circle, rgba(197,160,89,0.3), transparent 65%)" }}
+                    style={{ background: "radial-gradient(circle, rgba(109,139,255,0.3), transparent 65%)" }}
                   />
                   <img
                     src="/images/mastertrust-emblem.png"
@@ -185,7 +185,7 @@ export function RootPasscodeLock({ children }: { children: ReactNode }) {
                 aria-hidden="true"
                 style={{
                   background:
-                    "linear-gradient(to right, transparent, rgba(197,160,89,0.45), transparent)",
+                    "linear-gradient(to right, transparent, rgba(109,139,255,0.45), transparent)",
                 }}
               />
 
@@ -216,7 +216,7 @@ export function RootPasscodeLock({ children }: { children: ReactNode }) {
                   style={
                     error
                       ? undefined
-                      : { boxShadow: "inset 0 0 24px -14px rgba(197,160,89,0.5)" }
+                      : { boxShadow: "inset 0 0 24px -14px rgba(109,139,255,0.5)" }
                   }
                 />
 
@@ -233,8 +233,7 @@ export function RootPasscodeLock({ children }: { children: ReactNode }) {
                 <button
                   type="submit"
                   disabled={unlocking || !code.trim()}
-                  className="w-full rounded-xl bg-gold px-6 py-3.5 font-mono text-xs font-semibold uppercase tracking-[0.18em] text-obsidian transition-all hover:bg-gold-bright active:scale-[0.98] disabled:opacity-50"
-                  style={{ boxShadow: "0 0 40px -14px rgba(197,160,89,0.7)" }}
+                  className="btn-gold w-full !py-3.5 disabled:pointer-events-none disabled:opacity-40"
                 >
                   {unlocking ? "Unlocking…" : "Unlock Gateway"}
                 </button>
@@ -351,21 +350,21 @@ function PortalDoor({
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.55, delay }}
       onClick={onClick}
-      className="group card-surface rounded-2xl p-7 text-left transition-all hover:-translate-y-1 hover:border-gold/50"
+      className="group card-surface rounded-2xl p-8 text-left hover:-translate-y-1.5 hover:border-gold/60"
     >
       <div className="mb-5 flex items-center justify-between">
         <div className="flex h-12 w-12 items-center justify-center rounded-xl border border-gold/35 bg-gold/10 text-gold transition-colors group-hover:bg-gold group-hover:text-obsidian">
           <Icon className="h-6 w-6" strokeWidth={1.75} aria-hidden />
         </div>
-        <span className="font-mono text-2xl text-obsidian-line transition-colors group-hover:text-gold/35">
+        <span className="font-mono text-3xl text-bone/10 transition-colors duration-500 group-hover:text-gold/40">
           {index}
         </span>
       </div>
       <p className="eyebrow">Gateway {index}</p>
       <h2 className="mt-2 font-display text-xl text-bone sm:text-2xl">{title}</h2>
       <p className="mt-3 text-sm leading-relaxed text-muted">{subtitle}</p>
-      <p className="mt-6 font-mono text-[10px] uppercase tracking-[0.18em] text-gold">
-        Enter gateway →
+      <p className="mt-6 inline-flex items-center gap-2 font-mono text-[10px] uppercase tracking-[0.18em] text-gold transition-all duration-300 group-hover:gap-3.5">
+        Enter gateway <span aria-hidden>→</span>
       </p>
     </motion.button>
   );

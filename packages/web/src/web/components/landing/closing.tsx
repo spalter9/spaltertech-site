@@ -9,11 +9,11 @@ export function Closing() {
       <section className="relative py-28 border-t border-obsidian-line bg-obsidian-raised/40 overflow-hidden">
         <div
           className="absolute inset-0"
-          style={{ background: "radial-gradient(ellipse at 50% 120%, rgba(197,160,89,0.12), transparent 55%)" }}
+          style={{ background: "radial-gradient(ellipse at 50% 120%, rgba(109,139,255,0.12), transparent 55%)" }}
         />
         <div className="relative mx-auto max-w-[1200px] px-6 text-center flex flex-col items-center">
           <Crest size={56} />
-          <h2 className="font-display text-4xl md:text-5xl mt-8 max-w-3xl leading-[1.05]">
+          <h2 className="font-sora text-3xl font-semibold tracking-tight sm:text-5xl mt-8 max-w-3xl leading-[1.05]">
             The infrastructure is built. The technology is bulletproof.
           </h2>
           <p className="text-muted mt-5 max-w-xl leading-relaxed">
@@ -22,7 +22,7 @@ export function Closing() {
           </p>
           <Link
             to="/data-room"
-            className="mt-10 flex items-center gap-2 px-8 py-4 bg-gold text-obsidian font-mono text-xs uppercase tracking-[0.2em] hover:bg-gold-bright transition-colors"
+            className="btn-gold mt-10"
           >
             Access the Data Room <ArrowUpRight size={15} />
           </Link>

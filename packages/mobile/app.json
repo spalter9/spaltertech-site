@@ -5,7 +5,7 @@
       "package": "com.appId.runable",
       "adaptiveIcon": {
         "foregroundImage": "./assets/icon.png",
-        "backgroundColor": "#ffffff"
+        "backgroundColor": "#060A14"
       },
       "edgeToEdgeEnabled": true
     },
@@ -21,14 +21,14 @@
     "splash": {
       "image": "./assets/splash-icon.png",
       "resizeMode": "cover",
-      "backgroundColor": "#ffffff"
+      "backgroundColor": "#060A14"
     },
     "name": "mobile",
     "slug": "mobile",
     "version": "1.0.0",
     "scheme": "runable-soverei-fr4bv1k",
     "orientation": "portrait",
-    "userInterfaceStyle": "automatic",
+    "userInterfaceStyle": "dark",
     "newArchEnabled": true,
     "web": {
       "favicon": "./assets/favicon.png",

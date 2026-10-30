@@ -25,7 +25,7 @@ export default function NotFound() {
         <div
           className="absolute inset-0"
           aria-hidden="true"
-          style={{ background: "radial-gradient(ellipse at 50% -10%, rgba(197,160,89,0.12), transparent 55%)" }}
+          style={{ background: "radial-gradient(ellipse at 50% -10%, rgba(109,139,255,0.12), transparent 55%)" }}
         />
         <div className="relative mx-auto flex min-h-[80vh] max-w-2xl flex-col items-center justify-center px-6 py-28 text-center">
           <Crest size={52} />
