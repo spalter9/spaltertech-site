@@ -2,28 +2,38 @@ import type { LucideIcon } from "lucide-react";
 import { BadgeCheck, Bot, Clapperboard, Gamepad2, Landmark, Layers, Music2, Presentation, UserCheck } from "lucide-react";
 import type { EngineModuleId } from "../../lib/engine-data";
 
-interface TabDef {
+export interface TabDef {
   id: EngineModuleId;
   label: string;
   short: string;
+  blurb: string;
   icon: LucideIcon;
 }
 
-const TABS: TabDef[] = [
-  { id: "investor", label: "Investor Briefing", short: "Investors", icon: Presentation },
-  { id: "multitask", label: "Multitask · All Rails", short: "Multitask", icon: Layers },
+export const TABS: TabDef[] = [
+  { id: "investor", label: "Investor Briefing", short: "Investors",
+    blurb: "The business case: market, traction and the protocol economics in one briefing.", icon: Presentation },
+  { id: "multitask", label: "Multitask · All Rails", short: "Multitask",
+    blurb: "Every industry rail running concurrently — watch jobs settle in parallel.", icon: Layers },
   {
     id: "authorship",
     label: "Authorship & Provenance",
     short: "Authorship",
+    blurb: "Prove who made what, stem by stem, with provenance embedded at the source.",
     icon: UserCheck,
   },
-  { id: "credit", label: "Credit Layer", short: "Credit", icon: BadgeCheck },
-  { id: "gaming", label: "Video Games & Virtual Economies", short: "Games", icon: Gamepad2 },
-  { id: "film", label: "Film, Television & Streaming", short: "Film", icon: Clapperboard },
-  { id: "music", label: "Music & Spatial Audio", short: "Music", icon: Music2 },
-  { id: "ai", label: "Generative AI & Data Licensing", short: "AI / DIL", icon: Bot },
-  { id: "tax", label: "IRS Tax Settlement Terminal", short: "Tax Engine", icon: Landmark },
+  { id: "credit", label: "Credit Layer", short: "Credit",
+    blurb: "Verified credit and ownership records that travel with the work.", icon: BadgeCheck },
+  { id: "gaming", label: "Video Games & Virtual Economies", short: "Games",
+    blurb: "Microtransaction routing and royalty splits for virtual economies.", icon: Gamepad2 },
+  { id: "film", label: "Film, Television & Streaming", short: "Film",
+    blurb: "Box-office gross split across talent and treasuries, with chain-of-title checks.", icon: Clapperboard },
+  { id: "music", label: "Music & Spatial Audio", short: "Music",
+    blurb: "Per-stream micropayments and stem isolation with spatial preview.", icon: Music2 },
+  { id: "ai", label: "Generative AI & Data Licensing", short: "AI / DIL",
+    blurb: "License validation and per-prompt micro-metering for generative AI.", icon: Bot },
+  { id: "tax", label: "IRS Tax Settlement Terminal", short: "Tax Engine",
+    blurb: "Smart-contract IRS withholding at the point of sale, with audit receipts.", icon: Landmark },
 ];
 
 interface ModuleTabsProps {

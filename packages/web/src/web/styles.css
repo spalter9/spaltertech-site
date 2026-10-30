@@ -328,3 +328,24 @@
   animation: aurora-drift 18s ease-in-out infinite;
   pointer-events: none;
 }
+
+@keyframes mesh-spin { to { transform: rotate(360deg); } }
+.mesh-spin {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: mesh-spin 50s linear infinite;
+}
+@keyframes spark-draw { from { stroke-dasharray: 400; stroke-dashoffset: 400; } to { stroke-dasharray: 400; stroke-dashoffset: 0; } }
+.spark-draw { animation: spark-draw 1.6s var(--ease-out-expo) both; }
+
+/* Engine cards: gradient hairline across the top edge */
+.theme-engine .card-surface::before {
+  content: "";
+  position: absolute;
+  inset: 0 0 auto 0;
+  height: 1px;
+  border-radius: inherit;
+  background: linear-gradient(90deg, transparent, rgba(143, 233, 255, 0.55), rgba(143, 91, 255, 0.4), transparent);
+  opacity: 0.7;
+  pointer-events: none;
+}
