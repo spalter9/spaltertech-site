@@ -13,7 +13,9 @@ import { compliance } from "./routes/compliance";
 import { content } from "./routes/content";
 import { spalty } from "./routes/spalty";
 import { sovereignProtocol } from "./routes/sovereign-protocol";
-import { withUser } from "./middleware/auth";
+import { withUser, isAllowed } from "./middleware/auth";
+import { readFile, stat } from "node:fs/promises";
+import path from "node:path";
 
 // Three-pillar core architecture:
 //   masterTrust — Pillar 1 (Legal / Data Room + escrow vault), auth-gated
@@ -216,6 +218,72 @@ app.get("/api/surealizer/masters/:masterId/download", async (c) => {
   } catch {
     return c.json({ error: "Master file missing on disk" }, 404);
   }
+});
+
+/* ───────────────────────────────────────────────────────────
+   DATA ROOM — privileged briefing videos
+   Served from outside the public/ static root and gated the same way as
+   the Data Room's oRPC procedures (signed in + allowlisted), so the file
+   can't be reached by a direct URL the way a plain /videos/*.mp4 asset
+   could. GET /api/data-room/video/:name
+   ─────────────────────────────────────────────────────────── */
+const DATA_ROOM_VIDEO_DIR = path.join(import.meta.dirname, "protected-media", "data-room-videos");
+// Allowlist of servable filenames — never build a path from the URL param directly.
+const DATA_ROOM_VIDEOS = new Set([
+  "mt-landing-16x9-v4.mp4",
+  "ssp-directive-16x9-v2.mp4",
+  "who-is-spalty-16x9.mp4",
+  "mt-main-16x9.mp4",
+]);
+
+app.get("/api/data-room/video/:name", async (c) => {
+  const session = await auth.api.getSession({ headers: c.req.raw.headers });
+  if (!session || !(await isAllowed(session.user.email))) {
+    return c.json({ error: "Not authorized" }, 401);
+  }
+
+  const name = c.req.param("name");
+  if (!DATA_ROOM_VIDEOS.has(name)) return c.json({ error: "Unknown video" }, 404);
+  const filePath = path.join(DATA_ROOM_VIDEO_DIR, name);
+
+  let size: number;
+  try {
+    size = (await stat(filePath)).size;
+  } catch {
+    return c.json({ error: "Video missing on disk" }, 404);
+  }
+
+  const range = c.req.header("range");
+  const baseHeaders: Record<string, string> = {
+    "Content-Type": "video/mp4",
+    "Accept-Ranges": "bytes",
+    "Cache-Control": "private, no-store",
+    "Content-Disposition": "inline",
+  };
+
+  if (!range) {
+    const bytes = await readFile(filePath);
+    return new Response(bytes, { status: 200, headers: { ...baseHeaders, "Content-Length": String(size) } });
+  }
+
+  const match = /bytes=(\d*)-(\d*)/.exec(range);
+  if (!match) return new Response(null, { status: 416, headers: { "Content-Range": `bytes */${size}` } });
+  const start = match[1] ? Number(match[1]) : 0;
+  const end = match[2] ? Number(match[2]) : size - 1;
+  if (start >= size || end >= size || start > end) {
+    return new Response(null, { status: 416, headers: { "Content-Range": `bytes */${size}` } });
+  }
+
+  const bytes = await readFile(filePath);
+  const chunk = bytes.subarray(start, end + 1);
+  return new Response(chunk, {
+    status: 206,
+    headers: {
+      ...baseHeaders,
+      "Content-Range": `bytes ${start}-${end}/${size}`,
+      "Content-Length": String(chunk.byteLength),
+    },
+  });
 });
 
 /* ───────────────────────────────────────────────────────────
