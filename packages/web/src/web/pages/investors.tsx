@@ -364,7 +364,7 @@ export default function Investors() {
         <div className="mt-10 grid gap-4 md:grid-cols-2">
           <div className="card-surface rounded-2xl p-7">
             <h3 className="font-display text-2xl text-bone">Bradley Spalter</h3>
-            <p className="mt-1 font-mono text-[11px] uppercase tracking-[0.16em] text-gold">CEO &amp; Music Designer</p>
+            <p className="mt-1 font-mono text-[11px] uppercase tracking-[0.16em] text-gold">CTO &amp; Music Designer</p>
             <p className="mt-3 text-sm leading-relaxed text-muted">
               Songwriter and producer since 1993 — credited writer/producer on &ldquo;I Said You Lied,&rdquo;
               from Gladys Knight&rsquo;s Grammy-winning album <em>At Last</em>, with additional writing and
@@ -376,7 +376,7 @@ export default function Investors() {
           </div>
           <div className="card-surface rounded-2xl p-7">
             <h3 className="font-display text-2xl text-bone">Peter Van Barkal</h3>
-            <p className="mt-1 font-mono text-[11px] uppercase tracking-[0.16em] text-gold">CTO</p>
+            <p className="mt-1 font-mono text-[11px] uppercase tracking-[0.16em] text-gold">CEO</p>
             <p className="mt-3 text-sm leading-relaxed text-muted">
               The Surreal Audio Engine and the forensic pipeline at the core of the protocol — the
               signal science that makes the finding defensible.
