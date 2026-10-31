@@ -806,6 +806,27 @@ real secrets there. `.wrangler/` (local D1 state) is also gitignored.
   .mp3/.wav. A Dropbox file request "AI Track Test" (→ `/AI Track
   Test`, open, no deadline) exists for the friend's tracks; still
   empty as of Oct 31.
+- **Two sites, two looks — now one look.** The "Aurora" redesign
+  (#39/#40, Oct 30) went to `packages/web`, which Vercel deploys from
+  `main` as project `spaltertech-portal` (team
+  `spalter77-3197s-projects`, public alias
+  `spaltertech-portal-spalter77-3197s-projects.vercel.app`, gate code
+  1967; no custom domain; the Vercel account connected to Claude has
+  no projects, so domain changes need Bradley). sspengine.com never got
+  it — Bradley "hadn't seen it". **Ported to sspengine.com in commit
+  `4b9521a` on `main`:** `index.html` `:root` remapped (navy
+  `--chassis #060a14`; `--amber` now carries the blue accent `#6d8bff`
+  so every `var(--amber)` follows; `--disp` Sora; new `--body` Manrope
+  and `--warn #f5b74a` for caution states — meters' traffic lights,
+  Examiner "mixed", `#fLabels` review, attribution offline), ~170
+  literal amber/orange/magenta/cyan colors remapped (scratchpad
+  `aurora_tools/apply_aurora.py` holds the map), and an appended
+  "AURORA" style block restyles cards/buttons/locks/type. Reds kept;
+  white paper docs untouched. surreal-audio / immersive / get-android
+  got the same palette + a real font link (they never loaded fonts).
+  Rights Registry pages (scan, split, registry/) intentionally still
+  cream "paper" — offer to convert. Playwright gotcha: `#boom` breathes
+  (animation) so clicks need `{ force: true }`.
 
 ## Working style established this session
 
