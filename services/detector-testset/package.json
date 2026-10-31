@@ -1,0 +1,9 @@
+{
+  "name": "detector-testset",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "generate": "node generate.ts",
+    "test": "node --test test/jobs.test.ts"
+  }
+}

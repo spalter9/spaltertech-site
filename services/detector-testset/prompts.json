@@ -1,0 +1,41 @@
+{
+  "note": "Styles chosen to sit next to the human reference records (2000s R&B/pop, UK R&B/garage, soul, hip-hop) so a detector can't pass the test by spotting genre. Prompts stay under 300 characters because MiniMax rejects longer ones. Lyrics are original and only go to the generators that sing.",
+  "songs": [
+    {
+      "id": "rnb-ballad",
+      "prompt": "Early 2000s R&B ballad, 68 BPM, warm Rhodes piano, finger snaps, deep 808 sub, lush layered female lead vocal with stacked harmonies, polished radio mix",
+      "negativePrompt": "lo-fi, distortion, noise",
+      "lyrics": "[verse]\nLate night, porch light, still waiting on you\nPhone face down, I know what I'm gonna do\n[chorus]\nTell me that you want it, say it slow\nIf you mean it, baby, let me know"
+    },
+    {
+      "id": "pop-rnb-uptempo",
+      "prompt": "Uptempo 2004 pop R&B club single, 102 BPM, bouncy syncopated drums, plucked synth hook, handclaps, confident female vocal, short male rap verse, bright commercial mix",
+      "negativePrompt": "acoustic, ballad, lo-fi",
+      "lyrics": "[verse]\nStep in the room and the lights go low\nEverybody watching, put on a show\n[chorus]\nKeep it moving, don't you stop\nTurn it up until the speakers pop"
+    },
+    {
+      "id": "uk-garage-rnb",
+      "prompt": "Late 90s UK garage R&B, 132 BPM two-step shuffle, chopped vocal stabs, deep rolling bassline, airy pads, smooth female vocal, London pirate radio energy",
+      "negativePrompt": "four on the floor, trap hi-hats",
+      "lyrics": "[verse]\nSaturday, the city's calling out my name\nSouth side, the bassline never sounds the same\n[chorus]\nStay with me until the morning light\nMove with me, we're running out of night"
+    },
+    {
+      "id": "southern-soul",
+      "prompt": "Classic soul ballad with gospel roots, 76 BPM, Hammond organ, live drums with brushes, warm bass guitar, horn swells, powerful mature female lead with choir backing",
+      "negativePrompt": "electronic drums, synth bass",
+      "lyrics": "[verse]\nYou said forever, then you walked out the door\nI kept the light on like I did before\n[chorus]\nI won't beg you, I won't call your name\nBut Lord, this house don't feel the same"
+    },
+    {
+      "id": "boom-bap",
+      "prompt": "East coast hip-hop, 90 BPM boom bap, dusty sampled piano loop, hard snare, upright bass line, scratched hook, male rapper with gritty confident flow",
+      "negativePrompt": "autotune, EDM",
+      "lyrics": "[verse]\nCame up on the block where the cold wind bites\nPen to the pad every single night\nNo shortcuts taken, I earned every stripe\n[chorus]\nStill standing tall, still standing tall"
+    },
+    {
+      "id": "modern-trap",
+      "prompt": "Modern melodic trap, 140 BPM half-time, rolling hi-hats, distorted 808 slides, dark piano melody, auto-tuned male vocal, wide stereo mix, loud mastered",
+      "negativePrompt": "acoustic, live drums",
+      "lyrics": "[verse]\nRunning through the city with the windows down\nEverybody switching when I come around\n[chorus]\nI been in the trap, I been in my zone\nNow they call my phone, now they call my phone"
+    }
+  ]
+}

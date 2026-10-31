@@ -736,6 +736,37 @@ real secrets there. `.wrangler/` (local D1 state) is also gitignored.
   Verified on
   a 90 BPM test song with a known chorus at 32.0s (`structured_song.wav`
   generator in this session): picks 32.0s / 8 bars / 90 BPM.
+- **The Examiner's human-vs-AI verdict doesn't work** (found Oct 31,
+  from a friend of Bradley's whose AI tracks came back "human"). Ran
+  main's exact `analyzeBuffer` + band filters in Chromium: stereo white
+  noise → "Likely human performance · Claimable" in all three bands
+  (91/95/69); a fully machine-made, perfectly quantized song → "Claimable"
+  in mid (69); a steady 440 Hz sine → 29–50 ms "micro-timing deviation".
+  The five features reward messiness, not performance: timing grid is
+  anchored to the first onset so it drifts (and false onsets on steady
+  tones), wide stereo = human (our own width/spread raises the score),
+  tonal = human, pitch read off a polyphonic mix. Spalty also invented
+  how it works (breath detection, "the model gets trained on failures" —
+  there is no model) and calls DistroKid "our Phase I partner" (the plan
+  says target). Not fixed yet — Bradley chose to test dedicated detectors
+  first: **Hive** (separate vocal/instrumental models, 3 s timestamped
+  chunks, names the generator) vs **Modulate** (self-serve, free tier,
+  but admits polished human masters sometimes read as AI). Waiting on
+  his API keys and the friend's tracks. Proposed immediate fixes still
+  pending his go-ahead: no verdict on noise/steady tones, fix the timing
+  grid, drop "Claimable" from measurement-only results, give Spalty the
+  facts. Harness: scratchpad `examtest/` (extracted `exam_core.js` +
+  `harness.html` + `run_exam.js`).
+  **Known-AI test set generator** (`services/detector-testset/`, dev
+  branch only, not the site): implements Bradley's pasted
+  `GenerateMusicInput`/`MusicJob`/`MusicProvider` contract over
+  Replicate (lyria-2, minimax music-1.5, stable-audio-2.5, elevenlabs
+  music, musicgen, ace-step), 6 songs × 6 models, manifest with
+  generator/version/seed/SHA-256 per file. Needs `REPLICATE_API_TOKEN`
+  (`api.replicate.com` and `replicate.delivery` are reachable from the
+  sandbox). Suno/Udio have no official API — add those by hand.
+  `node --test services/detector-testset/test/jobs.test.ts` (fake
+  Replicate server, 23 tests).
 
 ## Working style established this session
 
