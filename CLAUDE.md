@@ -775,14 +775,25 @@ real secrets there. `.wrangler/` (local D1 state) is also gitignored.
   isn't wired), and `provenance.ts` (ProvenanceResult from ID3 / RIFF /
   FLAC / Ogg / MP4 tags, C2PA manifests — Suno attaches C2PA to new
   downloads — filename, source URL; metadata can only say AI or
-  unknown, `likely_human` needs a listening detector). The spec's
-  MusicGen call used the official-models endpoint, which MusicGen
-  can't use. `npm test` in that folder: 58 tests. Bradley's The Trap
-  files all read `unknown` (only tag: title "Untitled"). Suno markers
-  ranked per Bradley's pasted rules: song link 0.95 > "made with suno"
-  0.90 > suno.com/.ai domain 0.85 > bare "suno" 0.60, and the bare
-  word (likewise other generators' bare names) only counts in
-  comment/encoder fields — "suno" is Hindi/Urdu for "listen".
+  unknown). The spec's MusicGen call used the official-models
+  endpoint, which MusicGen can't use. `npm test` in that folder: 66
+  tests. Bradley's The Trap files all read `unknown` (only tag: title
+  "Untitled"). Suno markers ranked per Bradley's pasted rules: song
+  link 0.95 > "made with suno" 0.90 > suno.com/.ai domain 0.85 > bare
+  "suno" 0.60, and the bare word (likewise other generators' bare
+  names) only counts in comment/encoder fields — "suno" is Hindi/Urdu
+  for "listen". Verdicts per his next paste: noisy-OR confidence;
+  ≥ `PROVENANCE_REVIEW_THRESHOLD` (0.85) with a tag/manifest/URL
+  signal → likely_suno (likely_ai_other if the labels name another
+  generator — my adaptation, his rule said Suno only); classifier-only
+  → likely_ai_other; ≤ 0.20 and no signals → unknown; else unknown +
+  `needs_review`. Nothing returns likely_human any more (a detector
+  that heard no AI is weight 0, not a signal). `ProvenanceDetector`
+  / `MetadataProvenanceDetector.detect({buffer,url,filename})`;
+  `PROVENANCE_ML_ENABLED` (default false) gates the listening
+  detectors. He also pasted a UUID (13729aae-…-249676e75db3): not a
+  public Suno song (suno.com/song/… is 404) and Suno's CDN now needs
+  signed links (403 MissingKey), so tracks must come as files.
 
 ## Working style established this session
 

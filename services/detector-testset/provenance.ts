@@ -5,12 +5,18 @@
  * filename and the URL it was fetched from, and folds in a hosted detector's
  * verdict when one is supplied.
  *
- * Rule that the Examiner broke and this keeps: missing metadata is not
+ * Rule that the Examiner broke and this keeps: missing evidence is not
  * evidence of a human. Tags strip in one click and older Suno downloads carry
- * none, so metadata can only ever say "AI" or "unknown". likely_human needs a
- * detector that actually listened.
+ * none, so nothing here returns likely_human; a clean file is "unknown".
  *
- *   node services/detector-testset/provenance.ts song.mp3 [more files] [--source-url https://...]
+ * Verdicts (confidence = noisy-OR over the AI signals found):
+ *   >= review threshold (0.85) with a tag/manifest/URL signal -> likely_suno (likely_ai_other if it names another generator)
+ *   >= review threshold from classifier signals only          -> likely_ai_other
+ *   <= 0.20 with no signals at all                            -> unknown
+ *   anything else                                             -> unknown, needs_review: true
+ *
+ *   node services/detector-testset/provenance.ts song.mp3 [https://...mp3] [--source-url https://...]
+ *   PROVENANCE_ML_ENABLED=false  PROVENANCE_REVIEW_THRESHOLD=0.85
  */
 
 import { pathToFileURL } from "node:url";
@@ -20,7 +26,12 @@ export type ProvenanceResult = {
   confidence: number; // 0..1
   evidence: Evidence[];
   checkedAt: string;
+  needs_review: boolean; // some signal, not enough for a verdict: a person should look
 };
+
+export interface ProvenanceDetector {
+  detect(input: { buffer?: Buffer; url?: string; filename?: string }): Promise<ProvenanceResult>;
+}
 
 export type Evidence = {
   // riff_info and c2pa_manifest extend the original list: WAV keeps its tags in
@@ -37,7 +48,7 @@ export type Evidence = {
     | "spectral_classifier"
     | "hosted_detector";
   match: string; // what was found
-  weight: number; // 0..1 contribution
+  weight: number; // 0..1 contribution; 0 = noted, not a signal (e.g. a detector that heard no AI)
 };
 
 /** A listening detector's answer (Hive, Modulate, or our own classifier). */
@@ -55,7 +66,7 @@ export type ProvenanceInput = {
   spectralClassifier?: DetectorResult;
 };
 
-type Target = "suno" | "ai_other" | "human";
+type Target = "suno" | "ai_other" | "none";
 type Found = { evidence: Evidence; target: Target };
 /** `comment` marks comment and encoder/software fields: the only places a bare generator name counts. */
 type Field = { signal: Evidence["signal"]; label: string; value: string; comment: boolean };
@@ -339,6 +350,11 @@ export function extractMetadata(bytes: Uint8Array): { fields: Field[]; blobs: { 
   return { fields: fields.filter((f) => f.value), blobs };
 }
 
+export const DEFAULT_REVIEW_THRESHOLD = 0.85;
+const UNKNOWN_CEILING = 0.2;
+const METADATA_SIGNALS = new Set<Evidence["signal"]>(["id3_metadata", "mp4_atom", "vorbis_comment", "riff_info", "c2pa_manifest", "embedded_url", "source_url"]);
+const CLASSIFIER_SIGNALS = new Set<Evidence["signal"]>(["hosted_detector", "spectral_classifier"]);
+
 const WEIGHT = {
   c2paNamed: 0.95,
   c2paSourceType: 0.85,
@@ -346,7 +362,8 @@ const WEIGHT = {
   filename: 0.4,
 };
 
-export function checkProvenance(input: ProvenanceInput): ProvenanceResult {
+export function checkProvenance(input: ProvenanceInput, options: { reviewThreshold?: number } = {}): ProvenanceResult {
+  const threshold = options.reviewThreshold ?? DEFAULT_REVIEW_THRESHOLD;
   const found: Found[] = [];
   const seen = new Set<string>();
   const add = (signal: Evidence["signal"], match: string, weight: number, target: Target) => {
@@ -364,7 +381,7 @@ export function checkProvenance(input: ProvenanceInput): ProvenanceResult {
     const sourceType = text.match(AI_SOURCE_TYPE)?.[0];
     if (named) add("c2pa_manifest", `${blob.label} names ${named.name}${sourceType ? ` and declares ${sourceType}` : ""} (signature not verified)`, WEIGHT.c2paNamed, named.target);
     else if (sourceType) add("c2pa_manifest", `${blob.label} declares ${sourceType} (signature not verified)`, WEIGHT.c2paSourceType, "ai_other");
-    else add("c2pa_manifest", `${blob.label} present, no AI assertion found (signature not verified)`, 0, "human");
+    else add("c2pa_manifest", `${blob.label} present, no AI assertion found (signature not verified)`, 0, "none");
   }
 
   for (const f of fields) {
@@ -387,29 +404,112 @@ export function checkProvenance(input: ProvenanceInput): ProvenanceResult {
     if (!result) continue;
     const p = Math.min(1, Math.max(0, result.aiProbability));
     const named = result.generator ? bestMatch(result.generator, true) : undefined;
+    // A detector that heard AI is a signal at its own probability; one that didn't is noted, not counted.
     if (p >= 0.5) add(signal, `${result.name}: ${(p * 100).toFixed(0)}% AI${result.generator ? `, attributed to ${result.generator}` : ""}`, p, named?.target === "suno" ? "suno" : "ai_other");
-    else add(signal, `${result.name}: ${((1 - p) * 100).toFixed(0)}% not AI`, 1 - p, "human");
+    else add(signal, `${result.name}: ${((1 - p) * 100).toFixed(0)}% not AI`, 0, "none");
   }
 
   // Independent signals combine like noisy-OR: each one closes part of the remaining doubt.
-  const combine = (targets: Target[]) =>
-    1 - found.filter((f) => targets.includes(f.target)).reduce((acc, f) => acc * (1 - f.evidence.weight), 1);
-  const suno = combine(["suno"]);
-  const anyAi = combine(["suno", "ai_other"]);
-  const human = combine(["human"]);
+  const signals = found.filter((f) => f.evidence.weight > 0);
+  const confidence = 1 - signals.reduce((acc, f) => acc * (1 - f.evidence.weight), 1);
+  const labelled = signals.filter((f) => METADATA_SIGNALS.has(f.evidence.signal));
+  const classifierOnly = signals.length > 0 && signals.every((f) => CLASSIFIER_SIGNALS.has(f.evidence.signal));
 
   let verdict: ProvenanceResult["verdict"] = "unknown";
-  let confidence = 0;
-  if (suno >= 0.5) [verdict, confidence] = ["likely_suno", suno];
-  else if (anyAi >= 0.5) [verdict, confidence] = ["likely_ai_other", anyAi];
-  else if (human >= 0.5 && anyAi < 0.2) [verdict, confidence] = ["likely_human", human];
+  let needsReview = false;
+  if (confidence >= threshold && labelled.length) {
+    // A label names its generator; Suno wins if any label says Suno.
+    verdict = labelled.some((f) => f.target === "suno") ? "likely_suno" : "likely_ai_other";
+  } else if (confidence >= threshold && classifierOnly) {
+    verdict = "likely_ai_other"; // a classifier's attribution isn't proof of which generator
+  } else if (!(confidence <= UNKNOWN_CEILING && signals.length === 0)) {
+    needsReview = true;
+  }
 
   return {
     verdict,
     confidence: Math.round(confidence * 1000) / 1000,
     evidence: found.map((f) => f.evidence).sort((a, b) => b.weight - a.weight),
     checkedAt: new Date().toISOString(),
+    needs_review: needsReview,
   };
+}
+
+// ---------- detector ----------
+
+export type DetectorOptions = {
+  /** PROVENANCE_ML_ENABLED: run the listening detectors below. Off, they're never called. */
+  mlEnabled?: boolean;
+  /** PROVENANCE_REVIEW_THRESHOLD: confidence needed for a verdict. */
+  reviewThreshold?: number;
+  hostedDetector?: (bytes: Uint8Array) => Promise<DetectorResult>;
+  spectralClassifier?: (bytes: Uint8Array) => Promise<DetectorResult>;
+  fetch?: typeof fetch;
+  maxDownloadBytes?: number;
+};
+
+export function detectorOptionsFromEnv(env: Record<string, string | undefined> = process.env): Pick<DetectorOptions, "mlEnabled" | "reviewThreshold"> {
+  const ml = (env.PROVENANCE_ML_ENABLED ?? "false").trim().toLowerCase();
+  if (!["true", "false", "1", "0", ""].includes(ml)) throw new Error(`PROVENANCE_ML_ENABLED must be true or false, not "${env.PROVENANCE_ML_ENABLED}"`);
+  const raw = env.PROVENANCE_REVIEW_THRESHOLD?.trim();
+  const threshold = raw ? Number(raw) : DEFAULT_REVIEW_THRESHOLD;
+  if (!(threshold > 0 && threshold <= 1)) throw new Error(`PROVENANCE_REVIEW_THRESHOLD must be a number in (0, 1], not "${raw}"`);
+  return { mlEnabled: ml === "true" || ml === "1", reviewThreshold: threshold };
+}
+
+/** Tags, manifests, filename and URL, plus listening detectors when ML is enabled. */
+export class MetadataProvenanceDetector implements ProvenanceDetector {
+  options: DetectorOptions;
+
+  constructor(options: DetectorOptions = {}) {
+    this.options = options;
+  }
+
+  async detect(input: { buffer?: Buffer; url?: string; filename?: string }): Promise<ProvenanceResult> {
+    const bytes = input.buffer ? new Uint8Array(input.buffer.buffer, input.buffer.byteOffset, input.buffer.byteLength) : input.url ? await this.download(input.url) : undefined;
+    if (!bytes) throw new Error("detect() needs a buffer or a url");
+    const filename = input.filename ?? (input.url ? decodeURIComponent(new URL(input.url).pathname.split("/").pop() ?? "") || undefined : undefined);
+
+    const listened: Pick<ProvenanceInput, "hostedDetector" | "spectralClassifier"> = {};
+    const notes: Evidence[] = [];
+    if (this.options.mlEnabled) {
+      for (const key of ["hostedDetector", "spectralClassifier"] as const) {
+        const run = this.options[key];
+        if (!run) continue;
+        try {
+          listened[key] = await run(bytes);
+        } catch (e) {
+          // A detector that couldn't answer says nothing either way; the result shows it was tried.
+          notes.push({ signal: key === "hostedDetector" ? "hosted_detector" : "spectral_classifier", match: `failed: ${(e as Error).message}`, weight: 0 });
+        }
+      }
+    }
+    const result = checkProvenance(
+      { bytes, ...(filename ? { filename } : {}), ...(input.url ? { sourceUrl: input.url } : {}), ...listened },
+      { reviewThreshold: this.options.reviewThreshold ?? DEFAULT_REVIEW_THRESHOLD },
+    );
+    return notes.length ? { ...result, evidence: [...result.evidence, ...notes] } : result;
+  }
+
+  private async download(url: string): Promise<Uint8Array> {
+    const { protocol } = new URL(url);
+    if (protocol !== "https:" && protocol !== "http:") throw new Error(`only http(s) URLs can be fetched, not ${protocol}`);
+    const max = this.options.maxDownloadBytes ?? 100 * 1024 * 1024;
+    const res = await (this.options.fetch ?? fetch)(url, { redirect: "follow" });
+    if (!res.ok || !res.body) throw new Error(`fetching ${url} returned HTTP ${res.status}`);
+    if (Number(res.headers.get("content-length") ?? 0) > max) throw new Error(`${url} is larger than ${max} bytes`);
+    const chunks: Uint8Array[] = [];
+    let total = 0;
+    for await (const chunk of res.body as unknown as AsyncIterable<Uint8Array>) {
+      total += chunk.length;
+      if (total > max) throw new Error(`${url} is larger than ${max} bytes`);
+      chunks.push(chunk);
+    }
+    const out = new Uint8Array(total);
+    let o = 0;
+    for (const c of chunks) (out.set(c, o), (o += c.length));
+    return out;
+  }
 }
 
 // ---------- CLI ----------
@@ -421,11 +521,14 @@ if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) 
   const urlIdx = argv.indexOf("--source-url");
   const sourceUrl = urlIdx >= 0 ? argv.splice(urlIdx, 2)[1] : undefined;
   if (!argv.length) {
-    console.error("usage: node provenance.ts <audio files…> [--source-url URL]");
+    console.error("usage: node provenance.ts <audio files or http(s) URLs…> [--source-url URL]");
     process.exit(1);
   }
-  for (const file of argv) {
-    const result = checkProvenance({ bytes: new Uint8Array(await readFile(file)), filename: basename(file), ...(sourceUrl ? { sourceUrl } : {}) });
-    console.log(JSON.stringify({ file, ...result }, null, 2));
+  const detector = new MetadataProvenanceDetector(detectorOptionsFromEnv());
+  for (const item of argv) {
+    const result = /^https?:\/\//.test(item)
+      ? await detector.detect({ url: item })
+      : await detector.detect({ buffer: await readFile(item), filename: basename(item), ...(sourceUrl ? { url: sourceUrl } : {}) });
+    console.log(JSON.stringify({ file: item, ...result }, null, 2));
   }
 }

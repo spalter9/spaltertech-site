@@ -10,7 +10,7 @@ fully machine-made, perfectly quantized song "Claimable" in the mid band.
 A detector replaces that verdict only after it catches every AI track in the
 test set and flags none of the human reference records.
 
-Needs Node 22.18+ (runs the `.ts` files directly). `npm test` runs all 58 tests
+Needs Node 22.18+ (runs the `.ts` files directly). `npm test` runs all 66 tests
 against in-process fakes of Replicate and Stability, without spending credits.
 
 ## 1. Generate known-AI songs — `generate.ts`
@@ -86,11 +86,13 @@ negative prompt, and 8 steps is only valid with `model=stable-audio-2.5`
 ## 3. What a file says about itself — `provenance.ts`
 
 ```bash
-node provenance.ts track.mp3 [more files] [--source-url https://...]
+node provenance.ts track.mp3 [https://host/track.mp3] [--source-url https://...]
 ```
 
-Returns a `ProvenanceResult` (`likely_suno` / `likely_ai_other` /
-`likely_human` / `unknown`, confidence, evidence). It reads ID3v2/v1 (incl.
+`MetadataProvenanceDetector` implements
+`ProvenanceDetector.detect({ buffer?, url?, filename? })` (a `url` with no
+buffer is downloaded, http(s) only, 100 MB cap) and returns a
+`ProvenanceResult`: verdict, confidence, evidence, `needs_review`. It reads ID3v2/v1 (incl.
 C2PA in a GEOB frame), WAV RIFF INFO/bext/C2PA chunks, FLAC and Ogg Vorbis
 comments, MP4 ilst atoms and the C2PA uuid box, plus the filename and source
 URL. Suno attaches C2PA content credentials to new downloads; older downloads
@@ -109,14 +111,30 @@ Markers are ranked, and each field counts once, at its strongest match:
 
 A bare name never counts in a title, artist, album or filename: "suno" is
 Hindi/Urdu for "listen", and AIVA and Lyria are people's names. The source
-URL is capped at 0.75 and the filename at 0.40 (alone, below a verdict).
-Independent fields combine as 1 − Π(1 − weight); a verdict needs 0.5.
+URL is capped at 0.75 and the filename at 0.40.
 
-Missing labels never mean human: metadata alone can only return an AI
-verdict or `unknown`. `likely_human` comes only from a listening detector's
-result passed in as `hostedDetector` / `spectralClassifier`, the hook where
-Hive or Modulate plug in. The Evidence list adds `riff_info` and
-`c2pa_manifest` to the original signal names.
+Verdict, with `confidence = 1 − Π(1 − weight)` over the AI signals found:
+
+| Condition | Verdict |
+|---|---|
+| ≥ threshold, with a tag / manifest / URL signal | `likely_suno` (`likely_ai_other` if those name another generator) |
+| ≥ threshold, classifier signals only | `likely_ai_other`, even if the classifier names Suno |
+| ≤ 0.20 and no signals at all | `unknown` |
+| anything else | `unknown`, `needs_review: true` |
+
+Nothing returns `likely_human` (the type keeps it): a clean file is
+`unknown`, and a detector that heard no AI is listed at weight 0, not
+counted. So a lone bare "Suno" in an encoder field (0.60), a Suno source URL
+(0.75) or a filename (0.40) goes to review; two of them together can clear
+the bar (0.60 + 0.75 → 0.90).
+
+| Variable | Default | |
+|---|---|---|
+| `PROVENANCE_REVIEW_THRESHOLD` | `0.85` | confidence needed for a verdict, in (0, 1] |
+| `PROVENANCE_ML_ENABLED` | `false` | call the listening detectors (`hostedDetector`, `spectralClassifier` options, where Hive or Modulate plug in); off, they're never called. One that errors is listed at weight 0 and the check still answers. |
+
+The Evidence list adds `riff_info` and `c2pa_manifest` to the original
+signal names.
 
 ## Still to add by hand
 
