@@ -3,8 +3,8 @@ import { mkdir, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import { pathToFileURL } from "node:url";
 import { audioDurationSeconds } from "./audio.ts";
-import { MusicJobError } from "./types.ts";
-import type { GenerateMusicInput, MusicJob, MusicProvider } from "./types.ts";
+import { MusicJobError, asMusicJobError } from "./types.ts";
+import type { GenerateMusicInput, MusicError, MusicJob, MusicProvider } from "./types.ts";
 
 export const DEFAULT_DURATION_SECONDS = 30;
 const MAX_PROMPT_CHARS = 2000;
@@ -37,26 +37,36 @@ export class LocalAudioStore implements AudioStore {
   }
 }
 
-/** Validates and normalizes a request against one provider: prompt 1..2000 chars, duration defaulted and clamped. */
-export function normalizeInput<T extends GenerateMusicInput>(input: T, provider: MusicProvider): T & { durationSeconds: number } {
+/**
+ * Validates and normalizes a request: prompt 1..2000 chars, duration defaulted
+ * to 30 and clamped to the provider's max (and to `cap`, if one is configured).
+ */
+export function normalizeInput<T extends GenerateMusicInput>(
+  input: T,
+  provider: MusicProvider,
+  cap = Number.POSITIVE_INFINITY,
+): T & { durationSeconds: number } {
   if (typeof input.prompt !== "string" || input.prompt.trim().length === 0) {
-    throw new MusicJobError("invalid_input", "prompt is required");
+    throw new MusicJobError("INVALID_INPUT", "prompt is required");
   }
   if (input.prompt.length > MAX_PROMPT_CHARS) {
-    throw new MusicJobError("invalid_input", `prompt is ${input.prompt.length} characters; the limit is ${MAX_PROMPT_CHARS}`);
+    throw new MusicJobError("INVALID_INPUT", `prompt is ${input.prompt.length} characters; the limit is ${MAX_PROMPT_CHARS}`);
+  }
+  if (input.negativePrompt !== undefined && typeof input.negativePrompt !== "string") {
+    throw new MusicJobError("INVALID_INPUT", "negativePrompt must be text");
   }
   const requested = input.durationSeconds ?? DEFAULT_DURATION_SECONDS;
-  if (!Number.isFinite(requested) || requested <= 0) {
-    throw new MusicJobError("invalid_input", "durationSeconds must be a positive number");
+  if (typeof requested !== "number" || !Number.isFinite(requested) || requested <= 0) {
+    throw new MusicJobError("INVALID_INPUT", "durationSeconds must be a positive number");
   }
   if (input.seed !== undefined && !Number.isInteger(input.seed)) {
-    throw new MusicJobError("invalid_input", "seed must be an integer");
+    throw new MusicJobError("INVALID_INPUT", "seed must be an integer");
   }
-  return { ...input, durationSeconds: Math.min(requested, provider.maxDurationSeconds) };
+  return { ...input, durationSeconds: Math.min(requested, provider.maxDurationSeconds, cap) };
 }
 
 function extensionOf(url: string, contentType: string | null): string {
-  const fromPath = new URL(url).pathname.split(".").pop()?.toLowerCase();
+  const fromPath = url.startsWith("data:") ? undefined : new URL(url).pathname.split(".").pop()?.toLowerCase();
   if (fromPath && AUDIO_EXTS.includes(fromPath)) return fromPath;
   const type = contentType ?? "";
   if (type.includes("wav")) return "wav";
@@ -66,8 +76,6 @@ function extensionOf(url: string, contentType: string | null): string {
   return "bin";
 }
 
-const failed = (job: MusicJob, code: string, message: string): MusicJob => ({ ...job, status: "failed", error: { code, message } });
-
 export type WaitOptions = {
   pollIntervalMs?: number;
   timeoutMs?: number;
@@ -75,29 +83,58 @@ export type WaitOptions = {
   now?: () => number;
 };
 
+export type ServiceOptions = {
+  fetch?: typeof fetch;
+  /** Global duration cap on top of each provider's own (MUSIC_MAX_DURATION_SECONDS). */
+  maxDurationSeconds?: number;
+  /** Receives every error with the provider's raw response. Logs only; never sent to a client. */
+  log?: (jobId: string, error: MusicError) => void;
+};
+
 /**
- * Runs jobs against any MusicProvider: submit, poll until done, copy the audio
- * into our store. Failures never throw out of here — they come back as a failed
- * MusicJob with an error code, so a batch run records every outcome.
+ * Runs jobs against any MusicProvider: submit, poll (or accept a webhook)
+ * until done, copy the audio into our store. Failures never throw out of
+ * here: they come back as a failed MusicJob, so a batch run records every
+ * outcome.
  */
 export class MusicJobService {
   store: AudioStore;
-  fetchImpl: typeof fetch;
   /** Storage details for each succeeded job, keyed by our job id. */
   stored = new Map<string, StoredAudio>();
+  private fetchImpl: typeof fetch;
+  private cap: number;
+  private log: (jobId: string, error: MusicError) => void;
 
-  constructor(store: AudioStore, fetchImpl: typeof fetch = fetch) {
+  constructor(store: AudioStore, options: ServiceOptions = {}) {
     this.store = store;
-    this.fetchImpl = fetchImpl;
+    this.fetchImpl = options.fetch ?? fetch;
+    this.cap = options.maxDurationSeconds ?? Number.POSITIVE_INFINITY;
+    this.log =
+      options.log ??
+      ((jobId, e) => console.error(`[music ${jobId}] ${e.code}: ${e.message}`, e.providerRaw === undefined ? "" : e.providerRaw));
   }
 
-  async start(provider: MusicProvider, input: GenerateMusicInput): Promise<MusicJob> {
-    const job: MusicJob = { id: randomUUID(), providerJobId: "", status: "queued", createdAt: new Date().toISOString() };
+  /** Validation only, so a caller can reject bad input before creating a job. */
+  validate<T extends GenerateMusicInput>(provider: MusicProvider, input: T): T & { durationSeconds: number } {
+    return normalizeInput(input, provider, this.cap);
+  }
+
+  newJob(): MusicJob {
+    return { id: randomUUID(), providerJobId: "", status: "queued", createdAt: new Date().toISOString() };
+  }
+
+  private fail(job: MusicJob, e: unknown): MusicJob {
+    const err = asMusicJobError(e);
+    this.log(job.id, err.toMusicError());
+    return { ...job, status: "failed", error: { code: err.code, message: err.message } };
+  }
+
+  async start(provider: MusicProvider, input: GenerateMusicInput, job: MusicJob = this.newJob()): Promise<MusicJob> {
     try {
-      const { providerJobId } = await provider.submit(normalizeInput(input, provider));
+      const { providerJobId } = await provider.submit(this.validate(provider, input));
       return { ...job, providerJobId };
     } catch (e) {
-      return failed(job, e instanceof MusicJobError ? e.code : "provider_error", (e as Error).message);
+      return this.fail(job, e);
     }
   }
 
@@ -107,13 +144,22 @@ export class MusicJobService {
     try {
       remote = await provider.poll(job.providerJobId);
     } catch (e) {
-      // A failed status check isn't a failed generation; keep waiting.
-      if (e instanceof MusicJobError && e.code === "network_error") return job;
-      return failed(job, e instanceof MusicJobError ? e.code : "provider_error", (e as Error).message);
+      // An unreachable status endpoint isn't a failed generation; keep waiting.
+      if (e instanceof MusicJobError && e.retryable) return job;
+      return this.fail(job, e);
     }
-    if (remote.status !== "succeeded") {
-      return { ...job, status: remote.status, ...(remote.error ? { error: remote.error } : {}) };
+    return this.complete(job, remote);
+  }
+
+  /** Applies a provider-side status (from a poll or a webhook) to our job, storing the audio on success. */
+  async complete(job: MusicJob, remote: MusicJob): Promise<MusicJob> {
+    if (remote.status === "failed") {
+      // Providers may hang their raw response on the error; it goes to the log and no further.
+      const { code = "GENERATION_FAILED", message = "Generation failed", providerRaw } = (remote.error ?? {}) as Partial<MusicError>;
+      this.log(job.id, new MusicJobError(code, message, { providerRaw }).toMusicError());
+      return { ...job, status: "failed", error: { code, message } };
     }
+    if (remote.status !== "succeeded") return { ...job, status: remote.status };
     try {
       const res = await this.fetchImpl(remote.audioUrl!);
       if (!res.ok) throw new Error(`download returned HTTP ${res.status}`);
@@ -122,26 +168,27 @@ export class MusicJobService {
       const saved = await this.store.save(job.id, bytes, ext);
       this.stored.set(job.id, saved);
       const durationSeconds = audioDurationSeconds(bytes, ext) ?? remote.durationSeconds;
-      return {
-        ...job,
-        status: "succeeded",
-        audioUrl: saved.url,
-        ...(durationSeconds !== undefined ? { durationSeconds } : {}),
-      };
+      const { error: _previous, ...rest } = job;
+      return { ...rest, status: "succeeded", audioUrl: saved.url, ...(durationSeconds !== undefined ? { durationSeconds } : {}) };
     } catch (e) {
-      return failed(job, "storage_error", `Generated, but saving the audio failed: ${(e as Error).message}`);
+      return this.fail(job, new MusicJobError("INTERNAL", `Generated, but saving the audio failed: ${(e as Error).message}`, { retryable: true, providerRaw: e }));
     }
   }
 
   async run(provider: MusicProvider, input: GenerateMusicInput, options: WaitOptions = {}): Promise<MusicJob> {
+    const job = await this.start(provider, input);
+    return this.waitFor(provider, job, options);
+  }
+
+  async waitFor(provider: MusicProvider, initial: MusicJob, options: WaitOptions = {}): Promise<MusicJob> {
     const sleep = options.sleep ?? ((ms: number) => new Promise<void>((r) => setTimeout(r, ms)));
     const now = options.now ?? Date.now;
-    const interval = options.pollIntervalMs ?? 3000;
-    const deadline = now() + (options.timeoutMs ?? 10 * 60 * 1000);
-    let job = await this.start(provider, input);
+    const timeoutMs = options.timeoutMs ?? 10 * 60 * 1000;
+    const deadline = now() + timeoutMs;
+    let job = initial;
     while (job.status === "queued" || job.status === "running") {
-      if (now() >= deadline) return failed(job, "timeout", `No result after ${Math.round((options.timeoutMs ?? 600000) / 1000)} s`);
-      await sleep(interval);
+      if (now() >= deadline) return this.fail(job, new MusicJobError("TIMEOUT", `No result after ${Math.round(timeoutMs / 1000)} s`));
+      await sleep(options.pollIntervalMs ?? 3000);
       job = await this.refresh(provider, job);
     }
     return job;

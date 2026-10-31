@@ -4,6 +4,7 @@
  *   REPLICATE_API_TOKEN=r8_... node services/detector-testset/generate.ts
  *   node services/detector-testset/generate.ts --dry-run
  *   node services/detector-testset/generate.ts --models lyria-2,musicgen --songs boom-bap --duration 20
+ *   STABILITY_API_KEY=sk-... node services/detector-testset/generate.ts --models stability
  *
  * Every model × song in prompts.json becomes one job. Instrumental-only models
  * get the prompt alone; models that sing also get the lyrics. Output lands in
@@ -17,7 +18,8 @@ import { fileURLToPath } from "node:url";
 import { parseArgs } from "node:util";
 import { LocalAudioStore, MusicJobService, normalizeInput } from "./jobs.ts";
 import { REPLICATE_MODELS, ReplicateProvider } from "./replicate.ts";
-import type { GenerateSongInput, MusicJob } from "./types.ts";
+import { StabilityProvider } from "./stability.ts";
+import type { GenerateSongInput, MusicJob, MusicProvider } from "./types.ts";
 
 type Song = { id: string; prompt: string; negativePrompt?: string; lyrics?: string };
 
@@ -40,33 +42,52 @@ const songs = songIds ? allSongs.filter((s) => songIds.includes(s.id)) : allSong
 const modelKeys = args.models!.split(",").map((s) => s.trim());
 const duration = Number(args.duration);
 const token = process.env.REPLICATE_API_TOKEN ?? "";
+const stabilityKey = process.env.STABILITY_API_KEY ?? "";
 
-if (!args["dry-run"] && !token) {
-  console.error("Set REPLICATE_API_TOKEN (replicate.com → Account → API tokens), or pass --dry-run.");
-  process.exit(1);
+/** One generator as the batch sees it: Replicate's models, or Stable Audio direct from Stability. */
+type Generator = { provider: MusicProvider; slug: string; sings: boolean; honorsDuration: boolean; version: () => string | null };
+
+function generator(key: string): Generator {
+  if (key === "stability") {
+    return { provider: new StabilityProvider({ apiKey: stabilityKey }), slug: "stability/stable-audio-2.5", sings: false, honorsDuration: true, version: () => "stable-audio-2.5" };
+  }
+  const p = new ReplicateProvider(key, { token });
+  return { provider: p, slug: p.model.slug, sings: p.model.sings, honorsDuration: p.model.honorsDuration, version: () => p.version ?? null };
 }
 
-type Plan = { provider: ReplicateProvider; song: Song; input: GenerateSongInput };
+if (!args["dry-run"]) {
+  const needsReplicate = modelKeys.some((k) => k !== "stability");
+  if (needsReplicate && !token) {
+    console.error("Set REPLICATE_API_TOKEN (replicate.com → Account → API tokens), or pass --dry-run.");
+    process.exit(1);
+  }
+  if (modelKeys.includes("stability") && !stabilityKey) {
+    console.error("Set STABILITY_API_KEY (platform.stability.ai → API keys) to use --models stability.");
+    process.exit(1);
+  }
+}
+
+type Plan = { gen: Generator; song: Song; input: GenerateSongInput };
 const plan: Plan[] = [];
 for (const key of modelKeys) {
-  const provider = new ReplicateProvider(key, { token });
+  const gen = generator(key);
   songs.forEach((song, i) => {
     const input: GenerateSongInput = {
       prompt: song.prompt,
       durationSeconds: duration,
       seed: 1000 + i, // fixed per song, so a rerun of the same model reproduces the file where the model honors seeds
       ...(song.negativePrompt ? { negativePrompt: song.negativePrompt } : {}),
-      ...(provider.model.sings && song.lyrics ? { lyrics: song.lyrics } : {}),
+      ...(gen.sings && song.lyrics ? { lyrics: song.lyrics } : {}),
     };
-    plan.push({ provider, song, input });
+    plan.push({ gen, song, input });
   });
 }
 
 console.log(`${plan.length} tracks: ${modelKeys.length} models × ${songs.length} songs, ${duration} s requested each`);
-for (const { provider, song, input } of plan) {
-  const n = normalizeInput(input, provider);
-  const length = provider.model.honorsDuration ? `${n.durationSeconds} s` : "model picks length";
-  console.log(`  ${provider.model.slug.padEnd(30)} ${song.id.padEnd(18)} ${length}${input.lyrics ? " · vocals" : ""}`);
+for (const { gen, song, input } of plan) {
+  const n = normalizeInput(input, gen.provider);
+  const length = gen.honorsDuration ? `${n.durationSeconds} s` : "model picks length";
+  console.log(`  ${gen.slug.padEnd(30)} ${song.id.padEnd(18)} ${length}${input.lyrics ? " · vocals" : ""}`);
 }
 if (args["dry-run"]) process.exit(0);
 
@@ -95,14 +116,14 @@ async function writeManifest() {
 let next = 0;
 async function worker() {
   while (next < plan.length) {
-    const { provider, song, input } = plan[next++]!;
-    const job = await service.run(provider, input);
+    const { gen, song, input } = plan[next++]!;
+    const job = await service.run(gen.provider, input);
     const stored = service.stored.get(job.id);
     entries.push({
       label: "ai",
-      generator: provider.name,
-      model: provider.model.slug,
-      modelVersion: provider.version ?? null,
+      generator: gen.provider.name,
+      model: gen.slug,
+      modelVersion: gen.version(),
       song: song.id,
       input,
       file: stored ? relative(outDir, stored.path) : null,
@@ -111,7 +132,7 @@ async function worker() {
     });
     await writeManifest(); // after every job, so an interrupted run keeps what finished
     const detail = job.status === "succeeded" ? `${job.durationSeconds?.toFixed(1) ?? "?"} s` : `${job.error?.code}: ${job.error?.message}`;
-    console.log(`[${entries.length}/${plan.length}] ${provider.model.slug} · ${song.id} · ${job.status} · ${detail}`);
+    console.log(`[${entries.length}/${plan.length}] ${gen.slug} · ${song.id} · ${job.status} · ${detail}`);
   }
 }
 

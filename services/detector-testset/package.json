@@ -4,6 +4,8 @@
   "type": "module",
   "scripts": {
     "generate": "node generate.ts",
-    "test": "node --test test/jobs.test.ts"
+    "serve": "node server.ts",
+    "provenance": "node provenance.ts",
+    "test": "node --test test/jobs.test.ts test/service.test.ts test/provenance.test.ts"
   }
 }

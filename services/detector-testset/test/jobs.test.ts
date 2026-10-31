@@ -14,12 +14,13 @@ import { fileURLToPath } from "node:url";
 import { audioDurationSeconds } from "../audio.ts";
 import { LocalAudioStore, MusicJobService, normalizeInput } from "../jobs.ts";
 import { ReplicateProvider } from "../replicate.ts";
-import type { GenerateSongInput } from "../types.ts";
+import type { GenerateSongInput, MusicError } from "../types.ts";
 import { FakeReplicate, TOKEN, mp3Bytes, wavBytes } from "./fake-replicate.ts";
 
 const fake = new FakeReplicate();
 let dir = "";
 let service: MusicJobService;
+const logged: MusicError[] = [];
 const fastWait = { pollIntervalMs: 1, sleep: async () => {} };
 
 const provider = (key: string, token = TOKEN) => new ReplicateProvider(key, { token, baseUrl: `${fake.baseUrl}/v1` });
@@ -35,18 +36,20 @@ after(async () => {
 });
 beforeEach(() => {
   fake.behaviors.clear();
+  fake.readStatus = 200;
   fake.created.length = 0;
   fake.files.set("out.wav", { bytes: wavBytes(2), type: "audio/wav" });
-  service = new MusicJobService(new LocalAudioStore(join(dir, "audio")));
+  logged.length = 0;
+  service = new MusicJobService(new LocalAudioStore(join(dir, "audio")), { log: (id, e) => logged.push(e) });
 });
 
 describe("input rules", () => {
   const p = () => provider("stable-audio-2.5");
 
   test("prompt is required and capped at 2000 characters", () => {
-    assert.throws(() => normalizeInput({ prompt: "" }, p()), { code: "invalid_input" });
-    assert.throws(() => normalizeInput({ prompt: "   " }, p()), { code: "invalid_input" });
-    assert.throws(() => normalizeInput({ prompt: "x".repeat(2001) }, p()), { code: "invalid_input" });
+    assert.throws(() => normalizeInput({ prompt: "" }, p()), { code: "INVALID_INPUT" });
+    assert.throws(() => normalizeInput({ prompt: "   " }, p()), { code: "INVALID_INPUT" });
+    assert.throws(() => normalizeInput({ prompt: "x".repeat(2001) }, p()), { code: "INVALID_INPUT" });
     assert.equal(normalizeInput({ prompt: "x".repeat(2000) }, p()).prompt.length, 2000);
   });
 
@@ -54,12 +57,12 @@ describe("input rules", () => {
     assert.equal(normalizeInput({ prompt: "a" }, p()).durationSeconds, 30);
     assert.equal(normalizeInput({ prompt: "a", durationSeconds: 500 }, p()).durationSeconds, 190);
     assert.equal(normalizeInput({ prompt: "a", durationSeconds: 500 }, provider("musicgen")).durationSeconds, 30);
-    assert.throws(() => normalizeInput({ prompt: "a", durationSeconds: 0 }, p()), { code: "invalid_input" });
-    assert.throws(() => normalizeInput({ prompt: "a", durationSeconds: Number.NaN }, p()), { code: "invalid_input" });
+    assert.throws(() => normalizeInput({ prompt: "a", durationSeconds: 0 }, p()), { code: "INVALID_INPUT" });
+    assert.throws(() => normalizeInput({ prompt: "a", durationSeconds: Number.NaN }, p()), { code: "INVALID_INPUT" });
   });
 
   test("seed must be an integer", () => {
-    assert.throws(() => normalizeInput({ prompt: "a", seed: 1.5 }, p()), { code: "invalid_input" });
+    assert.throws(() => normalizeInput({ prompt: "a", seed: 1.5 }, p()), { code: "INVALID_INPUT" });
   });
 });
 
@@ -78,6 +81,20 @@ describe("official model, full lifecycle", () => {
     assert.equal(job.durationSeconds, 2);
     assert.equal(job.error, undefined);
     assert.match(service.stored.get(job.id)!.sha256, /^[0-9a-f]{64}$/);
+  });
+
+  test("asks Replicate to wait up to 60 s and to cancel abandoned runs", async () => {
+    fake.behaviors.set("google/lyria-2", {});
+    await service.run(provider("lyria-2"), { prompt: "soul" }, fastWait);
+    assert.equal(fake.created.at(-1)!.headers["prefer"], "wait=60");
+    assert.equal(fake.created.at(-1)!.headers["cancel-after"], "10m");
+  });
+
+  test("a global cap (MUSIC_MAX_DURATION_SECONDS) applies on top of the model max", async () => {
+    fake.behaviors.set("stability-ai/stable-audio-2.5", {});
+    const capped = new MusicJobService(new LocalAudioStore(join(dir, "audio")), { maxDurationSeconds: 30, log: () => {} });
+    await capped.run(provider("stable-audio-2.5"), { prompt: "boom bap", durationSeconds: 120 }, fastWait);
+    assert.equal((lastBody().input as { duration: number }).duration, 30);
   });
 
   test("intermediate statuses map to queued then running", async () => {
@@ -107,7 +124,14 @@ describe("per-model request shapes", () => {
     const job = await service.run(p, { prompt: "garage", durationSeconds: 45, seed: 3 }, fastWait);
     assert.equal(job.status, "succeeded");
     assert.equal(lastBody().version, "v-meta__musicgen");
-    assert.deepEqual(lastBody().input, { prompt: "garage", duration: 30, model_version: "stereo-large", output_format: "wav", seed: 3 });
+    assert.deepEqual(lastBody().input, {
+      prompt: "garage",
+      duration: 30,
+      model_version: "stereo-large",
+      output_format: "mp3",
+      normalization_strategy: "loudness",
+      seed: 3,
+    });
     assert.equal(p.version, "v-meta__musicgen");
   });
 
@@ -121,7 +145,7 @@ describe("per-model request shapes", () => {
     fake.behaviors.set("minimax/music-1.5", {});
     const job = await service.run(provider("minimax-music-1.5"), { prompt: "R&B ballad, 68 BPM" }, fastWait);
     assert.equal(job.status, "failed");
-    assert.equal(job.error?.code, "invalid_input");
+    assert.equal(job.error?.code, "INVALID_INPUT");
     assert.match(job.error!.message, /lyrics/);
     assert.equal(fake.created.length, 0);
   });
@@ -157,27 +181,51 @@ describe("failures come back as failed jobs", () => {
     fake.behaviors.set("google/lyria-2", { statuses: ["processing", "failed"], error: "CUDA out of memory" });
     const job = await service.run(provider("lyria-2"), { prompt: "soul" }, fastWait);
     assert.equal(job.status, "failed");
-    assert.deepEqual(job.error, { code: "provider_failed", message: "CUDA out of memory" });
+    assert.deepEqual(job.error, { code: "GENERATION_FAILED", message: "CUDA out of memory" });
+    assert.equal(logged.at(-1)?.retryable, true);
+    assert.equal((logged.at(-1)?.providerRaw as { error: string }).error, "CUDA out of memory", "raw prediction is logged");
   });
 
   test("a prediction Replicate aborted is a failure with its own code", async () => {
     fake.behaviors.set("google/lyria-2", { statuses: ["starting", "aborted"] });
     const job = await service.run(provider("lyria-2"), { prompt: "soul" }, fastWait);
     assert.equal(job.status, "failed");
-    assert.equal(job.error?.code, "aborted");
+    assert.equal(job.error?.code, "GENERATION_FAILED");
+    assert.match(job.error!.message, /aborted/);
+  });
+
+  test("a safety-filter failure is CONTENT_BLOCKED and not retryable", async () => {
+    fake.behaviors.set("google/lyria-2", { statuses: ["failed"], error: "The input or output was flagged as sensitive. (E005)" });
+    const job = await service.run(provider("lyria-2"), { prompt: "soul" }, fastWait);
+    assert.equal(job.error?.code, "CONTENT_BLOCKED");
+    assert.equal(logged.at(-1)?.retryable, false);
+  });
+
+  test("an outage while polling keeps waiting instead of failing the job", async () => {
+    fake.behaviors.set("google/lyria-2", { statuses: ["processing", "succeeded"] });
+    const p = provider("lyria-2");
+    let job = await service.start(p, { prompt: "soul" });
+    fake.readStatus = 503;
+    job = await service.refresh(p, job);
+    assert.equal(job.status, "queued");
+    fake.readStatus = 200;
+    job = await service.waitFor(p, job, fastWait);
+    assert.equal(job.status, "succeeded");
   });
 
   test("a rejected request maps the HTTP status to a code", async () => {
     fake.behaviors.set("google/lyria-2", { submitStatus: 422, submitDetail: "prompt flagged" });
     const job = await service.run(provider("lyria-2"), { prompt: "soul" }, fastWait);
     assert.equal(job.status, "failed");
-    assert.equal(job.error?.code, "invalid_input");
+    assert.equal(job.error?.code, "CONTENT_BLOCKED");
     assert.match(job.error!.message, /prompt flagged/);
+    assert.deepEqual(logged.at(-1)?.providerRaw, { status: 422, body: JSON.stringify({ detail: "prompt flagged" }) });
   });
 
-  test("a bad token is reported as unauthorized", async () => {
+  test("a bad token is an internal error, not retryable", async () => {
     const job = await service.run(provider("lyria-2", "wrong"), { prompt: "soul" }, fastWait);
-    assert.equal(job.error?.code, "unauthorized");
+    assert.equal(job.error?.code, "INTERNAL");
+    assert.equal(logged.at(-1)?.retryable, false);
   });
 
   test("a job that never finishes times out", async () => {
@@ -190,20 +238,21 @@ describe("failures come back as failed jobs", () => {
       now: () => clock,
     });
     assert.equal(job.status, "failed");
-    assert.equal(job.error?.code, "timeout");
+    assert.equal(job.error?.code, "TIMEOUT");
   });
 
   test("success with no audio URL is a failure", async () => {
     fake.behaviors.set("google/lyria-2", { output: null });
     const job = await service.run(provider("lyria-2"), { prompt: "soul" }, fastWait);
-    assert.equal(job.error?.code, "no_output");
+    assert.equal(job.error?.code, "GENERATION_FAILED");
   });
 
   test("an expired output link is a storage error, not a success", async () => {
     fake.behaviors.set("google/lyria-2", { output: fake.fileUrl("gone.wav") });
     const job = await service.run(provider("lyria-2"), { prompt: "soul" }, fastWait);
     assert.equal(job.status, "failed");
-    assert.equal(job.error?.code, "storage_error");
+    assert.equal(job.error?.code, "INTERNAL");
+    assert.match(job.error!.message, /saving the audio failed/);
     assert.equal(job.audioUrl, undefined);
   });
 

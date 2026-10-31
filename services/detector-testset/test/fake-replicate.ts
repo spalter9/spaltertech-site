@@ -3,11 +3,22 @@
  * create prediction (by model name or by version), read prediction, read model,
  * plus a file host for outputs. Each model slug gets a scripted behaviour.
  */
+import { createHmac } from "node:crypto";
 import { createServer } from "node:http";
 import type { IncomingMessage, Server, ServerResponse } from "node:http";
 import type { AddressInfo } from "node:net";
 
 export const TOKEN = "test-token";
+/** Standard Webhooks secret: "whsec_" + base64 of the HMAC key. */
+export const WEBHOOK_SECRET = `whsec_${Buffer.from("replicate-test-signing-key").toString("base64")}`;
+
+/** Headers Replicate would send with `body`, signed with WEBHOOK_SECRET (or another secret). */
+export function signWebhook(body: string, timestamp: number, secret = WEBHOOK_SECRET): Record<string, string> {
+  const id = "msg_test";
+  const key = Buffer.from(secret.replace(/^whsec_/, ""), "base64");
+  const sig = createHmac("sha256", key).update(`${id}.${timestamp}.${body}`).digest("base64");
+  return { "webhook-id": id, "webhook-timestamp": String(timestamp), "webhook-signature": `v1,${sig}` };
+}
 
 export type Behavior = {
   statuses?: string[]; // status returned by each successive GET; the last one repeats
@@ -23,8 +34,10 @@ export class FakeReplicate {
   server: Server;
   baseUrl = "";
   behaviors = new Map<string, Behavior>();
-  /** Every create-prediction body received, with the slug it was for. */
-  created: { slug: string; body: Record<string, unknown> }[] = [];
+  /** Every create-prediction body received, with the slug it was for and the request headers. */
+  created: { slug: string; body: Record<string, unknown>; headers: Record<string, string | string[] | undefined> }[] = [];
+  /** Status to return for prediction reads, to simulate an outage. */
+  readStatus = 200;
   files = new Map<string, { bytes: Uint8Array; type: string }>();
   private predictions = new Map<string, Prediction>();
   private nextId = 1;
@@ -69,12 +82,12 @@ export class FakeReplicate {
     const body = raw ? (JSON.parse(raw) as Record<string, unknown>) : {};
 
     let m = path.match(/^\/v1\/models\/([^/]+\/[^/]+)\/predictions$/);
-    if (req.method === "POST" && m) return this.create(res, m[1]!, body);
+    if (req.method === "POST" && m) return this.create(res, m[1]!, body, req.headers);
 
     if (req.method === "POST" && path === "/v1/predictions") {
       const slug = String(body.version ?? "").replace(/^v-/, "").replace("__", "/");
       if (!this.behaviors.has(slug)) return this.send(res, 422, { detail: `Invalid version ${String(body.version)}` });
-      return this.create(res, slug, body);
+      return this.create(res, slug, body, req.headers);
     }
 
     m = path.match(/^\/v1\/models\/([^/]+)\/([^/]+)$/);
@@ -82,8 +95,11 @@ export class FakeReplicate {
       return this.send(res, 200, { owner: m[1], name: m[2], latest_version: { id: `v-${m[1]}__${m[2]}` } });
     }
 
+    if (req.method === "GET" && path === "/v1/webhooks/default/secret") return this.send(res, 200, { key: WEBHOOK_SECRET });
+
     m = path.match(/^\/v1\/predictions\/([^/]+)$/);
     if (req.method === "GET" && m) {
+      if (this.readStatus !== 200) return this.send(res, this.readStatus, { detail: "upstream unavailable" });
       const p = this.predictions.get(m[1]!);
       if (!p) return this.send(res, 404, { detail: "Prediction not found" });
       const statuses = p.behavior.statuses ?? ["succeeded"];
@@ -106,8 +122,8 @@ export class FakeReplicate {
     return output === undefined ? this.fileUrl("out.wav") : output;
   }
 
-  private create(res: ServerResponse, slug: string, body: Record<string, unknown>) {
-    this.created.push({ slug, body });
+  private create(res: ServerResponse, slug: string, body: Record<string, unknown>, headers: IncomingMessage["headers"]) {
+    this.created.push({ slug, body, headers });
     const behavior = this.behaviors.get(slug) ?? {};
     if (behavior.submitStatus) return this.send(res, behavior.submitStatus, { detail: behavior.submitDetail ?? "rejected" });
     const id = `pred-${this.nextId++}`;

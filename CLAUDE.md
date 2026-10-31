@@ -765,8 +765,20 @@ real secrets there. `.wrangler/` (local D1 state) is also gitignored.
   generator/version/seed/SHA-256 per file. Needs `REPLICATE_API_TOKEN`
   (`api.replicate.com` and `replicate.delivery` are reachable from the
   sandbox). Suno/Udio have no official API — add those by hand.
-  `node --test services/detector-testset/test/jobs.test.ts` (fake
-  Replicate server, 23 tests).
+  Second pasted spec added (same folder): `MusicError` codes (raw
+  provider response logged, never returned), Stable Audio direct
+  (`stability.ts` — Stability's API is **multipart, not JSON**, has no
+  negative prompt, 8 steps only valid on 2.5; the spec had all three
+  wrong), a localhost HTTP API (`server.ts`: generate / jobs / files /
+  signed Replicate webhook; refuses non-loopback without
+  `MUSIC_API_KEY`; refuses `MUSIC_STORAGE_BUCKET` since cloud storage
+  isn't wired), and `provenance.ts` (ProvenanceResult from ID3 / RIFF /
+  FLAC / Ogg / MP4 tags, C2PA manifests — Suno attaches C2PA to new
+  downloads — filename, source URL; metadata can only say AI or
+  unknown, `likely_human` needs a listening detector). The spec's
+  MusicGen call used the official-models endpoint, which MusicGen
+  can't use. `npm test` in that folder: 57 tests. Bradley's The Trap
+  files all read `unknown` (only tag: title "Untitled").
 
 ## Working style established this session
 
