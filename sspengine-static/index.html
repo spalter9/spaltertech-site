@@ -3829,14 +3829,65 @@
             transition: none
         }
     }
+    
+    /* passcode screen: the crest sits above the keypad. Its height is
+       whatever the screen has left after the keypad, so the keypad always
+       fits; on short phones the keypad tightens first. */
+    #siteLock .lockCrest {
+        display: block;
+        height: clamp(96px, calc(100vh - 540px), 250px);
+        height: clamp(96px, calc(100dvh - 540px), 250px);
+        margin-bottom: -6px
+    }
+
+    #siteLock .lockCrest img {
+        display: block;
+        height: 100%;
+        width: auto;
+        filter: drop-shadow(0 18px 30px rgba(0, 0, 0, .7)) drop-shadow(0 0 40px rgba(109, 139, 255, .18))
+    }
+
+    #siteLock .sk {
+        max-width: 100%;
+        padding: 0 18px;
+        text-align: center;
+        line-height: 1.7
+    }
+
+    @media (max-height: 700px) {
+        #siteLock {
+            gap: 16px
+        }
+
+        #siteKeypad {
+            grid-template-columns: repeat(3, 64px);
+            gap: 10px
+        }
+
+        #siteKeypad button {
+            height: 64px
+        }
+
+        #siteLock .lockCrest {
+            height: clamp(72px, calc(100vh - 430px), 200px);
+            height: clamp(72px, calc(100dvh - 430px), 200px);
+            margin-bottom: 0
+        }
+    }
+
+    @media (max-height: 480px) {
+        #siteLock .lockCrest {
+            display: none
+        }
+    }
     </style>
 </head>
 <body>
     <div id="siteLock">
-        <div class="logo">
-            THE MASTER
-            <b>TRUST</b>
-        </div>
+        <picture class="lockCrest">
+            <source srcset="mastertrust-crest.webp" type="image/webp">
+            <img src="mastertrust-crest.png" width="1205" height="825" fetchpriority="high" decoding="async" alt="The Master Trust">
+        </picture>
         <div class="sk">THIS SITE IS PRIVATE · ACCESS CODE REQUIRED</div>
         <div id="siteLockDots">
             <i></i>
