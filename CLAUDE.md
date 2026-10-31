@@ -777,8 +777,12 @@ real secrets there. `.wrangler/` (local D1 state) is also gitignored.
   downloads — filename, source URL; metadata can only say AI or
   unknown, `likely_human` needs a listening detector). The spec's
   MusicGen call used the official-models endpoint, which MusicGen
-  can't use. `npm test` in that folder: 57 tests. Bradley's The Trap
-  files all read `unknown` (only tag: title "Untitled").
+  can't use. `npm test` in that folder: 58 tests. Bradley's The Trap
+  files all read `unknown` (only tag: title "Untitled"). Suno markers
+  ranked per Bradley's pasted rules: song link 0.95 > "made with suno"
+  0.90 > suno.com/.ai domain 0.85 > bare "suno" 0.60, and the bare
+  word (likewise other generators' bare names) only counts in
+  comment/encoder fields — "suno" is Hindi/Urdu for "listen".
 
 ## Working style established this session
 

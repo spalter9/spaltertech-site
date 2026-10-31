@@ -64,19 +64,21 @@ const manifestWith = (...texts: string[]) => cat(latin("jumb\0\0c2pa"), ...texts
 const verdictOf = (bytes: Uint8Array, extra: object = {}) => checkProvenance({ bytes, ...extra });
 
 describe("finds Suno", () => {
-  test("in an ID3v2.4 comment", () => {
+  test("in a 'made with Suno' comment (ID3v2.4)", () => {
     const r = verdictOf(cat(id3(4, [["COMM", comm("Made with Suno")]]), audio));
     assert.equal(r.verdict, "likely_suno");
-    assert.equal(r.confidence, 0.8);
+    assert.equal(r.confidence, 0.9);
     assert.equal(r.evidence[0]!.signal, "id3_metadata");
     assert.match(r.evidence[0]!.match, /COMM/);
   });
 
-  test("in an embedded suno.com link (ID3v2.3 WXXX)", () => {
-    const r = verdictOf(cat(id3(3, [["WXXX", wxxx("https://suno.com/song/3f2a9c1e")]]), audio));
-    assert.equal(r.verdict, "likely_suno");
-    assert.equal(r.evidence[0]!.signal, "embedded_url");
-    assert.equal(r.confidence, 0.9);
+  test("a suno.com song link outranks a plain suno.com mention (ID3v2.3 WXXX)", () => {
+    const link = verdictOf(cat(id3(3, [["WXXX", wxxx("https://suno.com/song/3f2a9c1e-7b4d-4c2a-9e1f-0a6b8c2d4e5f")]]), audio));
+    assert.equal(link.verdict, "likely_suno");
+    assert.equal(link.evidence[0]!.signal, "embedded_url");
+    assert.equal(link.confidence, 0.95);
+    const domain = verdictOf(cat(id3(3, [["WXXX", wxxx("https://www.suno.com")]]), audio));
+    assert.equal(domain.confidence, 0.85);
   });
 
   test("independent signals add up: tag + link + source URL", () => {
@@ -84,8 +86,8 @@ describe("finds Suno", () => {
       sourceUrl: "https://cdn1.suno.ai/abc.mp3",
     });
     assert.equal(r.verdict, "likely_suno");
-    assert.equal(r.confidence, 0.995); // 1 - 0.2 × 0.1 × 0.25
-    assert.deepEqual(r.evidence.map((e) => e.signal), ["embedded_url", "id3_metadata", "source_url"]);
+    assert.equal(r.confidence, 0.996); // 1 - 0.10 × 0.15 × 0.25
+    assert.deepEqual(r.evidence.map((e) => e.signal), ["id3_metadata", "embedded_url", "source_url"]);
   });
 
   test("in a C2PA manifest stored as an ID3 GEOB frame", () => {
@@ -96,17 +98,21 @@ describe("finds Suno", () => {
     assert.match(r.evidence[0]!.match, /names Suno and declares trainedAlgorithmicMedia \(signature not verified\)/);
   });
 
-  test("in a UTF-16 text frame, an ID3v1 comment, an MP4 encoder atom, and the source URL", () => {
-    assert.equal(verdictOf(cat(id3(3, [["TSSE", tUtf16("Suno v4.5")]]), audio)).verdict, "likely_suno");
+  test("as a bare name in encoder/comment fields (lowest weight), and in the source URL", () => {
+    const tsse = verdictOf(cat(id3(3, [["TSSE", tUtf16("Suno v4.5")]]), audio));
+    assert.deepEqual([tsse.verdict, tsse.confidence], ["likely_suno", 0.6]);
+    const txxx = verdictOf(cat(id3(4, [["TXXX", cat(Uint8Array.of(3), str("Software"), Uint8Array.of(0), str("Suno"))]]), audio));
+    assert.deepEqual([txxx.verdict, txxx.confidence], ["likely_suno", 0.6]);
     const v1 = new Uint8Array(128);
     v1.set(latin("TAG"));
     v1.set(latin("made with suno"), 97);
     assert.equal(verdictOf(cat(audio, v1)).verdict, "likely_suno");
     const m = mp4(box("moov", box("udta", box("meta", be32(0), box("ilst", ilstItem("©too", "Suno v4"))))), box("mdat"));
     const r = verdictOf(m);
-    assert.equal(r.verdict, "likely_suno");
+    assert.deepEqual([r.verdict, r.confidence], ["likely_suno", 0.6]);
     assert.equal(r.evidence[0]!.signal, "mp4_atom");
-    assert.equal(verdictOf(audio, { sourceUrl: "https://cdn1.suno.ai/x.mp3" }).verdict, "likely_suno");
+    const src = verdictOf(audio, { sourceUrl: "https://cdn1.suno.ai/x.mp3" });
+    assert.deepEqual([src.verdict, src.confidence], ["likely_suno", 0.75]);
   });
 });
 
@@ -155,8 +161,23 @@ describe("doesn't overreach", () => {
     assert.deepEqual(r.evidence, []);
   });
 
-  test("a filename alone is listed but isn't enough", () => {
-    const r = verdictOf(audio, { filename: "my_song_suno_v2.mp3" });
+  test("a bare 'Suno' in a title, artist, other tag or filename doesn't count ('suno' is Hindi for 'listen')", () => {
+    const tagged = cat(
+      id3(4, [
+        ["TIT2", cat(Uint8Array.of(3), str("Suno"))],
+        ["TPE1", cat(Uint8Array.of(3), str("Suno Sangeet"))],
+        ["TXXX", cat(Uint8Array.of(3), str("ARTISTS"), Uint8Array.of(0), str("AIVA Ray"))],
+      ]),
+      audio,
+    );
+    const r = verdictOf(tagged, { filename: "Suno Na.mp3" });
+    assert.deepEqual([r.verdict, r.evidence], ["unknown", []]);
+    const flacTitle = verdictOf(flac(["TITLE=Suno", "ARTIST=Lyria Choir"]));
+    assert.deepEqual([flacTitle.verdict, flacTitle.evidence], ["unknown", []]);
+  });
+
+  test("a filename with a 'made with suno' phrase is listed but capped below a verdict", () => {
+    const r = verdictOf(audio, { filename: "night-drive_made-with-suno.mp3" });
     assert.equal(r.verdict, "unknown");
     assert.equal(r.evidence[0]!.signal, "filename");
     assert.equal(r.evidence[0]!.weight, 0.4);

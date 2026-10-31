@@ -57,37 +57,57 @@ export type ProvenanceInput = {
 
 type Target = "suno" | "ai_other" | "human";
 type Found = { evidence: Evidence; target: Target };
-type Field = { signal: Evidence["signal"]; label: string; value: string };
+/** `comment` marks comment and encoder/software fields: the only places a bare generator name counts. */
+type Field = { signal: Evidence["signal"]; label: string; value: string; comment: boolean };
 
 // ---------- markers ----------
 
-const SUNO = /\bsuno\b|suno\.(?:com|ai)/i;
-const OTHER_AI: [string, RegExp][] = [
-  ["Udio", /\budio\b|udio\.com/i],
-  ["Riffusion", /riffusion/i],
-  ["Mureka", /mureka/i],
-  ["MusicGen", /musicgen|audiocraft/i],
-  ["Stable Audio", /stable[\s_-]?audio|stableaudio/i],
-  ["ElevenLabs", /elevenlabs|eleven labs/i],
-  ["Lyria", /\blyria\b/i],
-  ["Mubert", /mubert/i],
-  ["Soundraw", /soundraw/i],
-  ["Boomy", /\bboomy\b/i],
-  ["AIVA", /\baiva\b/i],
-  ["Loudly", /loudly\.com|\bloudly ai\b/i],
-  ["Beatoven", /beatoven/i],
-  ["Soundful", /soundful/i],
-  ["ACE-Step", /ace[\s_-]?step/i],
-  ["MiniMax / Hailuo", /minimax music|hailuo/i],
+/**
+ * Ranked, strongest first. A song link or a "made with" phrase is hard to
+ * mistake; a bare name is not ("suno" is Hindi/Urdu for "listen", AIVA and
+ * Lyria are people's names), so bare names only count in comment and
+ * encoder fields and a C2PA manifest, never in a title, artist or filename.
+ */
+type Rule = { target: Target; name: string; kind: "link" | "phrase" | "domain" | "word"; re: RegExp; weight: number };
+
+const generator = (name: string, domain: RegExp, word: RegExp): Rule[] => [
+  { target: "ai_other", name, kind: "domain", re: domain, weight: 0.85 },
+  { target: "ai_other", name, kind: "word", re: word, weight: 0.6 },
+];
+
+const RULES: Rule[] = [
+  { target: "suno", name: "Suno", kind: "link", re: /suno\.com\/song\/[0-9a-f-]{36}/i, weight: 0.95 },
+  { target: "suno", name: "Suno", kind: "phrase", re: /\bmade with suno\b/i, weight: 0.9 },
+  { target: "suno", name: "Suno", kind: "domain", re: /(?:https?:\/\/)?(?:www\.)?suno\.(?:com|ai)\b/i, weight: 0.85 },
+  { target: "suno", name: "Suno", kind: "word", re: /\bsuno\b/i, weight: 0.6 },
+  ...generator("Udio", /\budio\.com\b/i, /\budio\b/i),
+  ...generator("Riffusion", /\briffusion\.com\b/i, /riffusion/i),
+  ...generator("Mureka", /\bmureka\.ai\b/i, /mureka/i),
+  ...generator("MusicGen", /audiocraft\.metademolab\.com/i, /musicgen|audiocraft/i),
+  ...generator("Stable Audio", /\bstableaudio\.com\b/i, /stable[\s_-]?audio/i),
+  ...generator("ElevenLabs", /\belevenlabs\.io\b/i, /elevenlabs|eleven labs/i),
+  ...generator("Lyria", /deepmind\.google\/[^\s]*lyria/i, /\blyria\b/i),
+  ...generator("Mubert", /\bmubert\.com\b/i, /mubert/i),
+  ...generator("Soundraw", /\bsoundraw\.io\b/i, /soundraw/i),
+  ...generator("Boomy", /\bboomy\.com\b/i, /\bboomy\b/i),
+  ...generator("AIVA", /\baiva\.ai\b/i, /\baiva\b/i),
+  ...generator("Loudly", /\bloudly\.com\b/i, /\bloudly ai\b/i),
+  ...generator("Beatoven", /\bbeatoven\.ai\b/i, /beatoven/i),
+  ...generator("Soundful", /\bsoundful\.com\b/i, /soundful/i),
+  ...generator("ACE-Step", /ace-step\.github\.io/i, /ace[\s_-]?step/i),
+  ...generator("MiniMax / Hailuo", /\bhailuoai\.(?:com|video)\b/i, /minimax music|hailuo/i),
 ];
 /** IPTC digital source types C2PA uses for generated media. */
 const AI_SOURCE_TYPE = /(?:compositeWith)?trainedAlgorithmicMedia|algorithmicMedia/i;
-const URL_RE = /https?:\/\/[^\s"'<>\x00]+/gi;
 
-function which(text: string): { target: Target; name: string } | undefined {
-  if (SUNO.test(text)) return { target: "suno", name: "Suno" };
-  for (const [name, re] of OTHER_AI) if (re.test(text)) return { target: "ai_other", name };
-  return undefined;
+/** Strongest rule the text satisfies; bare-name rules only when `words` is allowed. */
+function bestMatch(text: string, words: boolean): Rule | undefined {
+  let best: Rule | undefined;
+  for (const r of RULES) {
+    if (r.kind === "word" && !words) continue;
+    if ((!best || r.weight > best.weight) && r.re.test(text)) best = r;
+  }
+  return best;
 }
 
 const clip = (s: string, n = 120) => (s.length > n ? `${s.slice(0, n)}…` : s);
@@ -108,6 +128,18 @@ function printable(b: Uint8Array): string {
 }
 
 // ---------- ID3 ----------
+
+/** Splits an encoded "description\0value" pair (UTF-16 terminators are two bytes, on an even offset). */
+function id3Pair(b: Uint8Array, encoding: number): [string, string] {
+  const wide = encoding === 1 || encoding === 2;
+  let i = 0;
+  if (wide) while (i + 1 < b.length && !(b[i] === 0 && b[i + 1] === 0)) i += 2;
+  else while (i < b.length && b[i] !== 0) i++;
+  return [id3Text(b.subarray(0, i), encoding), id3Text(b.subarray(i + (wide ? 2 : 1)), encoding)];
+}
+
+const ID3_COMMENT_FRAMES = new Set(["COMM", "COM", "TSSE", "TSS", "TENC", "TEN"]);
+const COMMENTISH = /comment|descr|encod|software|tool|generat|creat|source|made/i;
 
 function id3Text(b: Uint8Array, encoding: number): string {
   if (encoding === 1 || encoding === 2) {
@@ -142,23 +174,26 @@ function readId3v2(b: Uint8Array, at: number, fields: Field[], blobs: { label: s
     if (!body.length) continue;
     const enc = body[0]!;
     const label = `ID3 ${id}`;
-    if (id === "TXXX" || id === "TXX" || id === "COMM" || id === "COM" || id === "USLT" || id === "ULT") {
-      const rest = id.startsWith("T") ? body.subarray(1) : body.subarray(4); // COMM/USLT carry a 3-byte language
-      fields.push({ signal: "id3_metadata", label, value: id3Text(rest, enc) });
+    if (id === "TXXX" || id === "TXX") {
+      const [desc, value] = id3Pair(body.subarray(1), enc);
+      fields.push({ signal: "id3_metadata", label: `${label}:${desc}`, value, comment: COMMENTISH.test(desc) });
+    } else if (id === "COMM" || id === "COM" || id === "USLT" || id === "ULT") {
+      const [, value] = id3Pair(body.subarray(4), enc); // 3-byte language, then short description
+      fields.push({ signal: "id3_metadata", label, value, comment: ID3_COMMENT_FRAMES.has(id) });
     } else if (id === "WXXX" || id === "WXX") {
-      fields.push({ signal: "id3_metadata", label, value: latin1(body.subarray(1)).replace(/\0+/g, " ").trim() });
+      fields.push({ signal: "id3_metadata", label, value: id3Pair(body.subarray(1), enc)[1] || latin1(body.subarray(1)).replace(/\0+/g, " ").trim(), comment: false });
     } else if (id[0] === "T") {
-      fields.push({ signal: "id3_metadata", label, value: id3Text(body.subarray(1), enc) });
+      fields.push({ signal: "id3_metadata", label, value: id3Text(body.subarray(1), enc), comment: ID3_COMMENT_FRAMES.has(id) });
     } else if (id[0] === "W") {
-      fields.push({ signal: "id3_metadata", label, value: latin1(body).replace(/\0+/g, "").trim() });
+      fields.push({ signal: "id3_metadata", label, value: latin1(body).replace(/\0+/g, "").trim(), comment: false });
     } else if (id === "PRIV") {
-      fields.push({ signal: "id3_metadata", label, value: printable(body) });
+      fields.push({ signal: "id3_metadata", label, value: printable(body), comment: false });
     } else if (id === "GEOB" || id === "GEO") {
       // encoding, mime\0, filename\0, description\0, data — C2PA stores its manifest here in MP3
       const mimeEnd = body.indexOf(0, 1);
       const mime = latin1(body.subarray(1, mimeEnd));
       if (/c2pa/i.test(mime)) blobs.push({ label: "ID3 GEOB (C2PA manifest store)", data: body.subarray(mimeEnd + 1) });
-      else fields.push({ signal: "id3_metadata", label: `${label} ${mime}`, value: printable(body.subarray(mimeEnd + 1)) });
+      else fields.push({ signal: "id3_metadata", label: `${label} ${mime}`, value: printable(body.subarray(mimeEnd + 1)), comment: false });
     }
   }
   return end - at;
@@ -170,7 +205,7 @@ function readId3v1(b: Uint8Array, fields: Field[]) {
   const str = (s: number, n: number) => latin1(t.subarray(s, s + n)).replace(/\0+/g, " ").trim();
   for (const [label, s, n] of [["title", 3, 30], ["artist", 33, 30], ["album", 63, 30], ["comment", 97, 30]] as const) {
     const v = str(s, n);
-    if (v) fields.push({ signal: "id3_metadata", label: `ID3v1 ${label}`, value: v });
+    if (v) fields.push({ signal: "id3_metadata", label: `ID3v1 ${label}`, value: v, comment: label === "comment" });
   }
 }
 
@@ -187,11 +222,12 @@ function readRiff(b: Uint8Array, fields: Field[], blobs: { label: string; data: 
       while (p + 8 <= body.length) {
         const sub = ascii(body, p, 4);
         const n = u32le(body, p + 4);
-        fields.push({ signal: "riff_info", label: `RIFF INFO ${sub}`, value: utf8(body.subarray(p + 8, p + 8 + n)).replace(/\0+/g, " ").trim() });
+        const value = utf8(body.subarray(p + 8, p + 8 + n)).replace(/\0+/g, " ").trim();
+        fields.push({ signal: "riff_info", label: `RIFF INFO ${sub}`, value, comment: sub === "ICMT" || sub === "ISFT" });
         p += 8 + n + (n % 2);
       }
     } else if (id === "bext") {
-      fields.push({ signal: "riff_info", label: "RIFF bext", value: printable(body.subarray(0, 602)) });
+      fields.push({ signal: "riff_info", label: "RIFF bext", value: printable(body.subarray(0, 602)), comment: true }); // description + originator software
     } else if (id.toLowerCase() === "id3 ") {
       readId3v2(body, 0, fields, blobs);
     } else if (id === "C2PA") {
@@ -206,7 +242,7 @@ function readRiff(b: Uint8Array, fields: Field[], blobs: { label: string; data: 
 function readVorbisComments(b: Uint8Array, at: number, fields: Field[], where: string) {
   let p = at;
   const vendorLen = u32le(b, p);
-  fields.push({ signal: "vorbis_comment", label: `${where} vendor`, value: utf8(b.subarray(p + 4, p + 4 + vendorLen)) });
+  fields.push({ signal: "vorbis_comment", label: `${where} vendor`, value: utf8(b.subarray(p + 4, p + 4 + vendorLen)), comment: true });
   p += 4 + vendorLen;
   const count = u32le(b, p);
   p += 4;
@@ -214,7 +250,8 @@ function readVorbisComments(b: Uint8Array, at: number, fields: Field[], where: s
     const n = u32le(b, p);
     const s = utf8(b.subarray(p + 4, p + 4 + n));
     const eq = s.indexOf("=");
-    fields.push({ signal: "vorbis_comment", label: `${where} ${eq > 0 ? s.slice(0, eq).toUpperCase() : "comment"}`, value: eq > 0 ? s.slice(eq + 1) : s });
+    const key = eq > 0 ? s.slice(0, eq).toUpperCase() : "COMMENT";
+    fields.push({ signal: "vorbis_comment", label: `${where} ${key}`, value: eq > 0 ? s.slice(eq + 1) : s, comment: COMMENTISH.test(key) });
     p += 4 + n;
   }
 }
@@ -244,6 +281,7 @@ function readOgg(b: Uint8Array, fields: Field[]) {
 
 const C2PA_UUID = "d8fec3d61b0e483c92975828877ec481";
 const CONTAINERS = new Set(["moov", "udta", "ilst", "trak", "mdia", "minf", "stbl"]);
+const MP4_COMMENT_ATOMS = new Set(["\u00a9cmt", "\u00a9too", "\u00a9enc", "desc", "ldes"]);
 
 function readMp4(b: Uint8Array, start: number, end: number, fields: Field[], blobs: { label: string; data: Uint8Array }[], parent = "") {
   let p = start;
@@ -269,15 +307,18 @@ function readMp4(b: Uint8Array, start: number, end: number, fields: Field[], blo
       // each item holds a 'data' box: size, 'data', type(4), locale(4), value — or mean/name/data for '----'
       let q = bodyStart;
       const parts: string[] = [];
+      let name = "";
       while (q + 8 <= bodyEnd) {
         const s = u32be(b, q);
         const t = ascii(b, q + 4, 4);
         if (s < 8) break;
         if (t === "data") parts.push(utf8(b.subarray(q + 16, q + s)));
-        else if (t === "name" || t === "mean") parts.push(utf8(b.subarray(q + 12, q + s)));
+        else if (t === "name") name = utf8(b.subarray(q + 12, q + s));
         q += s;
       }
-      fields.push({ signal: "mp4_atom", label: `MP4 ${type}`, value: parts.join(" ").replace(/\0+/g, " ").trim() });
+      const label = name ? `MP4 ----:${name}` : `MP4 ${type}`;
+      const comment = MP4_COMMENT_ATOMS.has(type) || (type === "----" && COMMENTISH.test(name));
+      fields.push({ signal: "mp4_atom", label, value: parts.join(" ").replace(/\0+/g, " ").trim(), comment });
     }
     p += size;
   }
@@ -301,9 +342,7 @@ export function extractMetadata(bytes: Uint8Array): { fields: Field[]; blobs: { 
 const WEIGHT = {
   c2paNamed: 0.95,
   c2paSourceType: 0.85,
-  embeddedUrl: 0.9,
-  tag: 0.8,
-  sourceUrl: 0.75,
+  sourceUrl: 0.75, // caps: where a file came from, or what it's called, is weaker than what it carries
   filename: 0.4,
 };
 
@@ -321,7 +360,7 @@ export function checkProvenance(input: ProvenanceInput): ProvenanceResult {
 
   for (const blob of blobs) {
     const text = printable(blob.data);
-    const named = which(text);
+    const named = bestMatch(text, true);
     const sourceType = text.match(AI_SOURCE_TYPE)?.[0];
     if (named) add("c2pa_manifest", `${blob.label} names ${named.name}${sourceType ? ` and declares ${sourceType}` : ""} (signature not verified)`, WEIGHT.c2paNamed, named.target);
     else if (sourceType) add("c2pa_manifest", `${blob.label} declares ${sourceType} (signature not verified)`, WEIGHT.c2paSourceType, "ai_other");
@@ -329,27 +368,25 @@ export function checkProvenance(input: ProvenanceInput): ProvenanceResult {
   }
 
   for (const f of fields) {
-    for (const url of f.value.match(URL_RE) ?? []) {
-      const hit = which(url);
-      if (hit) add("embedded_url", `${f.label}: ${url}`, WEIGHT.embeddedUrl, hit.target);
-    }
-    const hit = which(f.value.replace(URL_RE, " "));
-    if (hit) add(f.signal, `${f.label}: "${clip(f.value)}"`, WEIGHT.tag, hit.target);
+    const hit = bestMatch(f.value, f.comment);
+    if (!hit) continue;
+    const signal = hit.kind === "link" || hit.kind === "domain" ? "embedded_url" : f.signal;
+    add(signal, `${f.label}: "${clip(f.value)}" (${hit.name} ${hit.kind})`, hit.weight, hit.target);
   }
 
   if (input.sourceUrl) {
-    const hit = which(input.sourceUrl);
-    if (hit) add("source_url", input.sourceUrl, WEIGHT.sourceUrl, hit.target);
+    const hit = bestMatch(input.sourceUrl, false);
+    if (hit) add("source_url", `${input.sourceUrl} (${hit.name} ${hit.kind})`, Math.min(hit.weight, WEIGHT.sourceUrl), hit.target);
   }
   if (input.filename) {
-    const hit = which(input.filename.replace(/[_.]+/g, " "));
-    if (hit) add("filename", `${input.filename} mentions ${hit.name}`, WEIGHT.filename, hit.target);
+    const hit = bestMatch(`${input.filename} ${input.filename.replace(/[_.-]+/g, " ")}`, false);
+    if (hit) add("filename", `${input.filename} (${hit.name} ${hit.kind})`, Math.min(hit.weight, WEIGHT.filename), hit.target);
   }
 
   for (const [signal, result] of [["hosted_detector", input.hostedDetector], ["spectral_classifier", input.spectralClassifier]] as const) {
     if (!result) continue;
     const p = Math.min(1, Math.max(0, result.aiProbability));
-    const named = result.generator ? which(result.generator) : undefined;
+    const named = result.generator ? bestMatch(result.generator, true) : undefined;
     if (p >= 0.5) add(signal, `${result.name}: ${(p * 100).toFixed(0)}% AI${result.generator ? `, attributed to ${result.generator}` : ""}`, p, named?.target === "suno" ? "suno" : "ai_other");
     else add(signal, `${result.name}: ${((1 - p) * 100).toFixed(0)}% not AI`, 1 - p, "human");
   }

@@ -10,7 +10,7 @@ fully machine-made, perfectly quantized song "Claimable" in the mid band.
 A detector replaces that verdict only after it catches every AI track in the
 test set and flags none of the human reference records.
 
-Needs Node 22.18+ (runs the `.ts` files directly). `npm test` runs all 57 tests
+Needs Node 22.18+ (runs the `.ts` files directly). `npm test` runs all 58 tests
 against in-process fakes of Replicate and Stability, without spending credits.
 
 ## 1. Generate known-AI songs — `generate.ts`
@@ -95,6 +95,22 @@ C2PA in a GEOB frame), WAV RIFF INFO/bext/C2PA chunks, FLAC and Ogg Vorbis
 comments, MP4 ilst atoms and the C2PA uuid box, plus the filename and source
 URL. Suno attaches C2PA content credentials to new downloads; older downloads
 carry no label. C2PA signatures are detected, not cryptographically verified.
+
+Markers are ranked, and each field counts once, at its strongest match:
+
+| Marker | Weight | Where it counts |
+|---|---|---|
+| C2PA manifest naming the generator | 0.95 | manifest |
+| `suno.com/song/<uuid>` | 0.95 | any field |
+| `made with suno` | 0.90 | any field |
+| `suno.com` / `suno.ai` (and other generators' domains) | 0.85 | any field |
+| C2PA declaring AI, no generator named | 0.85 | manifest |
+| bare `suno` (or another generator's name) | 0.60 | comment and encoder/software fields only |
+
+A bare name never counts in a title, artist, album or filename: "suno" is
+Hindi/Urdu for "listen", and AIVA and Lyria are people's names. The source
+URL is capped at 0.75 and the filename at 0.40 (alone, below a verdict).
+Independent fields combine as 1 − Π(1 − weight); a verdict needs 0.5.
 
 Missing labels never mean human: metadata alone can only return an AI
 verdict or `unknown`. `likely_human` comes only from a listening detector's
