@@ -855,6 +855,25 @@ real secrets there. `.wrangler/` (local D1 state) is also gitignored.
   CDP `Input.synthesizeScrollGesture` is a no-op in headless Chromium —
   swipe with `Input.dispatchTouchEvent` touchStart/Move/End instead.
   Not yet seen on Bradley's real iPhone.
+- **New Master Trust crest** (commit `67a6f7e` on `main`; Bradley sent a
+  new lions-and-vault JPEG on light grey: "replace the other one… make it
+  look right"). The old `mastertrust-emblem.png` (removed) had a bad
+  cutout — its light gold highlights were keyed out, punching navy holes
+  through the lions. New cutout (scratchpad `logo/cutout2.py`): split the
+  image into regions bounded by the artwork's dark outlines / sharp
+  edges; a region is background only if light, neutral (R≈G≈B — the
+  metal is warm), smooth, and touches the edge or is a real enclosed gap;
+  enclosed regions inside the vault door (centre ~610,365, r 250) are
+  never background (its chrome spokes have neutral highlights). Edge
+  pixels get alpha solved from local fg/bg colours (no grey halo). Rows
+  below y=862 dropped (the source cuts the bottom ornament off). Files:
+  `mastertrust-crest.webp` (257 KB) + `.png` fallback in a `<picture>`
+  as `.crestHero` at the top of the Home page (540px desktop, 94% phone,
+  Home h1 centred); `mastertrust-vault.png` = round badge cropped from
+  the crest (`.navBrand` buttons `#navHome` → Home page, `#fwHome` →
+  homepage; Surreal Audio's `.navLogo`). The engine/site lock screens
+  still use their text logos. Assets + `apply_crest.py`: scratchpad
+  `logo/`.
 
 ## Working style established this session
 
