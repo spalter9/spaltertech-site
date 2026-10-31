@@ -753,8 +753,9 @@ real secrets there. `.wrangler/` (local D1 state) is also gitignored.
   tonal = human, pitch read off a polyphonic mix. Spalty also invented
   how it works (breath detection, "the model gets trained on failures" —
   there is no model) and calls DistroKid "our Phase I partner" (the plan
-  says target). Not fixed yet — Bradley chose to test dedicated detectors
-  first: **Hive** (separate vocal/instrumental models, 3 s timestamped
+  says target). **FIXED (commit `42410a5` on `main`, Bradley: "make that
+  fix now")** — see the "Honest Examiner" item below. Before that, Bradley
+  had chosen to test dedicated detectors first: **Hive** (separate vocal/instrumental models, 3 s timestamped
   chunks, names the generator) vs **Modulate** (self-serve, free tier,
   but admits polished human masters sometimes read as AI). Waiting on
   his API keys and the friend's tracks. Proposed immediate fixes still
@@ -884,6 +885,38 @@ real secrets there. `.wrangler/` (local D1 state) is also gitignored.
   hidden under 480px tall (landscape phones). Test: `pw/lock_shots.cjs`
   (6 screen sizes, fits + unlocks). The engine lock (`#lock`) still
   shows its MASTER TRUST ENGINE text.
+- **Honest Examiner + Spalty facts** (commit `42410a5` on `main`). New
+  `analyzeBuffer(filtered, band, {pitch})` (band mode passes `examBand`;
+  stem mode passes `'full'` and `pitch: true` only for VOCALS/BASS):
+  no-reading gates (under 2 s; rms < −50 dBFS; noise = in-band flatness
+  > .55 & envelope CV > .01 & (median onset salience < 2.2 or < 8
+  onsets); steady = envelope CV < .18). Onsets: spectral flux (hop 256,
+  needs ≥ 5% new spectrum) then timed from the steepest rise of an 8 ms
+  log envelope (`attackTime`) — flux timing was off up to 40 ms by pitch,
+  1 ms envelopes ripple on low notes. `fitGrid`: ±4% period search on
+  the onsets' phase resultant, then least squares t = a + b·k, coarsest
+  of beat/½/⅓/¼ explaining ≥ 80% of hits (needs ≥ 60% and 6 hits).
+  Scored: timing (resid std, (ms−1)/15) .40, spacing (CV of gap/grid
+  step, /.08) .25, pitch (mean |Δcents| per 12 ms on held notes,
+  (c−.3)/3, stems only) .35; flatness (in-band) + stereo = context,
+  weight 0. Pitch is NOT read off full mixes: chords made a programmed
+  song read 7–20 cents of "wobble". `examReading()` → "High natural
+  variation" / "Moderate variation" / "Machine-tight" + a meaning
+  sentence, tone `'info'` (blue); gates → "NO READING". `EXAM_LIMITS`
+  text goes on the ledger .txt, stem report and PDF. "Claimable /
+  Partial claim / Must exclude / Likely human" removed everywhere,
+  including homepage evidence copy, Protocol rail card, investor memo
+  and technical brief. Test bench: scratchpad `examfix/` (`harness.html`
+  + `exam_core.js` + old core for comparison; `pw/exam_run.cjs`,
+  `pw/exam_e2e.cjs [url] [--spalty]`): programmed vs played songs 0–21
+  vs 87–99 by band; stems drums 0/87, bass 10/77, lead 5/91; noise, sine,
+  held chord, silence → no reading. jsPDF's Helvetica has no "≈" —
+  keep PDF strings WinAnsi. Spalty prompt now carries "THE EXAMINER,
+  EXACT FACTS", LALAL stem facts (fingerprinting in build), legacy
+  ingestion in build, DistroKid = target with no deal; verified live on
+  four probing questions. Stem mode itself wasn't run end to end (LALAL
+  is paid); its cards/report share the tested code. Still to do: a real
+  AI detector (Hive) when Bradley has keys, and real AI/human tracks.
 
 ## Working style established this session
 
