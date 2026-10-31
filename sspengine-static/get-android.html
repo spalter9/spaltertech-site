@@ -7,17 +7,20 @@
 <meta name="description" content="Download the Surreal Audio Android test build and install it in under a minute.">
 <link rel="icon" href="media/surreal-audio-icon.png">
 <link rel="apple-touch-icon" href="media/surreal-audio-icon.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;500;600;700&family=Manrope:wght@300;400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
     :root {
-        --chassis: #030309;
-        --panel: rgba(16, 18, 28, .72);
-        --line: #2b3044;
-        --bone: #e6e3d8;
-        --dim: #8d90a0;
-        --amber: #ffb638;
-        --green: #3ae8a4;
+        --chassis: #060a14;
+        --panel: rgba(12, 19, 34, .78);
+        --line: #1f2b48;
+        --bone: #eef2fb;
+        --dim: #8893ab;
+        --amber: #6d8bff;
+        --green: #34d399;
         --mono: 'IBM Plex Mono', ui-monospace, monospace;
-        --disp: 'Chakra Petch', 'IBM Plex Mono', sans-serif;
+        --disp: 'Sora', ui-sans-serif, system-ui, sans-serif;
+        --body: 'Manrope', ui-sans-serif, system-ui, sans-serif;
     }
     * { box-sizing: border-box; }
     html, body {
@@ -50,7 +53,7 @@
         content: '';
         position: absolute; inset: -26px;
         border-radius: 50%;
-        background: radial-gradient(circle, rgba(58,232,164,.22), transparent 65%);
+        background: radial-gradient(circle, rgba(52,211,153,.22), transparent 65%);
         filter: blur(26px);
     }
     .iconWrap img { position: relative; width: 84px; height: 84px; border-radius: 20px; box-shadow: 0 8px 32px rgba(0,0,0,.5); }
@@ -64,8 +67,8 @@
         padding: 20px;
         margin: 26px 0 8px;
         border-radius: 14px;
-        border: 1px solid rgba(58,232,164,.5);
-        background: radial-gradient(circle at 50% 20%, rgba(58,232,164,.16), #071410 75%);
+        border: 1px solid rgba(52,211,153,.5);
+        background: radial-gradient(circle at 50% 20%, rgba(52,211,153,.16), #071410 75%);
         color: var(--green);
         font-family: var(--disp);
         font-weight: 700;
@@ -93,8 +96,8 @@
     .warn {
         padding: 12px 14px;
         border-radius: 10px;
-        border: 1px solid rgba(255,182,56,.3);
-        background: rgba(255,182,56,.05);
+        border: 1px solid rgba(109,139,255,.3);
+        background: rgba(109,139,255,.05);
         font-size: 11.5px;
         line-height: 1.55;
         color: var(--amber);
@@ -103,7 +106,24 @@
 
     footer { text-align: center; margin-top: 8px; }
     footer a { color: var(--dim); font-size: 11px; text-decoration: none; border-bottom: 1px dotted var(--line); }
-</style>
+
+    /* ---- Aurora: the Spalter Tech portal's look (navy, blue→violet, Sora / Manrope) ---- */
+    body {
+        background-color: var(--chassis);
+        background-image:
+            radial-gradient(60rem 40rem at 8% -6%, rgba(109, 139, 255, .10), transparent 60%),
+            radial-gradient(50rem 36rem at 100% 100%, rgba(143, 91, 255, .09), transparent 60%),
+            linear-gradient(rgba(109, 139, 255, .028) 1px, transparent 1px),
+            linear-gradient(90deg, rgba(109, 139, 255, .028) 1px, transparent 1px);
+        background-size: auto, auto, 64px 64px, 64px 64px;
+        background-attachment: fixed;
+        -webkit-font-smoothing: antialiased;
+        font-family: var(--body);
+    }
+    h1, h2, h3 { font-weight: 600; letter-spacing: -.01em; text-wrap: balance; }
+    ::selection { background: #6d8bff; color: #000; }
+    :focus-visible { outline: 2px solid #8fe9ff; outline-offset: 3px; border-radius: 6px; }
+    </style>
 </head>
 <body>
 <main>

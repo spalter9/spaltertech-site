@@ -7,19 +7,22 @@
 <meta name="description" content="The Surreal Audio Engine: bass-safe spatial enhancement for anything you listen to. Same master, same volume — just the space opens up.">
 <link rel="icon" href="media/surreal-audio-icon.png">
 <link rel="apple-touch-icon" href="media/surreal-audio-icon.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;500;600;700&family=Manrope:wght@300;400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
     :root {
-        --chassis: #030309;
-        --panel: rgba(16, 18, 28, .72);
-        --panel2: rgba(26, 28, 42, .72);
-        --line: #2b3044;
-        --bone: #e6e3d8;
-        --dim: #8d90a0;
-        --amber: #ffb638;
-        --green: #3ae8a4;
-        --red: #ff4d4d;
+        --chassis: #060a14;
+        --panel: rgba(12, 19, 34, .78);
+        --panel2: rgba(18, 27, 48, .72);
+        --line: #1f2b48;
+        --bone: #eef2fb;
+        --dim: #8893ab;
+        --amber: #6d8bff;
+        --green: #34d399;
+        --red: #f0616d;
         --mono: 'IBM Plex Mono', ui-monospace, monospace;
-        --disp: 'Chakra Petch', 'IBM Plex Mono', sans-serif;
+        --disp: 'Sora', ui-sans-serif, system-ui, sans-serif;
+        --body: 'Manrope', ui-sans-serif, system-ui, sans-serif;
     }
     * { box-sizing: border-box; }
     html, body {
@@ -46,7 +49,7 @@
     }
     .nav .co { color: var(--dim); }
     .nav .navLogo { border-bottom: 0; }
-    .nav .navLogo img { display: block; width: 150px; height: auto; filter: drop-shadow(0 0 18px rgba(255, 182, 56, .3)); }
+    .nav .navLogo img { display: block; width: 150px; height: auto; filter: drop-shadow(0 0 18px rgba(109, 139, 255, .3)); }
     @media (max-width: 600px) { .nav .navLogo img { width: 112px; } }
     .nav a { color: var(--dim); text-decoration: none; border-bottom: 1px dotted var(--line); }
     .nav a:hover { color: var(--amber); }
@@ -57,7 +60,7 @@
         content: '';
         position: absolute; inset: -30px;
         border-radius: 50%;
-        background: radial-gradient(circle, rgba(255,182,56,.24), transparent 65%);
+        background: radial-gradient(circle, rgba(109,139,255,.24), transparent 65%);
         filter: blur(30px);
     }
     .iconWrap img { position: relative; width: 92px; height: 92px; border-radius: 22px; box-shadow: 0 8px 40px rgba(0,0,0,.5); }
@@ -90,8 +93,8 @@
         gap: 8px;
         padding: 16px 28px;
         border-radius: 12px;
-        border: 1px solid rgba(255,182,56,.5);
-        background: radial-gradient(circle at 50% 20%, rgba(255,182,56,.18), #14110a 75%);
+        border: 1px solid rgba(109,139,255,.5);
+        background: radial-gradient(circle at 50% 20%, rgba(109,139,255,.18), #0b1120 75%);
         color: var(--amber);
         font-family: var(--disp);
         font-weight: 700;
@@ -121,7 +124,7 @@
         border: 1px solid var(--line);
         padding: 10px;
         background: linear-gradient(180deg, #0b0d16, #060710);
-        box-shadow: 0 20px 60px rgba(0,0,0,.5), 0 0 0 1px rgba(255,182,56,.08);
+        box-shadow: 0 20px 60px rgba(0,0,0,.5), 0 0 0 1px rgba(109,139,255,.08);
     }
     .phoneScreen {
         border-radius: 24px;
@@ -174,7 +177,7 @@
         border-radius: 14px;
         padding: 18px;
     }
-    .tierCard.active { border-color: rgba(255,182,56,.5); box-shadow: 0 0 24px rgba(255,182,56,.08); }
+    .tierCard.active { border-color: rgba(109,139,255,.5); box-shadow: 0 0 24px rgba(109,139,255,.08); }
     .tierHead { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 6px; }
     .tierName { font-family: var(--disp); font-weight: 700; font-size: 14px; color: var(--bone); }
     .tierPrice { font-size: 11px; letter-spacing: .1em; color: var(--amber); }
@@ -194,7 +197,7 @@
         display: block;
         text-decoration: none;
         color: inherit;
-        border-color: rgba(58,232,164,.35);
+        border-color: rgba(52,211,153,.35);
         cursor: pointer;
     }
     a.platformCard.link:active { transform: scale(.98); }
@@ -220,11 +223,28 @@
         max-width: 50ch;
         margin: 0 auto;
     }
-    .originNote a { color: var(--amber); text-decoration: none; border-bottom: 1px dotted rgba(255,182,56,.4); }
+    .originNote a { color: var(--amber); text-decoration: none; border-bottom: 1px dotted rgba(109,139,255,.4); }
 
     footer { text-align: center; margin-top: 12px; }
     footer a { color: var(--dim); font-size: 11px; text-decoration: none; border-bottom: 1px dotted var(--line); }
-</style>
+
+    /* ---- Aurora: the Spalter Tech portal's look (navy, blue→violet, Sora / Manrope) ---- */
+    body {
+        background-color: var(--chassis);
+        background-image:
+            radial-gradient(60rem 40rem at 8% -6%, rgba(109, 139, 255, .10), transparent 60%),
+            radial-gradient(50rem 36rem at 100% 100%, rgba(143, 91, 255, .09), transparent 60%),
+            linear-gradient(rgba(109, 139, 255, .028) 1px, transparent 1px),
+            linear-gradient(90deg, rgba(109, 139, 255, .028) 1px, transparent 1px);
+        background-size: auto, auto, 64px 64px, 64px 64px;
+        background-attachment: fixed;
+        -webkit-font-smoothing: antialiased;
+        font-family: var(--body);
+    }
+    h1, h2, h3 { font-weight: 600; letter-spacing: -.01em; text-wrap: balance; }
+    ::selection { background: #6d8bff; color: #000; }
+    :focus-visible { outline: 2px solid #8fe9ff; outline-offset: 3px; border-radius: 6px; }
+    </style>
 </head>
 <body>
 <main>
@@ -294,13 +314,13 @@
             <div class="platformCard">
                 <div class="glyph">🌐</div>
                 <h4>BROWSER</h4>
-                <span class="status" style="color:var(--green);border-color:rgba(58,232,164,.4)">LIVE NOW</span>
+                <span class="status" style="color:var(--green);border-color:rgba(52,211,153,.4)">LIVE NOW</span>
                 <p>Chrome or Edge. Works today — no install.</p>
             </div>
             <a class="platformCard link" href="get-android.html">
                 <div class="glyph">🤖</div>
                 <h4>ANDROID</h4>
-                <span class="status" style="color:var(--green);border-color:rgba(58,232,164,.4)">TEST BUILD →</span>
+                <span class="status" style="color:var(--green);border-color:rgba(52,211,153,.4)">TEST BUILD →</span>
                 <p>Reaches into Spotify and any other app, plus your own library.</p>
             </a>
             <div class="platformCard">

@@ -6,19 +6,22 @@
 <title>Surreal Audio — Master Trust</title>
 <link rel="icon" href="media/surreal-audio-icon.png">
 <link rel="apple-touch-icon" href="media/surreal-audio-icon.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;500;600;700&family=Manrope:wght@300;400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
     :root {
-        --chassis: #030309;
-        --panel: rgba(16, 18, 28, .72);
-        --panel2: rgba(26, 28, 42, .72);
-        --line: #2b3044;
-        --bone: #e6e3d8;
-        --dim: #8d90a0;
-        --amber: #ffb638;
-        --green: #3ae8a4;
-        --red: #ff4d4d;
+        --chassis: #060a14;
+        --panel: rgba(12, 19, 34, .78);
+        --panel2: rgba(18, 27, 48, .72);
+        --line: #1f2b48;
+        --bone: #eef2fb;
+        --dim: #8893ab;
+        --amber: #6d8bff;
+        --green: #34d399;
+        --red: #f0616d;
         --mono: 'IBM Plex Mono', ui-monospace, monospace;
-        --disp: 'Chakra Petch', 'IBM Plex Mono', sans-serif;
+        --disp: 'Sora', ui-sans-serif, system-ui, sans-serif;
+        --body: 'Manrope', ui-sans-serif, system-ui, sans-serif;
     }
     * { box-sizing: border-box; }
     html, body {
@@ -83,8 +86,8 @@
         margin-top: 14px;
         padding: 10px 12px;
         border-radius: 8px;
-        border: 1px solid rgba(255,182,56,.35);
-        background: rgba(255,182,56,.06);
+        border: 1px solid rgba(109,139,255,.35);
+        background: rgba(109,139,255,.06);
         font-size: 11.5px;
         line-height: 1.55;
         color: var(--amber);
@@ -93,8 +96,8 @@
         width: 100%;
         padding: 18px;
         border-radius: 12px;
-        border: 1px solid rgba(255,182,56,.5);
-        background: radial-gradient(circle at 50% 20%, rgba(255,182,56,.16), #14110a 75%);
+        border: 1px solid rgba(109,139,255,.5);
+        background: radial-gradient(circle at 50% 20%, rgba(109,139,255,.16), #0b1120 75%);
         color: var(--amber);
         font-family: var(--disp);
         font-weight: 700;
@@ -106,7 +109,7 @@
     #shareBtn:disabled, #demoBtn:disabled { opacity: .4; cursor: default; }
     #demoBtn.playing {
         border-color: var(--green);
-        background: radial-gradient(circle at 50% 20%, rgba(58,232,164,.14), #0a1410 75%);
+        background: radial-gradient(circle at 50% 20%, rgba(52,211,153,.14), #0a1410 75%);
         color: var(--green);
     }
     .demoCredit {
@@ -163,35 +166,35 @@
         margin-top: 4px;
         padding: 22px 16px;
         border-radius: 14px;
-        border: 1px solid rgba(255,182,56,.5);
-        background: radial-gradient(circle at 50% 30%, rgba(255,182,56,.16), #14110a 70%);
+        border: 1px solid rgba(109,139,255,.5);
+        background: radial-gradient(circle at 50% 30%, rgba(109,139,255,.16), #0b1120 70%);
         color: var(--amber);
         font-family: var(--disp);
         font-weight: 700;
         font-size: 15px;
         letter-spacing: .14em;
         display: flex; flex-direction: column; align-items: center; gap: 6px;
-        box-shadow: 0 0 20px rgba(255,182,56,.12), inset 0 0 30px rgba(255,182,56,.06);
+        box-shadow: 0 0 20px rgba(109,139,255,.12), inset 0 0 30px rgba(109,139,255,.06);
         cursor: pointer;
     }
     #engage small { font-size: 9px; letter-spacing: .1em; color: var(--dim); font-weight: 400; }
     #engage.on {
-        border-color: rgba(58,232,164,.6);
-        background: radial-gradient(circle at 50% 30%, rgba(58,232,164,.22), #071a12 70%);
+        border-color: rgba(52,211,153,.6);
+        background: radial-gradient(circle at 50% 30%, rgba(52,211,153,.22), #071a12 70%);
         color: var(--green);
-        box-shadow: 0 0 30px rgba(58,232,164,.32), inset 0 0 40px rgba(58,232,164,.16);
+        box-shadow: 0 0 30px rgba(52,211,153,.32), inset 0 0 40px rgba(52,211,153,.16);
     }
     #engage.boomed { animation: boomOff .7s ease-out; }
     #engage.on.boomed { animation: boomOn .7s ease-out; }
     @keyframes boomOff {
-        0% { box-shadow: 0 0 0 0 rgba(255,182,56,.95), inset 0 0 30px rgba(255,182,56,.06) }
-        40% { box-shadow: 0 0 46px 20px rgba(255,182,56,.4), inset 0 0 46px rgba(255,182,56,.2) }
-        100% { box-shadow: 0 0 20px rgba(255,182,56,.12), inset 0 0 30px rgba(255,182,56,.06) }
+        0% { box-shadow: 0 0 0 0 rgba(109,139,255,.95), inset 0 0 30px rgba(109,139,255,.06) }
+        40% { box-shadow: 0 0 46px 20px rgba(109,139,255,.4), inset 0 0 46px rgba(109,139,255,.2) }
+        100% { box-shadow: 0 0 20px rgba(109,139,255,.12), inset 0 0 30px rgba(109,139,255,.06) }
     }
     @keyframes boomOn {
-        0% { box-shadow: 0 0 0 0 rgba(58,232,164,.95), inset 0 0 30px rgba(58,232,164,.08) }
-        40% { box-shadow: 0 0 50px 22px rgba(58,232,164,.45), inset 0 0 50px rgba(58,232,164,.24) }
-        100% { box-shadow: 0 0 30px rgba(58,232,164,.32), inset 0 0 40px rgba(58,232,164,.16) }
+        0% { box-shadow: 0 0 0 0 rgba(52,211,153,.95), inset 0 0 30px rgba(52,211,153,.08) }
+        40% { box-shadow: 0 0 50px 22px rgba(52,211,153,.45), inset 0 0 50px rgba(52,211,153,.24) }
+        100% { box-shadow: 0 0 30px rgba(52,211,153,.32), inset 0 0 40px rgba(52,211,153,.16) }
     }
     .meterLabel {
         display: flex; justify-content: space-between; font-size: 10px; letter-spacing: .1em;
@@ -267,7 +270,23 @@
         cursor: pointer;
         z-index: 2;
     }
-</style>
+
+    /* ---- Aurora: the Spalter Tech portal's look (navy, blue→violet, Sora / Manrope) ---- */
+    body {
+        background-color: var(--chassis);
+        background-image:
+            radial-gradient(60rem 40rem at 8% -6%, rgba(109, 139, 255, .10), transparent 60%),
+            radial-gradient(50rem 36rem at 100% 100%, rgba(143, 91, 255, .09), transparent 60%),
+            linear-gradient(rgba(109, 139, 255, .028) 1px, transparent 1px),
+            linear-gradient(90deg, rgba(109, 139, 255, .028) 1px, transparent 1px);
+        background-size: auto, auto, 64px 64px, 64px 64px;
+        background-attachment: fixed;
+        -webkit-font-smoothing: antialiased;
+    }
+    h1, h2, h3 { font-weight: 600; letter-spacing: -.01em; text-wrap: balance; }
+    ::selection { background: #6d8bff; color: #000; }
+    :focus-visible { outline: 2px solid #8fe9ff; outline-offset: 3px; border-radius: 6px; }
+    </style>
 </head>
 <body>
 <main>
@@ -351,7 +370,7 @@
         corrG.clearRect(0, 0, w, h);
         const grad = corrG.createLinearGradient(0, 0, w, 0);
         grad.addColorStop(0, 'rgba(230,70,70,.35)');
-        grad.addColorStop(.5, 'rgba(255,182,56,.28)');
+        grad.addColorStop(.5, 'rgba(109,139,255,.28)');
         grad.addColorStop(1, 'rgba(70,210,120,.35)');
         corrG.fillStyle = grad;
         corrG.fillRect(0, 0, w, h);
@@ -361,7 +380,7 @@
         corrG.lineTo(w / 2, h);
         corrG.stroke();
         const x = ((v + 1) / 2) * w;
-        const needleColor = v > .5 ? '#4ad27a' : v > -.2 ? '#ffb638' : '#e64646';
+        const needleColor = v > .5 ? '#4ad27a' : v > -.2 ? '#6d8bff' : '#e64646';
         corrG.fillStyle = needleColor;
         corrG.shadowColor = needleColor;
         corrG.shadowBlur = 6;
@@ -639,7 +658,7 @@
             corrSmooth += (raw - corrSmooth) * .2;
             drawCorrMeter(corrSmooth);
             tCorr.textContent = (corrSmooth >= 0 ? '+' : '') + corrSmooth.toFixed(2);
-            tCorr.style.color = corrSmooth > .5 ? '#3ae8a4' : corrSmooth > -.2 ? '#ffb638' : '#ff4d4d';
+            tCorr.style.color = corrSmooth > .5 ? '#34d399' : corrSmooth > -.2 ? '#6d8bff' : '#f0616d';
         }
         raf = requestAnimationFrame(tick);
     }
@@ -959,9 +978,9 @@
                         const x = cxx + Math.cos(a) * r, y = cyy + Math.sin(a) * r * .8;
                         i === 0 ? vg.moveTo(x, y) : vg.lineTo(x, y);
                     }
-                    vg.strokeStyle = `rgba(56,220,255,${.4 + energy * .6})`;
+                    vg.strokeStyle = `rgba(143,233,255,${.4 + energy * .6})`;
                     vg.lineWidth = 1.6;
-                    vg.shadowColor = 'rgba(56,220,255,.9)';
+                    vg.shadowColor = 'rgba(143,233,255,.9)';
                     vg.shadowBlur = 10 + energy * 24;
                     vg.stroke();
                     vg.shadowBlur = 0;
@@ -969,7 +988,7 @@
                 for (const p of parts) {
                     p.y -= p.v * (.0012 + energy * .006);
                     if (p.y < 0) { p.y = 1; p.x = Math.random(); }
-                    vg.fillStyle = `rgba(255,140,80,${.08 + energy * .35})`;
+                    vg.fillStyle = `rgba(143,123,255,${.08 + energy * .35})`;
                     vg.beginPath();
                     vg.arc(p.x * w, p.y * h, p.r * (1 + bass), 0, 7);
                     vg.fill();
@@ -1053,13 +1072,13 @@
                 }
                 vg.shadowBlur = 0;
                 const sun = vg.createRadialGradient(vp, hor, 2, vp, hor, 60 + bass * 50);
-                sun.addColorStop(0, `rgba(255,120,60,${.8 + bass * .2})`);
+                sun.addColorStop(0, `rgba(109,139,255,${.8 + bass * .2})`);
                 sun.addColorStop(1, 'rgba(255,60,120,0)');
                 vg.fillStyle = sun;
                 vg.beginPath();
                 vg.arc(vp, hor, 60 + bass * 50, 0, 7);
                 vg.fill();
-                vg.strokeStyle = `rgba(56,220,255,${.35 + energy * .4})`;
+                vg.strokeStyle = `rgba(143,233,255,${.35 + energy * .4})`;
                 vg.lineWidth = 1;
                 for (let i = -9; i <= 9; i++) {
                     vg.beginPath();
@@ -1070,7 +1089,7 @@
                 const sp2 = (vt * (1.5 + energy * 8)) % 22;
                 for (let yy = hor + sp2; yy < h; yy += 22) {
                     const t2 = (yy - hor) / (h - hor);
-                    vg.strokeStyle = `rgba(255,61,154,${.15 + t2 * .45 + energy * .25})`;
+                    vg.strokeStyle = `rgba(177,140,255,${.15 + t2 * .45 + energy * .25})`;
                     vg.lineWidth = 1 + t2 * 1.5;
                     vg.beginPath();
                     vg.moveTo(0, yy);
@@ -1098,7 +1117,7 @@
                 }
                 vg.shadowBlur = 0;
                 vg.fillStyle = `rgba(255,255,255,${.3 + bass * .7})`;
-                vg.shadowColor = 'rgba(255,180,80,1)';
+                vg.shadowColor = 'rgba(109,139,255,1)';
                 vg.shadowBlur = 16 + bass * 30;
                 vg.beginPath();
                 vg.arc(cxx, cyy, 5 + bass * 16, 0, 7);
