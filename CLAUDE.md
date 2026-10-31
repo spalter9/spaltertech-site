@@ -105,7 +105,12 @@ real secrets there. `.wrangler/` (local D1 state) is also gitignored.
 - **Split sheets don't enforce that percentages sum to 100%** — each
   collaborator proposes their own share independently; reconciliation is
   a manual staff step in the review queue today, not automated.
-- **Spalty (the console's AI chat widget) has never had its server-side
+- **UPDATE Oct 31: Spalty's keys ARE now set in production** — verified
+  live: `/api/spalty` answers (model `claude-sonnet-5` from the page),
+  `/api/spalty-voice` returns real MP3 audio. The note below is history.
+  Still open: Spalty states things that aren't true (how the Examiner
+  works, DistroKid as a partner) — the "give Spalty the facts" fix.
+- **Spalty (the console's AI chat widget) had never had its server-side
   keys configured in production** — confirmed live via a screenshot
   from sspengine.com showing `/api/spalty` return `HTTP 503 — Spalty is
   not configured`. Someone with Cloudflare dashboard access needs to set
