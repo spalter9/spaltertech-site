@@ -827,6 +827,34 @@ real secrets there. `.wrangler/` (local D1 state) is also gitignored.
   Rights Registry pages (scan, split, registry/) intentionally still
   cream "paper" — offer to convert. Playwright gotcha: `#boom` breathes
   (animation) so clicks need `{ force: true }`.
+- **Homepage and engine page side to side like an app** (commit
+  `3143128` on `main`; Bradley: "instead of scrolling down, we go from
+  side to side… like other apps do"). Homepage = 6 pages (Home, The
+  Examiner, The Plan, The Protocol, Live Demo, Data Room); engine = 5
+  (Load & Play, Sound, Export, Examiner, Economy — Presets now sit at the
+  top of Sound, the visualizer on Load & Play). Structure: `.pgShell`
+  (`position: fixed; inset: 0`, flex column; on the engine it's the
+  `.wrap` itself) > `.pgBar` (tabs + ‹ › built by JS) > `.pgTrack`
+  (native `scroll-snap-type: x mandatory`) > `section.pg[data-tab]` >
+  `.pgIn`; `.pgDots` at the bottom. `makePager(shell)` in the PORTAL
+  WIRING IIFE builds tabs/dots/NEXT cards and returns `{go, idx, pages,
+  index(name)}` (`landingPager`, `enginePager`); `window.refitPagers()`
+  restores the sideways position after a view is shown (a hidden view
+  forgets it) — called from `show()` and the engine unlock. The body no
+  longer scrolls on these two views; `#framework`/`#invRoom` still do.
+  `#miniBar` (engine, pinned above every page) proxies `btnRew/Play/Stop/
+  FF` and `#boom` via `.click()` and mirrors `#counter`, `#fName`,
+  `#tPeak`, `#tLufsM`, play/BOOM state every 100ms. The Protocol's rail
+  is a grid in paged mode. `#seek`, `#viz3d`, range inputs have
+  `touch-action: pan-y` so sideways drags don't turn the page. Arrow keys
+  skip inputs and open overlays (A/B screen, doc viewer, video modals,
+  locks). `#wtModal`/`#wsModal` moved outside `.wrap` (a fixed shell is a
+  stacking context). Build script + CSS/JS: scratchpad
+  `pager_tools/apply_pager.py` (anchors must match once). Test:
+  `pw/pager_test.cjs` (33 checks) + `pw/pager_extra.cjs`. Gotcha:
+  CDP `Input.synthesizeScrollGesture` is a no-op in headless Chromium —
+  swipe with `Input.dispatchTouchEvent` touchStart/Move/End instead.
+  Not yet seen on Bradley's real iPhone.
 
 ## Working style established this session
 
