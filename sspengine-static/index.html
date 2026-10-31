@@ -3703,10 +3703,6 @@
             padding: 0 12px
         }
 
-        .pgShell > .siteNav .navLogo {
-            width: 64px;
-            flex: none
-        }
 
         .pgShell > .siteNav .links {
             justify-content: flex-end;
@@ -3754,6 +3750,85 @@
             transition: none
         }
     }
+    
+    /* ================= THE CREST — the lions-and-vault crest is the Home
+       page's centrepiece. Menu bars carry the round vault badge instead: the
+       full crest can't be read at menu size. ================= */
+    .navBrand {
+        display: block;
+        flex: none;
+        border-radius: 50%
+    }
+
+    .navBrand img {
+        display: block;
+        width: 44px;
+        height: 44px;
+        filter: drop-shadow(0 4px 12px rgba(0, 0, 0, .6)) drop-shadow(0 0 16px rgba(109, 139, 255, .2));
+        transition: transform .4s cubic-bezier(.22, 1, .36, 1)
+    }
+
+    .navBrand:hover img {
+        transform: rotate(-12deg)
+    }
+
+    .crestHero {
+        position: relative;
+        display: flex;
+        justify-content: center;
+        margin: 2px auto 30px
+    }
+
+    .crestHero::before {
+        content: "";
+        position: absolute;
+        left: 50%;
+        top: 46%;
+        width: min(700px, 110%);
+        aspect-ratio: 1.7;
+        transform: translate(-50%, -50%);
+        background: radial-gradient(closest-side, rgba(109, 139, 255, .2), rgba(143, 91, 255, .08) 58%, transparent);
+        pointer-events: none
+    }
+
+    .crestHero picture {
+        position: relative;
+        display: block;
+        width: min(540px, 94%)
+    }
+
+    .crestHero img {
+        display: block;
+        width: 100%;
+        height: auto;
+        filter: drop-shadow(0 22px 34px rgba(0, 0, 0, .72))
+    }
+
+    #landing .pg[data-tab="Home"] h1 {
+        text-align: center
+    }
+
+    #landing .pg[data-tab="Home"] .sub {
+        margin-left: auto;
+        margin-right: auto
+    }
+
+    @media (max-width: 600px) {
+        .navBrand img {
+            width: 40px;
+            height: 40px
+        }
+
+        .crestHero {
+            margin-bottom: 22px
+        }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+        .navBrand img {
+            transition: none
+        }
+    }
     </style>
 </head>
 <body>
@@ -3780,7 +3855,7 @@
     <div id="landing">
         <div class="pgShell">
         <div class="siteNav">
-            <img class="navLogo" src="mastertrust-emblem.png" alt="Master Trust">
+            <button type="button" class="navBrand" id="navHome" aria-label="Master Trust, back to the first page"><img src="mastertrust-vault.png" alt="" width="44" height="44"></button>
             <span class="links">
                 <button id="navFw">MASTER TRUST</button>
                 <button id="navDr">DATA ROOM</button>
@@ -3791,6 +3866,12 @@
         <div class="pgBar"></div>
         <div class="pgTrack">
         <section class="pg" data-tab="Home"><div class="pgIn">
+        <div class="crestHero">
+            <picture>
+                <source srcset="mastertrust-crest.webp" type="image/webp">
+                <img src="mastertrust-crest.png" width="1205" height="825" fetchpriority="high" decoding="async" alt="Master Trust crest: two lions guarding a vault door">
+            </picture>
+        </div>
         <h1>
             <span class="grad">Securing the Digital Economy.</span>
         </h1>
@@ -4232,7 +4313,7 @@
     <!-- ============ MASTER TRUST ============ -->
     <div id="framework">
         <div class="siteNav">
-            <img class="navLogo" src="mastertrust-emblem.png" alt="Master Trust">
+            <button type="button" class="navBrand" id="fwHome" aria-label="Master Trust, back to the homepage"><img src="mastertrust-vault.png" alt="" width="44" height="44"></button>
             <span class="links">
                 <button id="fwBack">◀ BACK TO PROTOCOL</button>
             </span>
@@ -6055,6 +6136,8 @@
             landingPager.go(landingPager.index('Data Room'), true)
         });
         $('navDr').addEventListener('click', () => landingPager.go(landingPager.index('Data Room')));
+        $('navHome').addEventListener('click', () => landingPager.go(0));
+        $('fwHome').addEventListener('click', () => show('landing'));
         const INV = '1967';
         let invEntry = '';
         const pad = $('invPad'),
