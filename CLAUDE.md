@@ -794,6 +794,18 @@ real secrets there. `.wrangler/` (local D1 state) is also gitignored.
   detectors. He also pasted a UUID (13729aae-…-249676e75db3): not a
   public Suno song (suno.com/song/… is 404) and Suno's CDN now needs
   signed links (403 MissingKey), so tracks must come as files.
+  **Bradley can't upload audio into the chat** (send button never
+  activates) and won't do multi-step phone file moves, so the label
+  check now lives in the engine itself (commit `a7a79ec` on `main`):
+  arming a track runs the provenance core (type-stripped from
+  `provenance.ts`, identical output on 8 samples) on the file bytes and
+  shows `#fLabels` under the file name — red "AI LABEL FOUND · MADE
+  WITH SUNO · N%", amber "POSSIBLE AI LABEL · NEEDS A HUMAN LOOK", dim
+  "NO AI LABEL IN THIS FILE · NOT PROOF EITHER WAY". The Examiner
+  verdict is untouched and still unreliable. Track rack only accepts
+  .mp3/.wav. A Dropbox file request "AI Track Test" (→ `/AI Track
+  Test`, open, no deadline) exists for the friend's tracks; still
+  empty as of Oct 31.
 
 ## Working style established this session
 
