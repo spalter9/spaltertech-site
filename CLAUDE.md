@@ -871,9 +871,14 @@ real secrets there. `.wrangler/` (local D1 state) is also gitignored.
   as `.crestHero` at the top of the Home page (540px desktop, 94% phone,
   Home h1 centred); `mastertrust-vault.png` = round badge cropped from
   the crest (`.navBrand` buttons `#navHome` → Home page, `#fwHome` →
-  homepage; Surreal Audio's `.navLogo`). The engine/site lock screens
-  still use their text logos. Assets + `apply_crest.py`: scratchpad
-  `logo/`.
+  homepage; Surreal Audio's `.navLogo`). Assets + `apply_crest.py`:
+  scratchpad `logo/`. **Passcode screen** (commit `fe7769f`): `#siteLock`
+  opens on the crest (`.lockCrest`) instead of the THE MASTER TRUST text;
+  height `clamp(96px, 100dvh - 540px, 250px)`, and under 700px tall the
+  keypad tightens (64px keys) with `clamp(72px, 100dvh - 430px, 200px)`;
+  hidden under 480px tall (landscape phones). Test: `pw/lock_shots.cjs`
+  (6 screen sizes, fits + unlocks). The engine lock (`#lock`) still
+  shows its MASTER TRUST ENGINE text.
 
 ## Working style established this session
 
