@@ -3322,6 +3322,438 @@
             animation: none
         }
     }
+    
+    /* ================= PAGES — the homepage and the engine move side to side
+       like an app: a tab bar on top, swipe / arrow keys / tabs / dots to move,
+       each page scrolls on its own. The engine keeps a mini transport (play,
+       stop, counter, peak, loudness, BOOM) pinned above every page.
+       .pgShell fills the screen; .pgTrack is a native horizontal scroll-snap
+       row of section.pg pages, so swiping is the browser's own gesture. ===== */
+    .pgShell {
+        position: fixed;
+        inset: 0;
+        display: flex;
+        flex-direction: column;
+        padding-top: max(14px, env(safe-area-inset-top))
+    }
+
+    #landing {
+        max-width: none;
+        padding: 0
+    }
+
+    .wrap.pgShell {
+        max-width: none;
+        margin: 0;
+        padding: max(10px, env(safe-area-inset-top)) 0 0
+    }
+
+    .pgShell > .siteNav {
+        flex: none;
+        width: 100%;
+        max-width: 960px;
+        margin: 0 auto 14px;
+        padding: 0 20px
+    }
+
+    .pgBar {
+        flex: none;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        width: 100%;
+        max-width: 960px;
+        margin: 0 auto;
+        padding: 0 20px 12px
+    }
+
+    .wrap .pgBar {
+        max-width: 1080px;
+        padding: 0 14px 10px
+    }
+
+    .pgTabs {
+        flex: 1;
+        min-width: 0;
+        display: flex;
+        gap: 4px;
+        padding: 4px;
+        overflow-x: auto;
+        scrollbar-width: none;
+        border: 1px solid rgba(109, 139, 255, .2);
+        border-radius: 14px;
+        background: rgba(12, 19, 34, .78)
+    }
+
+    .pgTabs::-webkit-scrollbar {
+        display: none
+    }
+
+    .pgTab {
+        flex: 1 0 auto;
+        padding: 10px 14px;
+        border-radius: 10px;
+        font-size: 10px;
+        font-weight: 600;
+        letter-spacing: .2em;
+        text-transform: uppercase;
+        white-space: nowrap;
+        color: var(--dim);
+        transition: color .25s ease, background-color .25s ease, box-shadow .25s ease
+    }
+
+    .pgTab:hover {
+        color: var(--bone)
+    }
+
+    .pgTab.on {
+        color: #04101f;
+        background: linear-gradient(135deg, #8fe9ff, #6d8bff 60%, #8f7bff);
+        box-shadow: inset 0 1px 0 rgba(255, 255, 255, .35), 0 0 30px -12px rgba(109, 139, 255, .7)
+    }
+
+    .pgArr {
+        flex: none;
+        width: 40px;
+        height: 40px;
+        border-radius: 12px;
+        border: 1px solid rgba(109, 139, 255, .28);
+        background: rgba(109, 139, 255, .05);
+        color: #a3acc2;
+        font-size: 18px;
+        line-height: 1;
+        transition: color .25s ease, border-color .25s ease, opacity .25s ease
+    }
+
+    .pgArr:hover:not(:disabled) {
+        color: var(--bone);
+        border-color: #6d8bff
+    }
+
+    .pgArr:disabled {
+        opacity: .28;
+        cursor: default
+    }
+
+    @media (max-width: 760px), (hover: none) {
+        .pgArr {
+            display: none
+        }
+    }
+
+    .pgTrack {
+        flex: 1;
+        min-height: 0;
+        display: flex;
+        overflow-x: auto;
+        overflow-y: hidden;
+        scroll-snap-type: x mandatory;
+        overscroll-behavior-x: contain;
+        scrollbar-width: none
+    }
+
+    .pgTrack::-webkit-scrollbar {
+        display: none
+    }
+
+    .pg {
+        flex: 0 0 100%;
+        min-width: 0;
+        overflow-x: hidden;
+        overflow-y: auto;
+        overscroll-behavior-y: contain;
+        scroll-snap-align: start;
+        scroll-snap-stop: always
+    }
+
+    .pgIn {
+        max-width: 960px;
+        margin: 0 auto;
+        padding: 6px 20px calc(112px + env(safe-area-inset-bottom))
+    }
+
+    .wrap .pgIn {
+        max-width: 1080px;
+        padding: 4px 14px calc(112px + env(safe-area-inset-bottom))
+    }
+
+    /* the NEXT card at the foot of every page but the last */
+    .pgNext {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 14px;
+        width: 100%;
+        margin-top: 30px;
+        padding: 18px 20px;
+        border: 1px solid rgba(109, 139, 255, .22);
+        border-radius: 16px;
+        background: rgba(109, 139, 255, .05);
+        color: var(--bone);
+        text-align: left;
+        transition: border-color .3s ease, box-shadow .3s ease
+    }
+
+    .pgNext small {
+        display: block;
+        font-size: 9px;
+        font-weight: 600;
+        letter-spacing: .28em;
+        color: #6d8bff;
+        margin-bottom: 7px
+    }
+
+    .pgNext span {
+        font-family: var(--disp);
+        font-size: 18px;
+        font-weight: 600;
+        letter-spacing: -.01em
+    }
+
+    .pgNext i {
+        font-style: normal;
+        font-size: 22px;
+        color: #8fe9ff;
+        transition: transform .3s cubic-bezier(.22, 1, .36, 1)
+    }
+
+    .pgNext:hover {
+        border-color: #6d8bff;
+        box-shadow: 0 0 44px -18px #6d8bff
+    }
+
+    .pgNext:hover i {
+        transform: translateX(4px)
+    }
+
+    .pgDots {
+        position: absolute;
+        left: 50%;
+        bottom: max(14px, env(safe-area-inset-bottom));
+        transform: translateX(-50%);
+        z-index: 5;
+        display: flex;
+        padding: 6px 8px;
+        border-radius: 999px;
+        border: 1px solid rgba(109, 139, 255, .2);
+        background: rgba(6, 10, 20, .78);
+        backdrop-filter: blur(10px);
+        -webkit-backdrop-filter: blur(10px)
+    }
+
+    .pgDots button {
+        display: grid;
+        place-items: center;
+        height: 14px;
+        padding: 0 3px
+    }
+
+    .pgDots button::before {
+        content: "";
+        width: 6px;
+        height: 6px;
+        border-radius: 3px;
+        background: rgba(238, 242, 251, .28);
+        transition: width .35s cubic-bezier(.22, 1, .36, 1), background-color .35s ease
+    }
+
+    .pgDots button.on::before {
+        width: 20px;
+        background: #6d8bff
+    }
+
+    /* The Protocol already had its own sideways card rail; inside a page that
+       swipes sideways it becomes a grid you scroll down instead. */
+    #protoRail .railTrack {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));
+        overflow: visible;
+        scroll-snap-type: none;
+        padding: 4px 0 0
+    }
+
+    #protoRail .rCard {
+        width: auto;
+        min-height: 0
+    }
+
+    #protoRail .railNav {
+        display: none
+    }
+
+    /* things you drag sideways must not turn the page */
+    #seek, #viz3d, input[type="range"] {
+        touch-action: pan-y
+    }
+
+    /* ---- the engine's pinned mini transport ---- */
+    #miniBar {
+        flex: none;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        width: calc(100% - 28px);
+        max-width: 1052px;
+        margin: 0 auto 10px;
+        padding: 8px 10px;
+        border-radius: 16px;
+        border: 1px solid rgba(109, 139, 255, .2);
+        background: linear-gradient(180deg, rgba(255, 255, 255, .03), transparent 60%), #0c1322;
+        box-shadow: inset 0 1px 0 rgba(255, 255, 255, .04), 0 14px 34px -22px rgba(0, 0, 0, .95)
+    }
+
+    .mbKeys {
+        flex: none;
+        display: flex;
+        gap: 4px
+    }
+
+    .mbKeys button, #mbBoom {
+        height: 38px;
+        min-width: 40px;
+        padding: 0 10px;
+        border-radius: 11px;
+        border: 1px solid rgba(109, 139, 255, .28);
+        background: linear-gradient(180deg, rgba(255, 255, 255, .04), transparent 60%), #0f1830;
+        color: var(--bone);
+        font-size: 12px;
+        transition: color .2s ease, border-color .2s ease, background-color .2s ease
+    }
+
+    .mbKeys button:hover {
+        border-color: #6d8bff
+    }
+
+    .mbKeys button.active {
+        border-color: var(--green);
+        color: var(--green)
+    }
+
+    .mbNow {
+        flex: 1;
+        min-width: 0;
+        display: flex;
+        flex-direction: column;
+        gap: 4px
+    }
+
+    #mbTime {
+        font-size: 15px;
+        font-weight: 600;
+        letter-spacing: .04em;
+        font-variant-numeric: tabular-nums;
+        color: var(--bone)
+    }
+
+    #mbName {
+        font-size: 9px;
+        letter-spacing: .16em;
+        text-transform: uppercase;
+        color: var(--dim);
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis
+    }
+
+    .mbMeters {
+        flex: none;
+        display: flex;
+        gap: 16px;
+        font-size: 9px;
+        letter-spacing: .18em;
+        color: var(--dim)
+    }
+
+    .mbMeters b {
+        display: block;
+        margin-top: 4px;
+        font-size: 13px;
+        letter-spacing: .02em;
+        font-variant-numeric: tabular-nums;
+        color: var(--bone)
+    }
+
+    #mbLufs {
+        color: var(--mag)
+    }
+
+    #mbBoom {
+        min-width: 78px;
+        font-family: var(--disp);
+        font-size: 13px;
+        font-weight: 700;
+        letter-spacing: .2em;
+        color: #5d6b94
+    }
+
+    #mbBoom.on {
+        color: #dfe6ff;
+        border-color: var(--valve);
+        background: radial-gradient(circle at 35% 30%, #a99bff, #3a4fd6 80%);
+        box-shadow: 0 0 26px -6px rgba(143, 123, 255, .8)
+    }
+
+    @media (max-width: 600px) {
+        /* phone: logo and the four site buttons share one compact band, so
+           the pages get the screen */
+        .pgShell > .siteNav {
+            flex-wrap: nowrap;
+            gap: 12px;
+            margin-bottom: 10px;
+            padding: 0 12px
+        }
+
+        .pgShell > .siteNav .navLogo {
+            width: 64px;
+            flex: none
+        }
+
+        .pgShell > .siteNav .links {
+            justify-content: flex-end;
+            gap: 6px
+        }
+
+        .pgShell > .siteNav .links button, .pgShell > .siteNav .links a {
+            padding: 8px 10px;
+            font-size: 9px;
+            letter-spacing: .13em
+        }
+
+        .pgBar, .wrap .pgBar {
+            padding: 0 12px 10px
+        }
+
+        .pgIn, .wrap .pgIn {
+            padding-left: 12px;
+            padding-right: 12px
+        }
+
+        .pgTab {
+            padding: 10px 12px;
+            letter-spacing: .14em
+        }
+
+        #miniBar {
+            width: calc(100% - 24px);
+            gap: 8px;
+            padding: 7px 8px
+        }
+
+        .mbKeys [data-proxy="btnRew"], .mbKeys [data-proxy="btnFF"], .mbMeters .mbL {
+            display: none
+        }
+
+        #mbBoom {
+            min-width: 66px;
+            padding: 0 8px
+        }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+        .pgDots button::before, .pgNext i, .pgTab {
+            transition: none
+        }
+    }
     </style>
 </head>
 <body>
@@ -3346,6 +3778,7 @@
 
     <!-- ============ INVESTOR PORTAL ============ -->
     <div id="landing">
+        <div class="pgShell">
         <div class="siteNav">
             <img class="navLogo" src="mastertrust-emblem.png" alt="Master Trust">
             <span class="links">
@@ -3355,6 +3788,9 @@
                 <button class="hot" id="navEngine">THE ENGINE</button>
             </span>
         </div>
+        <div class="pgBar"></div>
+        <div class="pgTrack">
+        <section class="pg" data-tab="Home"><div class="pgIn">
         <h1>
             <span class="grad">Securing the Digital Economy.</span>
         </h1>
@@ -3420,6 +3856,8 @@
             </div>
         </div>
 
+        </div></section>
+        <section class="pg" data-tab="The Examiner"><div class="pgIn">
         <!-- THE EVIDENCE LAYER: The Examiner + The Engine, explained -->
         <div id="evidence" style="margin-bottom:36px">
             <div style="color:#c9a9ff;font-size:10px;letter-spacing:.25em;margin-bottom:8px">THE EVIDENCE LAYER · LIVE IN THE ENGINE TODAY</div>
@@ -3470,6 +3908,8 @@
             </div>
         </div>
 
+        </div></section>
+        <section class="pg" data-tab="The Plan"><div class="pgIn">
         <!-- THE CAMPAIGN: the plan of attack, step by step -->
         <div id="campaign" style="margin-bottom:36px">
             <div style="color:#c9a9ff;font-size:10px;letter-spacing:.25em;margin-bottom:8px;font-weight:700">THE CAMPAIGN · PLAN OF ATTACK</div>
@@ -3569,8 +4009,10 @@
                 <div style="font-family:var(--disp);font-size:15px;color:var(--bone);line-height:1.5">The majors are not the first move. They are the reward for winning it. We do not need the whole board on day one — we need the opening played perfectly, with every counter already answered. That is how the standard is won.</div>
             </div>
         </div>
+        </div></section>
+        <section class="pg" data-tab="The Protocol"><div class="pgIn">
         <div id="protoRail">
-            <div class="tag">THE PROTOCOL · WHAT IS LIVE AND WHAT IS IN BUILD · SWIPE →</div>
+            <div class="tag">THE PROTOCOL · WHAT IS LIVE AND WHAT IS IN BUILD</div>
             <h4>Ten Systems. One Record. Built In The Open.</h4>
             <div class="desc">Every panel below is a piece of Master Trust, and every one is labeled honestly: what is live in the engine today, what is in build, and what is a simulation or a model shown so you can see the mechanics before the rails are connected. We would rather you see the plan than be sold a finished machine.</div>
             <div id="buildLegend"><span class="rStat live">LIVE</span> working in the engine now &nbsp;·&nbsp; <span class="rStat build">IN BUILD</span> designed and under construction &nbsp;·&nbsp; <span class="rStat sim">SIMULATION</span> mechanics demonstrated with illustrative data &nbsp;·&nbsp; <span class="rStat model">MODEL</span> a defined rule or contract, not yet deployed</div>
@@ -3680,6 +4122,8 @@
                 </div>
             </div>
         </div>
+        </div></section>
+        <section class="pg" data-tab="Live Demo"><div class="pgIn">
         <div id="sandbox">
             <div class="tag">LIVE PROTOCOL SIMULATION</div>
             <h4>See the Engine in Action</h4>
@@ -3709,6 +4153,8 @@
             </div>
             <div id="tkNote">SIMULATION — illustrative catalog, rates, and splits for demonstration. Routing logic mirrors real-world rights flows: sync licenses split publisher and master sides; interactive-stream mechanicals route via The MLC; non-interactive digital radio routes via SoundExchange (50% featured artist / 45% rights owner / 5% session fund); terrestrial radio pays composition performance only — no US master royalty, which is precisely the gap SSP exists to close.</div>
         </div>
+        </div></section>
+        <section class="pg" data-tab="Data Room"><div class="pgIn">
         <div class="modHead">EXPANSION MODULES · INVESTOR DATA ROOM</div>
         <div class="modCard">
             <div class="head">
@@ -3776,6 +4222,10 @@
         <div class="ctaRow">
             <button class="primary" id="enterEngine">ENTER THE ENGINE ◆</button>
             <button class="ghost" id="memoBtn">INVESTOR MEMORANDUM</button>
+        </div>
+        </div></section>
+        </div>
+        <div class="pgDots"></div>
         </div>
     </div>
 
@@ -3995,8 +4445,28 @@
 
     <!-- ============ APP ============ -->
     <div id="app">
-        <div class="wrap">
-
+        <div class="wrap pgShell">
+            <div class="pgBar"></div>
+            <!-- MINI TRANSPORT: pinned above every engine page; each button presses the real one -->
+            <div id="miniBar" role="group" aria-label="Transport">
+                <div class="mbKeys">
+                    <button type="button" data-proxy="btnRew" aria-label="Back 5 seconds">◀◀</button>
+                    <button type="button" data-proxy="btnPlay" aria-label="Play">▶</button>
+                    <button type="button" data-proxy="btnStop" aria-label="Stop">■</button>
+                    <button type="button" data-proxy="btnFF" aria-label="Forward 5 seconds">▶▶</button>
+                </div>
+                <div class="mbNow">
+                    <b id="mbTime">00:00.0</b>
+                    <span id="mbName">NO TRACK LOADED</span>
+                </div>
+                <div class="mbMeters">
+                    <span>PEAK<b id="mbPeak">-inf</b></span>
+                    <span class="mbL">LUFS-M<b id="mbLufs">-inf</b></span>
+                </div>
+                <button type="button" id="mbBoom" data-proxy="boom" aria-pressed="false" title="Same as the big BOOM button: lit = your master, dark = the original">BOOM</button>
+            </div>
+            <div class="pgTrack">
+            <section class="pg" data-tab="Load &amp; Play"><div class="pgIn">
             <div class="top">
                 <div>
                     <div class="brand">
@@ -4015,26 +4485,6 @@
                     <button class="pill" id="btnSaveSession" title="Save every track in your Track Rack, plus your Valve Pipeline and Surreal Stage settings — recall them anytime, even after closing this tab or restarting your computer.">⤓ SAVE SESSION</button>
                     <button class="pill" id="btnRestoreSession" style="display:none;border-color:var(--amber);color:var(--amber)" title="Restore your last saved session.">⤒ RESTORE SESSION</button>
                 </div>
-            </div>
-
-            <div id="wtModal" role="dialog" aria-modal="true" aria-label="Master Trust Engine walkthrough video">
-                <div class="wtHead">
-                    <span>MASTER TRUST ENGINE · THE GUIDED WALKTHROUGH</span>
-                    <button type="button" class="wtClose" id="wtClose">✕ CLOSE</button>
-                </div>
-                <video id="wtVideo" controls playsinline preload="none" poster="media/engine-walkthrough-poster.jpg">
-                    <source src="media/engine-walkthrough.mp4" type="video/mp4">
-                </video>
-            </div>
-
-            <div id="wsModal" role="dialog" aria-modal="true" aria-label="Who is Spalty video">
-                <div class="wtHead">
-                    <span>WHO IS SPALTY</span>
-                    <button type="button" class="wtClose" id="wsClose">✕ CLOSE</button>
-                </div>
-                <video id="wsVideo" controls playsinline preload="none" poster="media/who-is-spalty-poster.jpg">
-                    <source src="media/who-is-spalty.mp4" type="video/mp4">
-                </video>
             </div>
 
             <!-- INGEST -->
@@ -4104,6 +4554,46 @@
                         <b id="tCorr" style="color:var(--green)">+1.00</b>
                     </div>
                     <canvas id="corrMeter" style="display:block;width:100%;height:22px;border:1px solid var(--line);border-radius:6px;background:#06070c"></canvas>
+                </div>
+            </div>
+
+            <!-- VIZ -->
+            <div id="vizBox">
+                <canvas id="viz">
+                </canvas>
+                <canvas id="viz3d" style="display:none;position:absolute;inset:0;width:100%;height:340px;cursor:grab"></canvas>
+                <div id="vizHud">
+                    <span id="hudViz">SPECTRAL FIELD</span>
+                    <span id="hudMode">STANDBY</span>
+                </div>
+                <div class="vizModes">
+                    <button data-viz="spectral" class="on">SPECTRAL</button>
+                    <button data-viz="rain">CRIMSON RAIN</button>
+                    <button data-viz="warp">WARP</button>
+                    <button data-viz="aurora">AURORA</button>
+                    <button data-viz="orbital">ORBITAL</button>
+                    <button data-viz="bloom">NEBULA BLOOM</button>
+                    <button data-viz="helix">DNA HELIX</button>
+                    <button data-viz="plasma">PLASMA CORE</button>
+                    <button data-viz="kaleido">KALEIDO</button>
+                    <button data-viz="three">3D CORE</button>
+                </div>
+            </div>
+            </div></section>
+            <section class="pg" data-tab="Sound"><div class="pgIn">
+            <!-- PRESETS -->
+            <div class="panel">
+                <h2>ARTIST PRESETS</h2>
+                <div class="presets">
+                    <button data-pre="radio">SSP · RADIO READY</button>
+                    <button data-pre="dre">STREET · KNOCK</button>
+                    <button data-pre="spalter">BRADLEY SPALTER · SILK</button>
+                    <button data-pre="manny">GLOSS · POLISH</button>
+                    <button data-pre="kagan">IMPACT · PUNCH</button>
+                    <button data-pre="serban">PRISTINE · CLARITY</button>
+                    <button data-pre="miked">SUB · 808 WEIGHT</button>
+                    <button data-pre="surreal">SURREAL · CLEAN</button>
+                    <button data-pre="flat" class="on">FLAT · REFERENCE</button>
                 </div>
             </div>
 
@@ -4501,46 +4991,8 @@
                     </div>
                 </details>
             </div>
-
-            <!-- VIZ -->
-            <div id="vizBox">
-                <canvas id="viz">
-                </canvas>
-                <canvas id="viz3d" style="display:none;position:absolute;inset:0;width:100%;height:340px;cursor:grab"></canvas>
-                <div id="vizHud">
-                    <span id="hudViz">SPECTRAL FIELD</span>
-                    <span id="hudMode">STANDBY</span>
-                </div>
-                <div class="vizModes">
-                    <button data-viz="spectral" class="on">SPECTRAL</button>
-                    <button data-viz="rain">CRIMSON RAIN</button>
-                    <button data-viz="warp">WARP</button>
-                    <button data-viz="aurora">AURORA</button>
-                    <button data-viz="orbital">ORBITAL</button>
-                    <button data-viz="bloom">NEBULA BLOOM</button>
-                    <button data-viz="helix">DNA HELIX</button>
-                    <button data-viz="plasma">PLASMA CORE</button>
-                    <button data-viz="kaleido">KALEIDO</button>
-                    <button data-viz="three">3D CORE</button>
-                </div>
-            </div>
-
-            <!-- PRESETS -->
-            <div class="panel">
-                <h2>ARTIST PRESETS</h2>
-                <div class="presets">
-                    <button data-pre="radio">SSP · RADIO READY</button>
-                    <button data-pre="dre">STREET · KNOCK</button>
-                    <button data-pre="spalter">BRADLEY SPALTER · SILK</button>
-                    <button data-pre="manny">GLOSS · POLISH</button>
-                    <button data-pre="kagan">IMPACT · PUNCH</button>
-                    <button data-pre="serban">PRISTINE · CLARITY</button>
-                    <button data-pre="miked">SUB · 808 WEIGHT</button>
-                    <button data-pre="surreal">SURREAL · CLEAN</button>
-                    <button data-pre="flat" class="on">FLAT · REFERENCE</button>
-                </div>
-            </div>
-
+            </div></section>
+            <section class="pg" data-tab="Export"><div class="pgIn">
             <!-- EXPORT -->
             <div class="panel">
                 <h2>BOUNCE YOUR MIX</h2>
@@ -4592,7 +5044,8 @@
                     <span class="sk">FORENSIC LEDGER · SHA-256 PER RENDER · YOUR BACKUP COPY OF EVERY FILE</span>
                 </div>
             </div>
-
+            </div></section>
+            <section class="pg" data-tab="Examiner"><div class="pgIn">
             <!-- EXAMINER -->
             <div class="panel">
                 <h2>THE EXAMINER · PROVENANCE AUDIT</h2>
@@ -4632,7 +5085,8 @@
                 <div id="stemResults" style="display:none;margin-top:12px;gap:10px"></div>
                 <div class="note">Stem mode uses LALAL.ai's separation model (a paid service, billed per minute of audio) to split the track into vocals, drums and bass; the residual is the mix minus those three. Each part is then examined with the same five measurements as band mode. Separation quality is the model's, not ours — bleed between stems is normal and shows up in the numbers.</div>
             </div>
-
+            </div></section>
+            <section class="pg" data-tab="Economy"><div class="pgIn">
             <!-- SSP ECONOMY -->
             <div class="panel">
                 <h2>SSP MACROECONOMIC ENGINE</h2>
@@ -4687,8 +5141,30 @@
                 </div>
                 <div class="note">PROTOCOL SIMULATION LAYER — settlement math, splits, and remittance logic run live in-browser against your registered hash. Production rails (Polygon contracts, payout accounts, tax authority remittance) connect through the SSP backend. Polygon runs invisibly as the audit layer — participants never need a crypto wallet; payouts settle as USD to standard bank accounts via licensed payment partners.</div>
             </div>
-
+            </div></section>
+            </div>
+            <div class="pgDots"></div>
         </div>
+
+            <div id="wtModal" role="dialog" aria-modal="true" aria-label="Master Trust Engine walkthrough video">
+                <div class="wtHead">
+                    <span>MASTER TRUST ENGINE · THE GUIDED WALKTHROUGH</span>
+                    <button type="button" class="wtClose" id="wtClose">✕ CLOSE</button>
+                </div>
+                <video id="wtVideo" controls playsinline preload="none" poster="media/engine-walkthrough-poster.jpg">
+                    <source src="media/engine-walkthrough.mp4" type="video/mp4">
+                </video>
+            </div>
+
+            <div id="wsModal" role="dialog" aria-modal="true" aria-label="Who is Spalty video">
+                <div class="wtHead">
+                    <span>WHO IS SPALTY</span>
+                    <button type="button" class="wtClose" id="wsClose">✕ CLOSE</button>
+                </div>
+                <video id="wsVideo" controls playsinline preload="none" poster="media/who-is-spalty-poster.jpg">
+                    <source src="media/who-is-spalty.mp4" type="video/mp4">
+                </video>
+            </div>
     </div>
 
     <!-- SPALTY -->
@@ -5319,6 +5795,213 @@
             if (!was)
                 c.classList.add('open');
         }));
+        /* ================= PAGES — side to side, like an app =================
+           The homepage and the engine are each a row of full-screen pages
+           (.pgShell > .pgTrack > section.pg[data-tab]). The browser's own
+           horizontal scroll-snap does the swiping; the tab bar, the dots,
+           the arrow keys and the NEXT card at the foot of each page move
+           between them. Each page keeps its own up-and-down scroll. */
+        function makePager(shell) {
+            const track = shell.querySelector('.pgTrack'),
+                bar = shell.querySelector('.pgBar'),
+                dots = shell.querySelector('.pgDots'),
+                pages = [...track.children],
+                reduce = matchMedia('(prefers-reduced-motion: reduce)'),
+                tabs = document.createElement('div'),
+                prev = document.createElement('button'),
+                next = document.createElement('button');
+            let idx = -1,
+                target = -1,
+                targetTimer = 0;
+            tabs.className = 'pgTabs';
+            tabs.setAttribute('role', 'tablist');
+            prev.type = next.type = 'button';
+            prev.className = next.className = 'pgArr';
+            prev.textContent = '‹';
+            next.textContent = '›';
+            prev.setAttribute('aria-label', 'Previous page');
+            next.setAttribute('aria-label', 'Next page');
+            bar.append(prev, tabs, next);
+            prev.addEventListener('click', () => go(idx - 1));
+            next.addEventListener('click', () => go(idx + 1));
+            pages.forEach((p, i) => {
+                const name = p.dataset.tab;
+                p.setAttribute('role', 'tabpanel');
+                p.setAttribute('aria-label', name);
+                const t = document.createElement('button');
+                t.type = 'button';
+                t.className = 'pgTab';
+                t.setAttribute('role', 'tab');
+                t.textContent = name;
+                t.addEventListener('click', () => go(i));
+                tabs.appendChild(t);
+                const d = document.createElement('button');
+                d.type = 'button';
+                d.setAttribute('aria-label', 'Page ' + (i + 1) + ' of ' + pages.length + ': ' + name);
+                d.addEventListener('click', () => go(i));
+                dots.appendChild(d);
+                if (i < pages.length - 1) {
+                    const n = document.createElement('button');
+                    n.type = 'button';
+                    n.className = 'pgNext';
+                    n.innerHTML = '<div><small>NEXT</small><span></span></div><i>→</i>';
+                    n.querySelector('span').textContent = pages[i + 1].dataset.tab;
+                    n.addEventListener('click', () => go(i + 1));
+                    (p.querySelector('.pgIn') || p).appendChild(n);
+                }
+            });
+            function mark(i) {
+                if (i === idx)
+                    return;
+                idx = i;
+                [...tabs.children].forEach((t, k) => {
+                    t.classList.toggle('on', k === i);
+                    t.setAttribute('aria-selected', k === i ? 'true' : 'false');
+                    t.tabIndex = k === i ? 0 : -1
+                });
+                [...dots.children].forEach((d, k) => d.classList.toggle('on', k === i));
+                prev.disabled = i === 0;
+                next.disabled = i === pages.length - 1;
+                const t = tabs.children[i];
+                tabs.scrollTo({
+                    left: t.offsetLeft - (tabs.clientWidth - t.offsetWidth) / 2,
+                    behavior: reduce.matches ? 'auto' : 'smooth'
+                });
+                /* a video left playing on another page stops when you move on */
+                pages.forEach((p, k) => {
+                    if (k !== i)
+                        p.querySelectorAll('video').forEach(v => {
+                            if (!v.paused)
+                                v.pause()
+                        })
+                })
+            }
+            function go(i, instant) {
+                i = Math.max(0, Math.min(pages.length - 1, i));
+                const w = track.clientWidth;
+                if (w) {
+                    /* while a tab-click glide passes the pages in between,
+                       the tab bar stays on where it is going */
+                    target = i;
+                    clearTimeout(targetTimer);
+                    targetTimer = setTimeout(() => target = -1, 900);
+                    track.scrollTo({
+                        left: i * w,
+                        behavior: instant || reduce.matches ? 'auto' : 'smooth'
+                    })
+                }
+                mark(i)
+            }
+            let raf = 0;
+            track.addEventListener('scroll', () => {
+                if (raf)
+                    return;
+                raf = requestAnimationFrame(() => {
+                    raf = 0;
+                    const w = track.clientWidth;
+                    if (!w)
+                        return;
+                    const k = Math.round(track.scrollLeft / w);
+                    if (target >= 0) {
+                        if (k !== target || Math.abs(track.scrollLeft - target * w) > 2)
+                            return;
+                        target = -1
+                    }
+                    mark(k)
+                })
+            }, {
+                passive: true
+            });
+            track.addEventListener('scrollend', () => {
+                target = -1;
+                const w = track.clientWidth;
+                if (w)
+                    mark(Math.round(track.scrollLeft / w))
+            });
+            /* a swipe or wheel cancels a glide that is still under way */
+            ['touchstart', 'wheel'].forEach(ev => track.addEventListener(ev, () => target = -1, {
+                passive: true
+            }));
+            addEventListener('resize', () => {
+                const w = track.clientWidth;
+                if (w && idx >= 0)
+                    track.scrollTo({
+                        left: idx * w,
+                        behavior: 'auto'
+                    })
+            });
+            mark(0);
+            return {
+                go,
+                get idx() {
+                    return idx
+                },
+                pages,
+                index: name => pages.findIndex(p => p.dataset.tab === name)
+            }
+        }
+        const landingPager = makePager(document.querySelector('#landing .pgShell')),
+            enginePager = makePager(document.querySelector('#app .pgShell'));
+        /* a hidden view forgets its sideways position; put it back when shown */
+        function refitPagers() {
+            [landingPager, enginePager].forEach(p => p.go(p.idx, true))
+        }
+        window.refitPagers = refitPagers;
+        function pagerOnScreen() {
+            const vis = id => {
+                const el = $(id);
+                return !!el && getComputedStyle(el).display !== 'none'
+            };
+            if (['siteLock', 'lock', 'abScreen', 'docViewer', 'wtModal', 'wsModal'].some(vis))
+                return null;
+            if (vis('app'))
+                return enginePager;
+            if (vis('landing'))
+                return landingPager;
+            return null
+        }
+        document.addEventListener('keydown', e => {
+            if (e.key !== 'ArrowLeft' && e.key !== 'ArrowRight')
+                return;
+            if (e.defaultPrevented || e.altKey || e.ctrlKey || e.metaKey || e.shiftKey)
+                return;
+            const t = e.target;
+            if (t && (t.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(t.tagName)))
+                return;
+            const p = pagerOnScreen();
+            if (!p)
+                return;
+            e.preventDefault();
+            p.go(p.idx + (e.key === 'ArrowRight' ? 1 : -1))
+        });
+        /* The engine's mini transport: every button presses the real one on
+           the first page, and the readouts copy the real meters. */
+        (() => {
+            const bar = $('miniBar');
+            bar.querySelectorAll('[data-proxy]').forEach(b => b.addEventListener('click', () => {
+                const real = $(b.dataset.proxy);
+                if (real)
+                    real.click()
+            }));
+            const play = bar.querySelector('[data-proxy="btnPlay"]'),
+                put = (el, v) => {
+                    if (el.textContent !== v)
+                        el.textContent = v
+                };
+            setInterval(() => {
+                if (document.hidden || $('app').style.display !== 'block')
+                    return;
+                put($('mbTime'), $('counter').textContent);
+                put($('mbName'), $('fName').textContent.trim() || 'NO TRACK LOADED · ADD ONE ON LOAD & PLAY');
+                put($('mbPeak'), $('tPeak').textContent);
+                $('mbPeak').style.color = $('tPeak').style.color;
+                put($('mbLufs'), $('tLufsM').textContent);
+                const on = $('boom').classList.contains('on');
+                $('mbBoom').classList.toggle('on', on);
+                $('mbBoom').setAttribute('aria-pressed', on ? 'true' : 'false');
+                play.classList.toggle('active', $('btnPlay').classList.contains('active'))
+            }, 100)
+        })();
         /* Each page has its own address so it can be linked, bookmarked and
            reloaded: sspengine.com/engine/, /investors/, /overview/, /videos/.
            Cloudflare Pages serves this same index.html for those paths;
@@ -5337,12 +6020,14 @@
                 $(id).style.display = 'block'
             }
             window.scrollTo(0, 0);
+            refitPagers();
             path = path || PAGE_PATH[id];
             if (!fromHistory && path && location.pathname !== path)
                 history.pushState(null, '', path)
         }
         function showVideos(fromHistory) {
             show('landing', '/videos/', fromHistory);
+            landingPager.go(0, true);
             setTimeout(() => $('videos').scrollIntoView({
                 behavior: 'smooth'
             }), 60)
@@ -5367,13 +6052,9 @@
         $('fwBack').addEventListener('click', () => show('landing'));
         $('fwToDr').addEventListener('click', () => {
             show('landing');
-            setTimeout(() => document.querySelector('.modHead').scrollIntoView({
-                behavior: 'smooth'
-            }), 60)
+            landingPager.go(landingPager.index('Data Room'), true)
         });
-        $('navDr').addEventListener('click', () => document.querySelector('.modHead').scrollIntoView({
-            behavior: 'smooth'
-        }));
+        $('navDr').addEventListener('click', () => landingPager.go(landingPager.index('Data Room')));
         const INV = '1967';
         let invEntry = '';
         const pad = $('invPad'),
@@ -5589,6 +6270,7 @@
                         $('lock').style.display = 'none';
                         $('app').style.display = 'block';
                         $('app').dataset.unlocked = '1';
+                        window.refitPagers();
                         toast('ACCESS GRANTED · MASTER TRUST ENGINE ONLINE');
                     }
                     else {
