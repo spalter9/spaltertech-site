@@ -917,6 +917,11 @@ real secrets there. `.wrangler/` (local D1 state) is also gitignored.
   four probing questions. Stem mode itself wasn't run end to end (LALAL
   is paid); its cards/report share the tested code. Still to do: a real
   AI detector (Hive) when Bradley has keys, and real AI/human tracks.
+- **TOP button** (commit `e7956a5` on `main`; Bradley: no quick way back to
+  the start, REW only steps 5 s). `#btnTop` is the first of five
+  `.tKeys` (glyph `.topSym` = CSS bar + ◀◀, not the ⏮ emoji) and
+  `data-proxy="btnTop"` leads the `#miniBar` keys (visible on phones);
+  click → `seekTo(0)` (keeps playing). Test: scratchpad `pw/top_test.cjs`.
 
 ## Working style established this session
 
